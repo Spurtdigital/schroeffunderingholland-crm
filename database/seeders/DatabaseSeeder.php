@@ -45,9 +45,16 @@ class DatabaseSeeder extends Seeder
         ]);
         $admin->assignRole($role);
 
-        // 2. Create products (30 producten)
+        // 2. Maak alle echte SFH-producten aan via updateOrCreate
         $this->command->info('📦 Creating products...');
-        $products = Product::factory()->count(30)->create();
+        $products = collect();
+        foreach (\Database\Factories\ProductFactory::catalog() as $productData) {
+            $product = \App\Models\Product::updateOrCreate(
+                ['sku' => $productData['sku']],
+                $productData
+            );
+            $products->push($product);
+        }
 
         // 3. Create companies (15 klanten)
         $this->command->info('🏢 Creating companies...');
@@ -100,8 +107,10 @@ class DatabaseSeeder extends Seeder
 
                     QuoteItem::factory()
                         ->for($quote)
-                        ->for($product, 'itemable')  // Specify morphTo relationship name
+                        ->for($product, 'itemable')
                         ->create([
+                            'type' => \App\Enums\QuoteItemType::Product,
+                            'description' => $product->name,
                             'quantity' => rand(1, 10),
                             'unit_price' => $product->sales_price,
                         ]);
@@ -214,6 +223,8 @@ class DatabaseSeeder extends Seeder
             $selectedProducts = $products->random(rand(3, 5));
             foreach ($selectedProducts as $product) {
                 QuoteItem::factory()->for($quote)->for($product, 'itemable')->create([
+                    'type' => \App\Enums\QuoteItemType::Product,
+                    'description' => $product->name,
                     'quantity' => rand(4, 24),
                     'unit_price' => $product->sales_price,
                 ]);
