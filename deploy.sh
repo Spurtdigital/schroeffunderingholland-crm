@@ -54,19 +54,48 @@ rsync -az --delete \
   -e "ssh -i $SSH_KEY" \
   public/build/ "$SSH_USER@$SSH_HOST:$REMOTE_PUBLIC/build/"
 
-# Sync overige public bestanden (index.php, .htaccess, etc.)
+# Sync overige public bestanden (.htaccess, css/filament, js/filament, etc.)
+# index.php wordt BEWUST uitgesloten — de server-versie heeft andere paden (zie hieronder)
 rsync -az \
   -e "ssh -i $SSH_KEY" \
   --exclude='build' \
   --exclude='storage' \
   --exclude='hot' \
+  --exclude='index.php' \
   public/ "$SSH_USER@$SSH_HOST:$REMOTE_PUBLIC/"
+
+# Schrijf server-specifieke index.php met correcte paden naar ../app/vendor en ../app/bootstrap
+# (De lokale public/index.php wijst naar ../vendor — dat klopt alleen lokaal)
+$SSH "cat > $REMOTE_PUBLIC/index.php" << 'INDEXPHP'
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/../app/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// Register the Composer autoloader...
+require __DIR__.'/../app/vendor/autoload.php';
+
+// Bootstrap Laravel and handle the request...
+/** @var Application $app */
+$app = require_once __DIR__.'/../app/bootstrap/app.php';
+
+$app->handleRequest(Request::capture());
+INDEXPHP
 
 echo "==> [6/6] Laravel optimalisaties + migraties..."
 $SSH "cd $REMOTE_APP && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php"
 $SSH "cd $REMOTE_APP && php artisan migrate --force 2>&1"
 # LET OP: config:cache wordt NIET gedraaid - zie server-bootstrap.sh voor uitleg
 $SSH "cd $REMOTE_APP && php artisan route:cache && php artisan view:cache && php artisan event:cache 2>&1"
+# Permissies fixen zodat Apache de bestanden kan lezen
+$SSH "find $REMOTE_PUBLIC -type d -exec chmod 755 {} \; && find $REMOTE_PUBLIC -type f -exec chmod 644 {} \;"
 
 echo ""
 echo "Deploy voltooid! https://crm.schroeffunderingholland.nl"
