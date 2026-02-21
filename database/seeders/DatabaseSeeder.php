@@ -27,13 +27,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('🌱 Seeding database with demo data...');
 
-        // 1. Create admin user
+        // 1. Create admin user (firstOrCreate zodat re-seeden niet crasht)
         $this->command->info('👤 Creating admin user...');
-        $admin = User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@sfh.nl',
-            'password' => Hash::make('password'),
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@sfh.nl'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
+            ]);
 
         // Assign super_admin role to the admin user
         $this->command->info('🔐 Assigning super_admin role...');
