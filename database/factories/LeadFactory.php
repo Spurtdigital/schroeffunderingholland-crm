@@ -22,7 +22,7 @@ class LeadFactory extends Factory
             'company_id' => Company::factory(),
             'converted_to_quote_id' => null,
             'name' => fake()->name(),
-            'email' => fake()->email(),
+            'email' => fake()->randomElement(['kevin@spurt.digital', 'bob@schroeffunderingholland.nl']),
             'phone' => fake()->phoneNumber(),
             'postal_code' => fake()->postcode(),
             'house_number' => fake()->buildingNumber(),

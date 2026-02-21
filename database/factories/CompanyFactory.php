@@ -18,7 +18,7 @@ class CompanyFactory extends Factory
     {
         return [
             'name' => fake()->company(),
-            'email' => fake()->companyEmail(),
+            'email' => fake()->randomElement(['kevin@spurt.digital', 'bob@schroeffunderingholland.nl']),
             'phone' => fake()->phoneNumber(),
             'postal_code' => fake()->postcode(),
             'house_number' => fake()->buildingNumber(),

@@ -40,7 +40,7 @@ class DemoLeadsSeeder extends Seeder
     private array $leads = [
         [
             'company_name' => 'Bouwbedrijf Van der Berg B.V.',
-            'company_email' => 'info@vandenberg-bouw.nl',
+            'company_email' => 'kevin@spurt.digital',
             'company_phone' => '010-4521890',
             'street' => 'Westzeedijk',
             'house_number' => '384',
@@ -58,7 +58,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Architectenbureau Klaassen & Partners',
-            'company_email' => 'info@klaassen-architecten.nl',
+            'company_email' => 'bob@schroeffunderingholland.nl',
             'company_phone' => '010-7831200',
             'street' => 'Bergselaan',
             'house_number' => '72',
@@ -76,7 +76,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Aannemingsbedrijf De Groot Schiedam',
-            'company_email' => 'office@degroot-aanneming.nl',
+            'company_email' => 'kevin@spurt.digital',
             'company_phone' => '010-2461500',
             'street' => 'Nieuwe Damlaan',
             'house_number' => '18',
@@ -94,7 +94,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Woningcorporatie Vestia Delft',
-            'company_email' => 'technisch@vestia-delft.nl',
+            'company_email' => 'bob@schroeffunderingholland.nl',
             'company_phone' => '015-2136700',
             'street' => 'Phoenixstraat',
             'house_number' => '16',
@@ -112,7 +112,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Particulier — Dhr. F. Janssen',
-            'company_email' => 'f.janssen@gmail.com',
+            'company_email' => 'kevin@spurt.digital',
             'company_phone' => '06-56789012',
             'street' => 'Kerkstraat',
             'house_number' => '43',
@@ -130,7 +130,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Projectontwikkeling Havenzicht B.V.',
-            'company_email' => 'projecten@havenzicht.nl',
+            'company_email' => 'bob@schroeffunderingholland.nl',
             'company_phone' => '0182-651800',
             'street' => 'Havenstraat',
             'house_number' => '210',
@@ -148,7 +148,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Aannemer Gebr. Verhoef',
-            'company_email' => 'info@gebr-verhoef.nl',
+            'company_email' => 'kevin@spurt.digital',
             'company_phone' => '015-3690100',
             'street' => 'Papsouwselaan',
             'house_number' => '61',
@@ -166,7 +166,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Sloopbedrijf & Bouw Hendriksen',
-            'company_email' => 'projectleider@hendriksen-bouw.nl',
+            'company_email' => 'bob@schroeffunderingholland.nl',
             'company_phone' => '010-4990055',
             'street' => 'Mozartlaan',
             'house_number' => '5',
@@ -184,7 +184,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Particulier — Mevr. A. de Boer',
-            'company_email' => 'a.deboer@hotmail.com',
+            'company_email' => 'kevin@spurt.digital',
             'company_phone' => '06-90123456',
             'street' => 'Koninginnelaan',
             'house_number' => '12',
@@ -202,7 +202,7 @@ class DemoLeadsSeeder extends Seeder
         ],
         [
             'company_name' => 'Vastgoed & Beheer Dordrecht B.V.',
-            'company_email' => 'vastgoed@vbdordrecht.nl',
+            'company_email' => 'bob@schroeffunderingholland.nl',
             'company_phone' => '078-6140200',
             'street' => 'Vriesestraat',
             'house_number' => '130',
