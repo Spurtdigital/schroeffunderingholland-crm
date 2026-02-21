@@ -14,10 +14,15 @@ REMOTE_ROOT="/home/deb122730/domains/crm.schroeffunderingholland.nl"
 REMOTE_APP="$REMOTE_ROOT/app"
 REMOTE_PUBLIC="$REMOTE_ROOT/public_html"
 
-echo "==> [1/5] Vite build lokaal..."
+echo "==> [1/6] Vite build lokaal..."
 npm run build
 
-echo "==> [2/5] Bestanden uploaden via rsync..."
+echo "==> [2/6] Composer vendor lokaal bouwen voor productie..."
+VENDOR_TMP=$(mktemp -d)
+cp composer.json composer.lock "$VENDOR_TMP/"
+(cd "$VENDOR_TMP" && composer install --no-dev --optimize-autoloader --no-interaction --quiet)
+
+echo "==> [3/6] Bestanden uploaden via rsync..."
 
 # Upload alles BEHALVE: .git, node_modules, vendor, .env*, storage logs, public/build (apart)
 rsync -az --delete \
@@ -36,8 +41,15 @@ rsync -az --delete \
   --filter='protect .env' \
   ./ "$SSH_USER@$SSH_HOST:$REMOTE_APP/"
 
+# Upload vendor (lokaal gebouwd voor productie)
+echo "==> [4/6] Vendor uploaden..."
+rsync -az --delete \
+  -e "ssh -i $SSH_KEY" \
+  "$VENDOR_TMP/vendor/" "$SSH_USER@$SSH_HOST:$REMOTE_APP/vendor/"
+rm -rf "$VENDOR_TMP"
+
 # Upload public/build apart (gegenereerde assets)
-echo "==> [3/5] Assets (public/build) uploaden..."
+echo "==> [5/6] Assets (public/build) uploaden..."
 rsync -az --delete \
   -e "ssh -i $SSH_KEY" \
   public/build/ "$SSH_USER@$SSH_HOST:$REMOTE_PUBLIC/build/"
@@ -50,14 +62,11 @@ rsync -az \
   --exclude='hot' \
   public/ "$SSH_USER@$SSH_HOST:$REMOTE_PUBLIC/"
 
-echo "==> [4/5] Composer install op server..."
-$SSH "cd $REMOTE_APP && php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" && php composer-setup.php --quiet && rm composer-setup.php" 2>/dev/null || true
-$SSH "cd $REMOTE_APP && php composer.phar install --no-dev --optimize-autoloader --no-interaction 2>&1"
-
-echo "==> [5/5] Laravel optimalisaties + migraties..."
+echo "==> [6/6] Laravel optimalisaties + migraties..."
+$SSH "cd $REMOTE_APP && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php"
 $SSH "cd $REMOTE_APP && php artisan migrate --force 2>&1"
-$SSH "cd $REMOTE_APP && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache 2>&1"
-$SSH "cd $REMOTE_APP && php artisan queue:restart 2>/dev/null || true"
+# LET OP: config:cache wordt NIET gedraaid - zie server-bootstrap.sh voor uitleg
+$SSH "cd $REMOTE_APP && php artisan route:cache && php artisan view:cache && php artisan event:cache 2>&1"
 
 echo ""
 echo "Deploy voltooid! https://crm.schroeffunderingholland.nl"

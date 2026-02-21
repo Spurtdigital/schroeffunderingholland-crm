@@ -25,12 +25,14 @@ echo "==> [2/8] APP_KEY genereren..."
 php artisan key:generate --force
 
 echo "==> [3/8] Composer install..."
-if [ ! -f "$REMOTE_APP/composer.phar" ]; then
-  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-  php composer-setup.php --quiet
-  rm composer-setup.php
+# Antagonist heeft proc_* functies uitgeschakeld waardoor composer.phar niet werkt.
+# De vendor map wordt lokaal gebouwd en geüpload via deploy.sh.
+if [ -d "$REMOTE_APP/vendor" ]; then
+  echo "     vendor map aanwezig (geüpload via deploy), stap overgeslagen"
+else
+  echo "     WAARSCHUWING: vendor map ontbreekt! Draai deploy.sh opnieuw."
+  exit 1
 fi
-php composer.phar install --no-dev --optimize-autoloader --no-interaction
 
 echo "==> [4/8] Storage symlink aanmaken..."
 # Symlink: public_html/storage -> app/storage/app/public
@@ -57,8 +59,10 @@ echo "==> [7/8] Dummy data seeden (admin@sfh.nl / password)..."
 php artisan db:seed --force
 
 echo "==> [8/8] Filament Shield rollen aanmaken + cache opbouwen..."
-php artisan shield:generate --all --ignore-config-exclude 2>/dev/null || php artisan shield:generate --all
-php artisan config:cache
+php artisan shield:generate --all --panel=admin --no-interaction
+# LET OP: config:cache wordt NIET gedraaid omdat Antagonist CLI php een andere
+# variables_order heeft dan web php, waardoor APP_KEY leeg in de cache terecht komt.
+# Laravel leest .env direct via de web request - dat werkt correct.
 php artisan route:cache
 php artisan view:cache
 php artisan event:cache
