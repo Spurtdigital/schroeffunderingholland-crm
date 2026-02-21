@@ -120,79 +120,141 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 6. Create projects from approved quotes
+        // 6. Create projects — vaste projecten met datums 20 feb t/m 15 mrt 2026
+        // zodat de dashboard-widget "Komende projecten" altijd gevuld is.
         $this->command->info('🔧 Creating projects...');
-        $approvedQuotes = Quote::where('status', QuoteStatus::Approved)->get();
+        $quoteService = app(\App\Services\QuoteCalculationService::class);
 
-        foreach ($approvedQuotes->random(min(5, $approvedQuotes->count())) as $quote) {
-            $project = Project::factory()
-                ->for($quote->company)
-                ->for($quote)
-                ->create([
-                    'status' => fake()->randomElement([
-                        ProjectStatus::Active,
-                        ProjectStatus::Active,
-                        ProjectStatus::Completed,
-                    ]),
-                    'project_value' => $quote->total,
-                ]);
+        $projectDefinitions = [
+            [
+                'company_name' => 'Bouwbedrijf De Vries & Zn.',
+                'start_date' => '2026-02-20',
+                'completion_date' => '2026-02-23',
+                'project_value' => 8750.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Split5050,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Funderingsherstel achtergevel jaren-30 woning Rotterdam-Zuid. 12× ø89mm schroefpalen.',
+            ],
+            [
+                'company_name' => 'Aannemingsbedrijf Hartman B.V.',
+                'start_date' => '2026-02-24',
+                'completion_date' => '2026-02-26',
+                'project_value' => 14200.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Split5050,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Nieuwbouw aanbouw 60 m² Schiedam. 18× ø114mm schroefpalen, diepte 6m.',
+            ],
+            [
+                'company_name' => 'Woningbouw Zuidwest Delft',
+                'start_date' => '2026-02-28',
+                'completion_date' => '2026-03-03',
+                'project_value' => 22500.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Split3070,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Funderingsherstel 4 woningen Delft-Noord. Totaal 48× ø114mm palen. Inclusief funderingsonderzoek.',
+            ],
+            [
+                'company_name' => 'Vastgoed Rijnmond Groep',
+                'start_date' => '2026-03-04',
+                'completion_date' => '2026-03-07',
+                'project_value' => 11800.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Single,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Fundering bedrijfshal uitbreiding Ridderkerk. 16× ø114mm schroefpalen.',
+            ],
+            [
+                'company_name' => 'Projectontwikkeling IJsselmond',
+                'start_date' => '2026-03-09',
+                'completion_date' => '2026-03-12',
+                'project_value' => 31000.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Split5050,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Nieuwbouw 6 grondgebonden woningen Gouda. 72× ø89mm schroefpalen. Grote opdracht.',
+            ],
+            [
+                'company_name' => 'Renovatiebedrijf Van Tol',
+                'start_date' => '2026-03-11',
+                'completion_date' => '2026-03-13',
+                'project_value' => 6400.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Single,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Terrasoverkapping fundering Rotterdam-Oost. 8× ø89mm schroefpalen.',
+            ],
+            [
+                'company_name' => 'Bouwgroep Hollands Diep',
+                'start_date' => '2026-03-13',
+                'completion_date' => '2026-03-15',
+                'project_value' => 18900.00,
+                'invoicing_type' => \App\Enums\InvoicingType::Split3070,
+                'status' => ProjectStatus::Active,
+                'notes' => 'Funderingsherstel monumentaal pand Dordrecht. 24× ø168mm zware schroefpalen, diepte 8m.',
+            ],
+        ];
 
-            // Mark quote as converted
-            $quote->update([
+        foreach ($projectDefinitions as $def) {
+            // Bedrijf aanmaken
+            $projectCompany = Company::firstOrCreate(
+                ['name' => $def['company_name']],
+                [
+                    'email' => strtolower(str_replace([' ', '.', '&'], ['.', '', 'en'], $def['company_name'])).'@example.nl',
+                    'phone' => '010-'.rand(1000000, 9999999),
+                ]
+            );
+
+            // Bijbehorende offerte aanmaken (approved)
+            $quote = Quote::factory()->for($projectCompany)->create([
                 'status' => QuoteStatus::Converted,
-                'project_id' => $project->id,
+                'subtotal' => round($def['project_value'] / 1.21, 2),
+                'vat_amount' => round($def['project_value'] - $def['project_value'] / 1.21, 2),
+                'total' => $def['project_value'],
+                'valid_until' => now()->addDays(30),
             ]);
 
-            // Create invoice(s) for project
-            $this->command->info('💰 Creating invoices...');
-            if ($project->invoicing_type === \App\Enums\InvoicingType::Split5050 || $project->invoicing_type === \App\Enums\InvoicingType::Split3070) {
-                $firstPct = $project->invoicing_type->getFirstInvoicePercentage() / 100;
-                $secondPct = $project->invoicing_type->getSecondInvoicePercentage() / 100;
-                $projectValue = $quote->total ?? 0;
+            // Items toevoegen aan de offerte
+            $selectedProducts = $products->random(rand(3, 5));
+            foreach ($selectedProducts as $product) {
+                QuoteItem::factory()->for($quote)->for($product, 'itemable')->create([
+                    'quantity' => rand(4, 24),
+                    'unit_price' => $product->sales_price,
+                ]);
+            }
+            $quoteService->calculateTotals($quote);
 
-                // Deposit invoice
-                Invoice::factory()
-                    ->for($project)
-                    ->for($project->company)
-                    ->create([
-                        'invoice_type' => \App\Enums\InvoiceType::Deposit,
-                        'subtotal' => round($projectValue * $firstPct / 1.21, 2),
-                        'vat_amount' => round($projectValue * $firstPct - $projectValue * $firstPct / 1.21, 2),
-                        'total' => round($projectValue * $firstPct, 2),
-                        'status' => InvoiceStatus::Sent,
-                    ]);
+            // Project aanmaken
+            $project = Project::create([
+                'company_id' => $projectCompany->id,
+                'quote_id' => $quote->id,
+                'status' => $def['status'],
+                'invoicing_type' => $def['invoicing_type'],
+                'start_date' => $def['start_date'],
+                'completion_date' => $def['completion_date'],
+                'project_value' => $def['project_value'],
+                'notes' => $def['notes'],
+            ]);
 
-                // Final invoice - alleen als project completed
-                if ($project->status === ProjectStatus::Completed) {
-                    Invoice::factory()
-                        ->for($project)
-                        ->for($project->company)
-                        ->create([
-                            'invoice_type' => \App\Enums\InvoiceType::Final,
-                            'subtotal' => round($projectValue * $secondPct / 1.21, 2),
-                            'vat_amount' => round($projectValue * $secondPct - $projectValue * $secondPct / 1.21, 2),
-                            'total' => round($projectValue * $secondPct, 2),
-                            'status' => fake()->randomElement([
-                                InvoiceStatus::Draft,
-                                InvoiceStatus::Sent,
-                            ]),
-                        ]);
-                }
+            $quote->update(['project_id' => $project->id]);
+
+            // Factuur aanmaken
+            $this->command->info('💰 Creating invoice for '.$def['company_name'].'...');
+            $projectValue = $def['project_value'];
+
+            if (in_array($def['invoicing_type'], [\App\Enums\InvoicingType::Split5050, \App\Enums\InvoicingType::Split3070])) {
+                $firstPct = $def['invoicing_type']->getFirstInvoicePercentage() / 100;
+                Invoice::factory()->for($project)->for($projectCompany)->create([
+                    'invoice_type' => \App\Enums\InvoiceType::Deposit,
+                    'subtotal' => round($projectValue * $firstPct / 1.21, 2),
+                    'vat_amount' => round($projectValue * $firstPct - $projectValue * $firstPct / 1.21, 2),
+                    'total' => round($projectValue * $firstPct, 2),
+                    'status' => InvoiceStatus::Sent,
+                ]);
             } else {
-                // Single invoice
-                $projectValue = $quote->total ?? 0;
-                Invoice::factory()
-                    ->for($project)
-                    ->for($project->company)
-                    ->create([
-                        'invoice_type' => \App\Enums\InvoiceType::Single,
-                        'subtotal' => round($projectValue / 1.21, 2),
-                        'vat_amount' => round($projectValue - $projectValue / 1.21, 2),
-                        'total' => round($projectValue, 2),
-                        'status' => $project->status === ProjectStatus::Completed
-                            ? InvoiceStatus::Sent
-                            : InvoiceStatus::Draft,
-                    ]);
+                Invoice::factory()->for($project)->for($projectCompany)->create([
+                    'invoice_type' => \App\Enums\InvoiceType::Single,
+                    'subtotal' => round($projectValue / 1.21, 2),
+                    'vat_amount' => round($projectValue - $projectValue / 1.21, 2),
+                    'total' => round($projectValue, 2),
+                    'status' => InvoiceStatus::Draft,
+                ]);
             }
         }
 
