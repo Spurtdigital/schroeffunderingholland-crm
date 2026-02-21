@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Product;
 use App\Models\Project;
+use App\Models\ProjectItem;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\User;
@@ -245,6 +246,21 @@ class DatabaseSeeder extends Seeder
 
             $quote->update(['project_id' => $project->id]);
 
+            // Kopieer quote items naar project items (zelfde als ConvertToProjectAction)
+            foreach ($quote->items as $quoteItem) {
+                $project->items()->create([
+                    'quote_item_id' => $quoteItem->id,
+                    'itemable_type' => $quoteItem->itemable_type,
+                    'itemable_id' => $quoteItem->itemable_id,
+                    'type' => $quoteItem->type,
+                    'description' => $quoteItem->description,
+                    'quantity' => $quoteItem->quantity,
+                    'unit_price' => $quoteItem->unit_price,
+                    'total' => $quoteItem->total,
+                    'sort_order' => $quoteItem->sort_order,
+                ]);
+            }
+
             // Factuur aanmaken
             $this->command->info('💰 Creating invoice for '.$def['company_name'].'...');
             $projectValue = $def['project_value'];
@@ -282,6 +298,7 @@ class DatabaseSeeder extends Seeder
                 ['Quotes', Quote::count()],
                 ['Quote Items', QuoteItem::count()],
                 ['Projects', Project::count()],
+                ['Project Items', ProjectItem::count()],
                 ['Invoices', Invoice::count()],
             ]
         );
