@@ -31,5 +31,9 @@ class EditQuote extends EditRecord
     protected function afterSave(): void
     {
         app(QuoteCalculationService::class)->calculateTotals($this->getRecord());
+
+        // Sync selected clausules
+        $clauseIds = $this->data['clause_ids'] ?? [];
+        $this->getRecord()->clauses()->sync($clauseIds);
     }
 }

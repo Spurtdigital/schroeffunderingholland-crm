@@ -17,10 +17,10 @@ REMOTE_PUBLIC="$REMOTE_ROOT/public_html"
 echo "==> [1/6] Vite build lokaal..."
 npm run build
 
-echo "==> [2/6] Composer vendor lokaal bouwen voor productie..."
+echo "==> [2/6] Composer vendor bouwen via DDEV voor productie..."
 VENDOR_TMP=$(mktemp -d)
-cp composer.json composer.lock "$VENDOR_TMP/"
-(cd "$VENDOR_TMP" && composer install --no-dev --optimize-autoloader --no-interaction --quiet)
+ddev exec "cd /var/www/html && composer install --no-dev --optimize-autoloader --no-interaction --quiet 2>&1"
+COPYFILE_DISABLE=1 cp -r vendor "$VENDOR_TMP/vendor"
 
 echo "==> [3/6] Bestanden uploaden via rsync..."
 

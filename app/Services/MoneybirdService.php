@@ -303,7 +303,7 @@ class MoneybirdService
             $mbEstimate->reference = $quote->quote_number;
             $mbEstimate->estimate_date = $quote->created_at->format('Y-m-d');
             $mbEstimate->pre_text = $quote->pre_text;
-            $mbEstimate->post_text = $quote->post_text;
+            $mbEstimate->post_text = $this->buildPostText($quote);
 
             // Build details and assign
             $mbEstimate->details = $this->buildEstimateDetails($moneybird, $quote);
@@ -368,13 +368,46 @@ class MoneybirdService
             // Send destroy + new in one PATCH
             $mbEstimate->details = array_merge($destroyDetails, $newDetails);
             $mbEstimate->pre_text = $quote->pre_text;
-            $mbEstimate->post_text = $quote->post_text;
+            $mbEstimate->post_text = $this->buildPostText($quote);
             $mbEstimate->save();
 
             return true;
         } catch (ApiException $e) {
             throw new \Exception('Moneybird API fout: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Build the post_text for a Moneybird estimate by combining selected clauses
+     * (in sort_order) with any free-form post_text on the quote.
+     */
+    protected function buildPostText(Quote $quote): string
+    {
+        $parts = [];
+
+        // Load selected clauses ordered by sort_order
+        $clauses = $quote->clauses()->orderBy('sort_order')->pluck('content')->toArray();
+
+        if (! empty($clauses)) {
+            // Format as a bullet list
+            $parts[] = 'Bij deze aanbieding gaat '.($this->settings->company_name ?? 'Schroeffundering Holland B.V.').' ervan uit dat:';
+            foreach ($clauses as $clause) {
+                $parts[] = '* '.$clause;
+            }
+        }
+
+        // Append payment term content
+        if ($quote->paymentTerm) {
+            $parts[] = '*Betalingsvoorwaarden:*';
+            $parts[] = $quote->paymentTerm->content;
+        }
+
+        // Append any free-form post_text (extra info)
+        if (! empty(trim($quote->post_text ?? ''))) {
+            $parts[] = trim($quote->post_text);
+        }
+
+        return implode("\n", $parts);
     }
 
     /**

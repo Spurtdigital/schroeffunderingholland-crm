@@ -4,7 +4,10 @@ namespace App\Filament\Resources\Quotes\Schemas;
 
 use App\Enums\QuoteProcessingMethod;
 use App\Enums\QuoteStatus;
+use App\Models\PaymentTerm;
+use App\Models\QuoteClause;
 use App\Settings\GeneralSettings;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -97,9 +100,45 @@ class QuoteForm
                     ->rows(4)
                     ->columnSpanFull(),
 
+                // Clausules
+                Section::make('Clausules sluitingstekst')
+                    ->description('Selecteer welke clausules in de sluitingstekst van de Moneybird-offerte verschijnen. Standaard zijn alle actieve clausules aangevinkt.')
+                    ->schema([
+                        CheckboxList::make('clause_ids')
+                            ->label('')
+                            ->options(fn () => QuoteClause::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->default(fn () => QuoteClause::where('active', true)->orderBy('sort_order')->pluck('id')->toArray())
+                            ->afterStateHydrated(function (CheckboxList $component, $record) {
+                                if ($record) {
+                                    $selected = $record->clauses()->pluck('quote_clauses.id')->toArray();
+                                    if (empty($selected)) {
+                                        $selected = QuoteClause::where('active', true)->orderBy('sort_order')->pluck('id')->toArray();
+                                    }
+                                    $component->state($selected);
+                                }
+                            })
+                            ->columns(2)
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
+
+                // Betalingsvoorwaarden
+                Section::make('Betalingsvoorwaarden')
+                    ->schema([
+                        Select::make('payment_term_id')
+                            ->label('Betalingsvoorwaarde')
+                            ->options(fn () => PaymentTerm::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->default(fn () => PaymentTerm::where('active', true)->where('is_default', true)->value('id'))
+                            ->placeholder('Selecteer betalingsvoorwaarde')
+                            ->searchable()
+                            ->nullable()
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
+
                 Textarea::make('post_text')
-                    ->label('Nawoord (Moneybird)')
-                    ->helperText('Tekst die onder de regelitems verschijnt in de Moneybird-offerte.')
+                    ->label('Nawoord vrije tekst (Moneybird)')
+                    ->helperText('Extra tekst die ná de clausules verschijnt in de Moneybird-offerte. Vaste slottekst (betalingsvoorwaarden, aansprakelijkheid etc.) wordt automatisch samengesteld uit de clausules hierboven.')
                     ->default(fn () => app(GeneralSettings::class)->default_post_text)
                     ->rows(4)
                     ->columnSpanFull(),
@@ -157,3 +196,4 @@ class QuoteForm
             ->columns(3);
     }
 }
+
