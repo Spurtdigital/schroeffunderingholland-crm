@@ -36,7 +36,7 @@ class CreateCompany extends CreateRecord
                                         return [];
                                     }
 
-                                    $contacts = $moneybird->contact()->get();
+                                    $contacts = $moneybird->contact()->getAll();
                                     $options = [];
 
                                     foreach ($contacts as $contact) {

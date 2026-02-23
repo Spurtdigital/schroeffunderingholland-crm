@@ -38,6 +38,10 @@ class GeneralSettings extends Settings
 
     public ?string $google_maps_api_key;
 
+    public ?string $default_pre_text;
+
+    public ?string $default_post_text;
+
     public static function group(): string
     {
         return 'general';

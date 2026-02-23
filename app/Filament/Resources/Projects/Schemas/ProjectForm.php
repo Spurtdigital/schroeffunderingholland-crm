@@ -36,10 +36,9 @@ class ProjectForm
 
                 Select::make('company_id')
                     ->label('Bedrijf')
-                    ->relationship('company', 'name')
+                    ->relationship('company', 'name', fn ($query) => $query->orderBy('name'))
                     ->required()
                     ->searchable()
-                    ->preload()
                     ->columnSpan(1),
 
                 Placeholder::make('quote_link')

@@ -477,6 +477,65 @@ class MoneybirdService
     }
 
     /**
+     * Sync all contacts from Moneybird to local companies.
+     * Returns array with counts: ['created' => int, 'updated' => int, 'total' => int]
+     */
+    public function syncAllContacts(): array
+    {
+        $moneybird = $this->getMoneybird();
+
+        if (! $moneybird) {
+            throw new \Exception('Moneybird is niet geconfigureerd. Controleer de API instellingen.');
+        }
+
+        try {
+            $contacts = $moneybird->contact()->get();
+        } catch (ApiException $e) {
+            throw new \Exception('Moneybird API fout: '.$e->getMessage());
+        }
+
+        $created = 0;
+        $updated = 0;
+
+        foreach ($contacts as $contact) {
+            $name = $contact->company_name ?: trim($contact->firstname.' '.$contact->lastname) ?: 'Onbekend';
+
+            $company = Company::where('moneybird_contact_id', $contact->id)->first();
+
+            if (! $company) {
+                Company::create([
+                    'name' => $name,
+                    'email' => $contact->email,
+                    'phone' => $contact->phone,
+                    'street' => $contact->address1,
+                    'house_number' => $contact->address2,
+                    'postal_code' => $contact->zipcode,
+                    'city' => $contact->city,
+                    'moneybird_contact_id' => $contact->id,
+                ]);
+                $created++;
+            } else {
+                $company->update([
+                    'name' => $name ?: $company->name,
+                    'email' => $contact->email ?: $company->email,
+                    'phone' => $contact->phone ?: $company->phone,
+                    'street' => $contact->address1 ?: $company->street,
+                    'house_number' => $contact->address2 ?: $company->house_number,
+                    'postal_code' => $contact->zipcode ?: $company->postal_code,
+                    'city' => $contact->city ?: $company->city,
+                ]);
+                $updated++;
+            }
+        }
+
+        return [
+            'created' => $created,
+            'updated' => $updated,
+            'total' => $created + $updated,
+        ];
+    }
+
+    /**
      * Import a single contact from Moneybird
      */
     public function importContact(string $contactId): ?Company

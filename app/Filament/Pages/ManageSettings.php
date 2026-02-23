@@ -7,6 +7,7 @@ use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -59,6 +60,8 @@ class ManageSettings extends Page implements HasForms
             'moneybird_api_token' => $settings->moneybird_api_token,
             'moneybird_administration_id' => $settings->moneybird_administration_id,
             'google_maps_api_key' => $settings->google_maps_api_key,
+            'default_pre_text' => $settings->default_pre_text,
+            'default_post_text' => $settings->default_post_text,
         ]);
     }
 
@@ -135,6 +138,16 @@ class ManageSettings extends Page implements HasForms
                             ->minValue(0)
                             ->step(0.01)
                             ->helperText('Wordt gebruikt voor automatische berekening van reiskosten'),
+                        Textarea::make('default_pre_text')
+                            ->label('Standaard voorwoord (Moneybird)')
+                            ->helperText('Wordt automatisch ingevuld bij een nieuwe offerte. Per offerte aan te passen.')
+                            ->rows(4)
+                            ->columnSpanFull(),
+                        Textarea::make('default_post_text')
+                            ->label('Standaard nawoord (Moneybird)')
+                            ->helperText('Wordt automatisch ingevuld bij een nieuwe offerte. Per offerte aan te passen.')
+                            ->rows(4)
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -198,6 +211,8 @@ class ManageSettings extends Page implements HasForms
         $settings->moneybird_api_token = $data['moneybird_api_token'] ?? null;
         $settings->moneybird_administration_id = $data['moneybird_administration_id'] ?? null;
         $settings->google_maps_api_key = $data['google_maps_api_key'] ?? null;
+        $settings->default_pre_text = $data['default_pre_text'] ?? null;
+        $settings->default_post_text = $data['default_post_text'] ?? null;
         $settings->save();
 
         Notification::make()
@@ -209,6 +224,42 @@ class ManageSettings extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('syncMoneybirdContacts')
+                ->label('Klanten synchroniseren')
+                ->icon('heroicon-o-arrow-path')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Klanten synchroniseren vanuit Moneybird')
+                ->modalDescription('Alle contacten uit Moneybird worden opgehaald en lokaal opgeslagen of bijgewerkt. Dit kan even duren.')
+                ->modalSubmitActionLabel('Synchroniseren')
+                ->action(function (MoneybirdService $moneybirdService) {
+                    try {
+                        if (! $moneybirdService->isConfigured()) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Moneybird niet geconfigureerd')
+                                ->body('Vul eerst de API Token en Administratie ID in.')
+                                ->send();
+
+                            return;
+                        }
+
+                        $result = $moneybirdService->syncAllContacts();
+
+                        Notification::make()
+                            ->success()
+                            ->title('Klanten gesynchroniseerd')
+                            ->body("{$result['created']} nieuw aangemaakt, {$result['updated']} bijgewerkt ({$result['total']} totaal).")
+                            ->send();
+                    } catch (\Exception $e) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Synchronisatie mislukt')
+                            ->body($e->getMessage())
+                            ->send();
+                    }
+                }),
+
             Action::make('testMoneybirdConnection')
                 ->label('Test Moneybird Connectie')
                 ->icon('heroicon-o-signal')

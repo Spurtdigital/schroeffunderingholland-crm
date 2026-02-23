@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Quotes\Schemas;
 
 use App\Enums\QuoteProcessingMethod;
 use App\Enums\QuoteStatus;
+use App\Settings\GeneralSettings;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -28,9 +29,8 @@ class QuoteForm
                     ->columnSpan(1),
                 Select::make('company_id')
                     ->label('Bedrijf')
-                    ->relationship('company', 'name')
+                    ->relationship('company', 'name', fn ($query) => $query->orderBy('name'))
                     ->searchable()
-                    ->preload()
                     ->required()
                     ->columnSpan(1),
                 Select::make('lead_id')
@@ -93,12 +93,14 @@ class QuoteForm
                 Textarea::make('pre_text')
                     ->label('Voorwoord (Moneybird)')
                     ->helperText('Tekst die boven de regelitems verschijnt in de Moneybird-offerte.')
+                    ->default(fn () => app(GeneralSettings::class)->default_pre_text)
                     ->rows(4)
                     ->columnSpanFull(),
 
                 Textarea::make('post_text')
                     ->label('Nawoord (Moneybird)')
                     ->helperText('Tekst die onder de regelitems verschijnt in de Moneybird-offerte.')
+                    ->default(fn () => app(GeneralSettings::class)->default_post_text)
                     ->rows(4)
                     ->columnSpanFull(),
 
