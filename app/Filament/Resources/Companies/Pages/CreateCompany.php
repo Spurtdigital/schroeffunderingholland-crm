@@ -26,28 +26,22 @@ class CreateCompany extends CreateRecord
                             ->label('Selecteer Moneybird contact')
                             ->searchable()
                             ->options(function (MoneybirdService $moneybirdService) {
-                                if (! $moneybirdService->isConfigured()) {
+                                $contacts = MoneybirdService::getCachedContacts();
+
+                                if (empty($contacts)) {
                                     return [];
                                 }
 
-                                try {
-                                    $moneybird = $moneybirdService->getMoneybirdInstance();
-                                    if (! $moneybird) {
-                                        return [];
+                                $options = [];
+                                foreach ($contacts as $contact) {
+                                    $label = $contact['name'];
+                                    if (! empty($contact['email'])) {
+                                        $label .= ' ('.$contact['email'].')';
                                     }
-
-                                    $contacts = $moneybird->contact()->getAll();
-                                    $options = [];
-
-                                    foreach ($contacts as $contact) {
-                                        $label = $contact->company_name ?: ($contact->firstname.' '.$contact->lastname);
-                                        $options[$contact->id] = $label.' ('.($contact->email ?: 'Geen email').')';
-                                    }
-
-                                    return $options;
-                                } catch (\Exception $e) {
-                                    return [];
+                                    $options[$contact['id']] = $label;
                                 }
+
+                                return $options;
                             })
                             ->live()
                             ->afterStateUpdated(function (?string $state, Set $set, MoneybirdService $moneybirdService) {
@@ -86,7 +80,7 @@ class CreateCompany extends CreateRecord
                                         ->send();
                                 }
                             })
-                            ->helperText('Selecteer een contact om de gegevens automatisch in te vullen')
+                            ->helperText('Selecteer een contact om de gegevens automatisch in te vullen. Gebruik "Klanten synchroniseren" in de instellingen om de lijst bij te werken.')
                             ->placeholder('Kies een Moneybird contact (optioneel)')
                             ->columnSpanFull(),
                     ])

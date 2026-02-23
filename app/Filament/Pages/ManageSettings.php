@@ -249,7 +249,7 @@ class ManageSettings extends Page implements HasForms
                         Notification::make()
                             ->success()
                             ->title('Klanten gesynchroniseerd')
-                            ->body("{$result['created']} nieuw aangemaakt, {$result['updated']} bijgewerkt ({$result['total']} totaal).")
+                            ->body("{$result} contacten opgeslagen in de lokale cache.")
                             ->send();
                     } catch (\Exception $e) {
                         Notification::make()

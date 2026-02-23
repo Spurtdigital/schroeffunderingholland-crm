@@ -477,10 +477,10 @@ class MoneybirdService
     }
 
     /**
-     * Sync all contacts from Moneybird to local companies.
-     * Returns array with counts: ['created' => int, 'updated' => int, 'total' => int]
+     * Fetch all Moneybird contacts and store them in a local JSON cache file.
+     * Returns the number of contacts saved.
      */
-    public function syncAllContacts(): array
+    public function syncAllContacts(): int
     {
         $moneybird = $this->getMoneybird();
 
@@ -489,50 +489,47 @@ class MoneybirdService
         }
 
         try {
-            $contacts = $moneybird->contact()->get();
+            $contacts = $moneybird->contact()->getAll();
         } catch (ApiException $e) {
             throw new \Exception('Moneybird API fout: '.$e->getMessage());
         }
 
-        $created = 0;
-        $updated = 0;
+        $data = [];
 
         foreach ($contacts as $contact) {
             $name = $contact->company_name ?: trim($contact->firstname.' '.$contact->lastname) ?: 'Onbekend';
 
-            $company = Company::where('moneybird_contact_id', $contact->id)->first();
-
-            if (! $company) {
-                Company::create([
-                    'name' => $name,
-                    'email' => $contact->email,
-                    'phone' => $contact->phone,
-                    'street' => $contact->address1,
-                    'house_number' => $contact->address2,
-                    'postal_code' => $contact->zipcode,
-                    'city' => $contact->city,
-                    'moneybird_contact_id' => $contact->id,
-                ]);
-                $created++;
-            } else {
-                $company->update([
-                    'name' => $name ?: $company->name,
-                    'email' => $contact->email ?: $company->email,
-                    'phone' => $contact->phone ?: $company->phone,
-                    'street' => $contact->address1 ?: $company->street,
-                    'house_number' => $contact->address2 ?: $company->house_number,
-                    'postal_code' => $contact->zipcode ?: $company->postal_code,
-                    'city' => $contact->city ?: $company->city,
-                ]);
-                $updated++;
-            }
+            $data[] = [
+                'id' => $contact->id,
+                'name' => $name,
+                'email' => $contact->email ?? '',
+            ];
         }
 
-        return [
-            'created' => $created,
-            'updated' => $updated,
-            'total' => $created + $updated,
-        ];
+        // Sort by name
+        usort($data, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+
+        file_put_contents(
+            storage_path('app/moneybird_contacts.json'),
+            json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+
+        return count($data);
+    }
+
+    /**
+     * Load cached Moneybird contacts from the local JSON file.
+     * Returns an array of ['id' => ..., 'name' => ..., 'email' => ...]
+     */
+    public static function getCachedContacts(): array
+    {
+        $path = storage_path('app/moneybird_contacts.json');
+
+        if (! file_exists($path)) {
+            return [];
+        }
+
+        return json_decode(file_get_contents($path), true) ?? [];
     }
 
     /**
