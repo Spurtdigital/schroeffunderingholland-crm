@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Companies\Schemas;
 
 use App\Services\PostcodeService;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
@@ -19,6 +20,18 @@ class CompanyForm
                     ->required()
                     ->maxLength(255)
                     ->columnSpanFull(),
+                TextInput::make('contact_person')
+                    ->label('Contactpersoon')
+                    ->maxLength(255)
+                    ->helperText('Naam zonder aanhef, bijv. "Haan" of "de Groot"'),
+                Select::make('salutation')
+                    ->label('Aanhef')
+                    ->options([
+                        'de heer' => 'De heer',
+                        'mevrouw' => 'Mevrouw',
+                    ])
+                    ->placeholder('Selecteer aanhef')
+                    ->nullable(),
                 TextInput::make('email')
                     ->label('E-mailadres')
                     ->email()

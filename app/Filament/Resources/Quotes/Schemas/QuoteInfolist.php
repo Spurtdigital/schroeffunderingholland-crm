@@ -170,6 +170,17 @@ class QuoteInfolist
                                     ->money('EUR'),
                             ]),
 
+                        Section::make('Offerte-aannames')
+                            ->schema([
+                                TextEntry::make('assumptions')
+                                    ->label('')
+                                    ->state(fn ($record) => $record->assumptions()->orderBy('sort_order')->pluck('title')->toArray())
+                                    ->listWithLineBreaks()
+                                    ->placeholder('Geen aannames geselecteerd'),
+                            ])
+                            ->collapsible()
+                            ->collapsed(fn ($record) => $record->assumptions()->doesntExist()),
+
                         Section::make('Betalingsvoorwaarden')
                             ->schema([
                                 TextEntry::make('paymentTerm.title')

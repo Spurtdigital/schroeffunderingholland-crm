@@ -302,7 +302,7 @@ class MoneybirdService
             $mbEstimate->contact_id = $quote->company->moneybird_contact_id;
             $mbEstimate->reference = $quote->quote_number;
             $mbEstimate->estimate_date = $quote->created_at->format('Y-m-d');
-            $mbEstimate->pre_text = $quote->pre_text;
+            $mbEstimate->pre_text = $this->buildPreText($quote);
             $mbEstimate->post_text = $this->buildPostText($quote);
 
             // Build details and assign
@@ -367,7 +367,7 @@ class MoneybirdService
 
             // Send destroy + new in one PATCH
             $mbEstimate->details = array_merge($destroyDetails, $newDetails);
-            $mbEstimate->pre_text = $quote->pre_text;
+            $mbEstimate->pre_text = $this->buildPreText($quote);
             $mbEstimate->post_text = $this->buildPostText($quote);
             $mbEstimate->save();
 
@@ -375,6 +375,43 @@ class MoneybirdService
         } catch (ApiException $e) {
             throw new \Exception('Moneybird API fout: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Build the pre_text for a Moneybird estimate:
+     *  1. Aanhef         → "Geachte [salutation] [contact_person]," from company
+     *  2. Opening zin    → from Quote::pre_text (free field, set from GeneralSettings::default_pre_text)
+     *  3. Aannames       → "In deze offerte gaan wij uit van het onderstaande:" + bullet list
+     */
+    protected function buildPreText(Quote $quote): string
+    {
+        $parts = [];
+
+        // 1. Aanhef
+        $company = $quote->company;
+        if ($company && $company->contact_person) {
+            $salutation = $company->salutation ? $company->salutation.' ' : '';
+            $parts[] = 'Geachte '.$salutation.$company->contact_person.',';
+            $parts[] = '';
+        }
+
+        // 2. Free pre_text (opening zin, e.g. "Hierbij ontvangt u van ons...")
+        $preText = trim($quote->pre_text ?? '');
+        if (! empty($preText)) {
+            $parts[] = $preText;
+        }
+
+        // 3. Aannames bullet list
+        $assumptions = $quote->assumptions()->orderBy('sort_order')->pluck('content')->toArray();
+        if (! empty($assumptions)) {
+            $parts[] = '';
+            $parts[] = 'In deze offerte gaan wij uit van het onderstaande:';
+            foreach ($assumptions as $content) {
+                $parts[] = '* '.$content;
+            }
+        }
+
+        return implode("\n", $parts);
     }
 
     /**

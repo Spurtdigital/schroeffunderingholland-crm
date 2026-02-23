@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Quotes\Schemas;
 use App\Enums\QuoteProcessingMethod;
 use App\Enums\QuoteStatus;
 use App\Models\PaymentTerm;
+use App\Models\QuoteAssumption;
 use App\Settings\GeneralSettings;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -96,6 +98,25 @@ class QuoteForm
                     ->helperText('Tekst die boven de regelitems verschijnt in de Moneybird-offerte.')
                     ->default(fn () => app(GeneralSettings::class)->default_pre_text)
                     ->rows(4)
+                    ->columnSpanFull(),
+
+                // Offerte-aannames
+                Section::make('Offerte-aannames')
+                    ->description('Selecteer welke aannames van toepassing zijn. Worden als bulletlijst opgenomen in de offerte. Aannames met een SKU-koppeling worden automatisch aangevinkt op basis van de producten in de offerte.')
+                    ->schema([
+                        CheckboxList::make('assumption_ids')
+                            ->label('')
+                            ->options(fn () => QuoteAssumption::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->default([])
+                            ->afterStateHydrated(function (CheckboxList $component, $record) {
+                                if ($record) {
+                                    $selected = $record->assumptions()->pluck('quote_assumptions.id')->toArray();
+                                    $component->state($selected);
+                                }
+                            })
+                            ->columns(2)
+                            ->columnSpanFull(),
+                    ])
                     ->columnSpanFull(),
 
                 // Betalingsvoorwaarden

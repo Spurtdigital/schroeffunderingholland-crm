@@ -7,6 +7,7 @@ use App\Enums\QuoteStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -71,6 +72,14 @@ class Quote extends Model
     public function paymentTerm(): BelongsTo
     {
         return $this->belongsTo(PaymentTerm::class);
+    }
+
+    /**
+     * Get the assumptions selected for this quote.
+     */
+    public function assumptions(): BelongsToMany
+    {
+        return $this->belongsToMany(QuoteAssumption::class, 'quote_assumption_quote');
     }
 
     /**
