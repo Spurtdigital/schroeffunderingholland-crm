@@ -21,17 +21,9 @@ class CompanyForm
                     ->maxLength(255)
                     ->columnSpanFull(),
                 TextInput::make('contact_person')
-                    ->label('Contactpersoon')
+                    ->label('Voornaam contactpersoon')
                     ->maxLength(255)
-                    ->helperText('Naam zonder aanhef, bijv. "Haan" of "de Groot"'),
-                Select::make('salutation')
-                    ->label('Aanhef')
-                    ->options([
-                        'de heer' => 'De heer',
-                        'mevrouw' => 'Mevrouw',
-                    ])
-                    ->placeholder('Selecteer aanhef')
-                    ->nullable(),
+                    ->helperText('Wordt gebruikt als aanhef in de offerte: "Beste [voornaam],"'),
                 TextInput::make('email')
                     ->label('E-mailadres')
                     ->email()

@@ -392,7 +392,7 @@ class MoneybirdService
 
     /**
      * Build the pre_text for a Moneybird estimate:
-     *  1. Aanhef         → "Geachte [salutation] [contact_person]," from company
+     *  1. Aanhef         → "Beste [contact_person]," from company
      *  2. Opening zin    → from Quote::pre_text (free field, set from GeneralSettings::default_pre_text)
      *  3. Aannames       → "In deze offerte gaan wij uit van het onderstaande:" + bullet list
      */
@@ -403,8 +403,7 @@ class MoneybirdService
         // 1. Aanhef
         $company = $quote->company;
         if ($company && $company->contact_person) {
-            $salutation = $company->salutation ? $company->salutation.' ' : '';
-            $parts[] = 'Geachte '.$salutation.$company->contact_person.',';
+            $parts[] = 'Beste '.$company->contact_person.',';
             $parts[] = '';
         }
 
