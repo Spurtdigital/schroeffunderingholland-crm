@@ -379,40 +379,27 @@ class MoneybirdService
 
     /**
      * Build the post_text for a Moneybird estimate:
-     *  1. Bullet clauses  → "Bij deze aanbieding gaat X ervan uit dat:" + bullet list
-     *  2. Payment term    → "*Betalingsvoorwaarden:*" + bullet
-     *  3. Free post_text  → per-quote extra text
-     *  4. Closing text    → fixed blob from GeneralSettings::closing_text
+     *  1. Payment term    → "*Betalingsvoorwaarden:*" + bullet
+     *  2. Free post_text  → per-quote extra text
+     *  3. Closing text    → fixed blob from GeneralSettings::closing_text
      */
     protected function buildPostText(Quote $quote): string
     {
         $parts = [];
 
-        // 1. Bullet clauses
-        $clauses = $quote->clauses()->orderBy('sort_order')->pluck('content')->toArray();
-
-        if (! empty($clauses)) {
-            $companyName = $this->settings->company_name ?? 'Schroeffundering Holland B.V.';
-            $parts[] = 'Bij deze aanbieding gaat '.$companyName.' ervan uit dat:';
-            foreach ($clauses as $content) {
-                $parts[] = '* '.$content;
-            }
-        }
-
-        // 2. Payment term
+        // 1. Payment term
         if ($quote->paymentTerm) {
-            $parts[] = '';
             $parts[] = '*Betalingsvoorwaarden:*';
             $parts[] = '* '.$quote->paymentTerm->content;
         }
 
-        // 3. Free post_text (per-quote extra notes)
+        // 2. Free post_text (per-quote extra notes)
         if (! empty(trim($quote->post_text ?? ''))) {
             $parts[] = '';
             $parts[] = trim($quote->post_text);
         }
 
-        // 4. Fixed closing text from settings
+        // 3. Fixed closing text from settings
         $closingText = trim($this->settings->closing_text ?? '');
         if (! empty($closingText)) {
             $parts[] = '';

@@ -170,17 +170,6 @@ class QuoteInfolist
                                     ->money('EUR'),
                             ]),
 
-                        Section::make('Clausules sluitingstekst')
-                            ->schema([
-                                TextEntry::make('clauses')
-                                    ->label('')
-                                    ->state(fn ($record) => $record->clauses()->orderBy('sort_order')->pluck('title')->toArray())
-                                    ->listWithLineBreaks()
-                                    ->placeholder('Geen clausules geselecteerd'),
-                            ])
-                            ->collapsible()
-                            ->collapsed(fn ($record) => $record->clauses()->doesntExist()),
-
                         Section::make('Betalingsvoorwaarden')
                             ->schema([
                                 TextEntry::make('paymentTerm.title')

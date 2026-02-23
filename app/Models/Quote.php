@@ -7,8 +7,8 @@ use App\Enums\QuoteStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class Quote extends Model
@@ -119,14 +119,6 @@ class Quote extends Model
     public function stockReservations(): HasMany
     {
         return $this->hasMany(StockReservation::class);
-    }
-
-    /**
-     * Get the clauses selected for this quote.
-     */
-    public function clauses(): BelongsToMany
-    {
-        return $this->belongsToMany(QuoteClause::class, 'quote_clause_quote');
     }
 
     /**
