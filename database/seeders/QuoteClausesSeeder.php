@@ -13,8 +13,7 @@ class QuoteClausesSeeder extends Seeder
      */
     public function run(): void
     {
-        // --- Bullet-clausules (voorwaarden-lijst) ---
-        $bullets = [
+        $clauses = [
             [
                 'title' => 'Stroom 230V aanwezig',
                 'content' => 'Er op locatie een 230 Volt stroomaansluiting aanwezig is voor onze machines.',
@@ -52,41 +51,10 @@ class QuoteClausesSeeder extends Seeder
             ],
         ];
 
-        foreach ($bullets as $clause) {
+        foreach ($clauses as $clause) {
             QuoteClause::firstOrCreate(
                 ['title' => $clause['title']],
-                array_merge($clause, ['active' => true, 'type' => 'bullet']),
-            );
-        }
-
-        // --- Sectie-clausules (vrije alinea's met eigen kopje) ---
-        $sections = [
-            [
-                'title' => 'Extra informatie',
-                'content' => 'Indien de werkzaamheden door Schroeffundering Holland B.V. binnen 15 meter vanaf de gevellijn worden uitgevoerd sluiten wij iedere vorm aansprakelijkheid voor funderingsschade ontstaan binnen een afstand van 15 meter van de gevellijn van het pand en naburige panden ontstaan tijdens na verrichte werkzaamheden volledig uit. De opdrachtgever is verplicht, althans wordt dringend geadviseerd, om dit risico op schade zelf af te dekken met een daarvoor bestemde verzekering. Indien er geen sondering aanwezig is, raden wij u aan deze te laten uitvoeren en met ons te delen. Indien er geen sondering is of niet zal worden uitgevoerd door de opdrachtgever, dan komt dit risico voor rekening van de opdrachtgever, Schroeffundering Holland B.V. kan hiervoor niet aansprakelijk worden gesteld.',
-                'sort_order' => 110,
-            ],
-            [
-                'title' => 'Weersvoorspelling',
-                'content' => 'Indien de weersvoorspellingen te slecht zijn en het ons niet toelaat om de werkzaamheden uit te voeren, dan zullen wij de opdracht moeten verplaatsen. Houdt hierbij dus rekening mee in uw eigen planning.',
-                'sort_order' => 120,
-            ],
-            [
-                'title' => 'Klic melding',
-                'content' => 'Schroeffundering Holland B.V. vraagt voor aanvang van de montage een klic melding aan bij het Kadaster voor het inzien van eventueel lopende kabels en leidingen. Blijkt dat er een EV op de klic melding zit en de werkzaamheden eerst gecontroleerd dienen te worden door de netbeheerder, dan kan dit vertraging in de startdatum opleveren. Indien het blijkt dat er kabels en leidingen liggen in het werkgebied dan dienen deze zichtbaar te worden gemaakt, dit dient door de klant vooraf te worden uitgevoerd. Als de montage door de aanwezigheid van kabels en leidingen of overige eisen niet mogelijk blijkt te zijn dan worden de kosten van de klic melding a €55,- excl. btw altijd in rekening gebracht.',
-                'sort_order' => 130,
-            ],
-            [
-                'title' => 'Wachttijd en vergoeding',
-                'content' => 'Wachttijd door het niet hebben voldaan aan de gestelde voorbereidingen wordt doorbelast a €60,- per monteur excl. btw. Indien blijkt dat de voorbereidingen niet getroffen zijn en de montage om welke reden dan ook niet kan worden uitgevoerd op dezelfde dag en Schroeffundering Holland hiervoor terug moet komen wordt doorbelast bij de klant a €400,- excl. btw per gepland dagdeel.',
-                'sort_order' => 140,
-            ],
-        ];
-
-        foreach ($sections as $clause) {
-            QuoteClause::firstOrCreate(
-                ['title' => $clause['title']],
-                array_merge($clause, ['active' => true, 'type' => 'section']),
+                array_merge($clause, ['active' => true]),
             );
         }
     }

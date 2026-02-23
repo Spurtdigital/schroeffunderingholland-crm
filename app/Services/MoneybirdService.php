@@ -378,33 +378,24 @@ class MoneybirdService
     }
 
     /**
-     * Build the post_text for a Moneybird estimate by combining selected clauses
-     * (in sort_order) with any free-form post_text on the quote.
-     *
-     * Structure:
+     * Build the post_text for a Moneybird estimate:
      *  1. Bullet clauses  → "Bij deze aanbieding gaat X ervan uit dat:" + bullet list
-     *  2. Payment term    → "*Betalingsvoorwaarden:*" + content
-     *  3. Section clauses → "*Titel:*" + paragraph (in sort_order, interleaved with bullets)
-     *  4. Free post_text
-     *  5. Fixed closing text
+     *  2. Payment term    → "*Betalingsvoorwaarden:*" + bullet
+     *  3. Free post_text  → per-quote extra text
+     *  4. Closing text    → fixed blob from GeneralSettings::closing_text
      */
     protected function buildPostText(Quote $quote): string
     {
         $parts = [];
 
-        // Load all selected clauses ordered by sort_order (with type)
-        $clauses = $quote->clauses()->orderBy('sort_order')->get();
+        // 1. Bullet clauses
+        $clauses = $quote->clauses()->orderBy('sort_order')->pluck('content')->toArray();
 
-        // Split into bullets and sections
-        $bullets = $clauses->where('type', 'bullet');
-        $sections = $clauses->where('type', 'section');
-
-        // 1. Bullet list
-        if ($bullets->isNotEmpty()) {
+        if (! empty($clauses)) {
             $companyName = $this->settings->company_name ?? 'Schroeffundering Holland B.V.';
             $parts[] = 'Bij deze aanbieding gaat '.$companyName.' ervan uit dat:';
-            foreach ($bullets as $clause) {
-                $parts[] = '* '.$clause->content;
+            foreach ($clauses as $content) {
+                $parts[] = '* '.$content;
             }
         }
 
@@ -415,26 +406,18 @@ class MoneybirdService
             $parts[] = '* '.$quote->paymentTerm->content;
         }
 
-        // 3. Section clauses (Extra info, Weersvoorspelling, Klic, Wachttijd, etc.)
-        foreach ($sections as $clause) {
-            $parts[] = '';
-            $parts[] = '*'.$clause->title.':*';
-            $parts[] = $clause->content;
-        }
-
-        // 4. Free post_text
+        // 3. Free post_text (per-quote extra notes)
         if (! empty(trim($quote->post_text ?? ''))) {
             $parts[] = '';
             $parts[] = trim($quote->post_text);
         }
 
-        // 5. Fixed closing text
-        $parts[] = '';
-        $parts[] = 'We hopen u hiermee een passende aanbieding te hebben gedaan en hopen u hiermee voldoende geïnformeerd te hebben. Mochten er nog vragen zijn over deze aanbieding, dan horen wij dat heel graag.';
-        $parts[] = '';
-        $parts[] = 'Met vriendelijke groet,';
-        $parts[] = '';
-        $parts[] = ($this->settings->company_name ?? 'Schroeffundering Holland B.V.');
+        // 4. Fixed closing text from settings
+        $closingText = trim($this->settings->closing_text ?? '');
+        if (! empty($closingText)) {
+            $parts[] = '';
+            $parts[] = $closingText;
+        }
 
         return implode("\n", $parts);
     }

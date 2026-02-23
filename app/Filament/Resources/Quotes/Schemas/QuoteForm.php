@@ -105,38 +105,16 @@ class QuoteForm
                     ->description('Selecteer welke clausules in de sluitingstekst van de Moneybird-offerte verschijnen. Standaard zijn alle actieve clausules aangevinkt.')
                     ->schema([
                         CheckboxList::make('clause_ids')
-                            ->label('Voorwaarden (bullet-punten)')
-                            ->helperText('Verschijnen als opsomming onder "Bij deze aanbieding gaat X ervan uit dat:"')
-                            ->options(fn () => QuoteClause::where('active', true)->where('type', 'bullet')->orderBy('sort_order')->pluck('title', 'id')->toArray())
-                            ->default(fn () => QuoteClause::where('active', true)->where('type', 'bullet')->orderBy('sort_order')->pluck('id')->toArray())
+                            ->label('')
+                            ->options(fn () => QuoteClause::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->default(fn () => QuoteClause::where('active', true)->orderBy('sort_order')->pluck('id')->toArray())
                             ->afterStateHydrated(function (CheckboxList $component, $record) {
                                 if ($record) {
                                     $selected = $record->clauses()->pluck('quote_clauses.id')->toArray();
                                     if (empty($selected)) {
                                         $selected = QuoteClause::where('active', true)->orderBy('sort_order')->pluck('id')->toArray();
                                     }
-                                    // Only show bullet IDs for this component
-                                    $bulletIds = QuoteClause::where('active', true)->where('type', 'bullet')->pluck('id')->toArray();
-                                    $component->state(array_values(array_intersect($selected, $bulletIds)));
-                                }
-                            })
-                            ->columns(2)
-                            ->columnSpanFull(),
-
-                        CheckboxList::make('section_clause_ids')
-                            ->label('Extra secties (alinea\'s met kopje)')
-                            ->helperText('Verschijnen elk als aparte alinea: Extra informatie, Weersvoorspelling, Klic melding, Wachttijd etc.')
-                            ->options(fn () => QuoteClause::where('active', true)->where('type', 'section')->orderBy('sort_order')->pluck('title', 'id')->toArray())
-                            ->default(fn () => QuoteClause::where('active', true)->where('type', 'section')->orderBy('sort_order')->pluck('id')->toArray())
-                            ->afterStateHydrated(function (CheckboxList $component, $record) {
-                                if ($record) {
-                                    $selected = $record->clauses()->pluck('quote_clauses.id')->toArray();
-                                    if (empty($selected)) {
-                                        $selected = QuoteClause::where('active', true)->orderBy('sort_order')->pluck('id')->toArray();
-                                    }
-                                    // Only show section IDs for this component
-                                    $sectionIds = QuoteClause::where('active', true)->where('type', 'section')->pluck('id')->toArray();
-                                    $component->state(array_values(array_intersect($selected, $sectionIds)));
+                                    $component->state($selected);
                                 }
                             })
                             ->columns(2)

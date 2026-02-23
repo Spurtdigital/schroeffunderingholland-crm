@@ -32,11 +32,8 @@ class EditQuote extends EditRecord
     {
         app(QuoteCalculationService::class)->calculateTotals($this->getRecord());
 
-        // Merge both checkbox lists (bullet clauses + section clauses) and sync
-        $clauseIds = array_merge(
-            $this->data['clause_ids'] ?? [],
-            $this->data['section_clause_ids'] ?? [],
-        );
+        // Sync selected clausules
+        $clauseIds = $this->data['clause_ids'] ?? [];
         $this->getRecord()->clauses()->sync($clauseIds);
     }
 }

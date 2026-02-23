@@ -62,6 +62,7 @@ class ManageSettings extends Page implements HasForms
             'google_maps_api_key' => $settings->google_maps_api_key,
             'default_pre_text' => $settings->default_pre_text,
             'default_post_text' => $settings->default_post_text,
+            'closing_text' => $settings->closing_text,
         ]);
     }
 
@@ -144,9 +145,14 @@ class ManageSettings extends Page implements HasForms
                             ->rows(4)
                             ->columnSpanFull(),
                         Textarea::make('default_post_text')
-                            ->label('Standaard nawoord (Moneybird)')
-                            ->helperText('Wordt automatisch ingevuld bij een nieuwe offerte. Per offerte aan te passen.')
+                            ->label('Extra nawoord (Moneybird)')
+                            ->helperText('Vrije extra tekst die ná de clausules en vóór de sluitingstekst verschijnt. Per offerte aan te passen.')
                             ->rows(4)
+                            ->columnSpanFull(),
+                        Textarea::make('closing_text')
+                            ->label('Sluitingstekst (Moneybird)')
+                            ->helperText('Vaste tekst die altijd onderaan elke offerte verschijnt, na betalingsvoorwaarden en clausules (Extra info, Weersvoorspelling, Klic, Wachttijd, groet etc.).')
+                            ->rows(16)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -213,6 +219,7 @@ class ManageSettings extends Page implements HasForms
         $settings->google_maps_api_key = $data['google_maps_api_key'] ?? null;
         $settings->default_pre_text = $data['default_pre_text'] ?? null;
         $settings->default_post_text = $data['default_post_text'] ?? null;
+        $settings->closing_text = $data['closing_text'] ?? null;
         $settings->save();
 
         Notification::make()
