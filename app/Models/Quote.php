@@ -27,6 +27,8 @@ class Quote extends Model
         'vat_amount',
         'total',
         'notes',
+        'pre_text',
+        'post_text',
         'travel_distance',
         'travel_cost_per_km',
         'travel_total',

@@ -90,6 +90,18 @@ class QuoteForm
                     ->rows(4)
                     ->columnSpanFull(),
 
+                Textarea::make('pre_text')
+                    ->label('Voorwoord (Moneybird)')
+                    ->helperText('Tekst die boven de regelitems verschijnt in de Moneybird-offerte.')
+                    ->rows(4)
+                    ->columnSpanFull(),
+
+                Textarea::make('post_text')
+                    ->label('Nawoord (Moneybird)')
+                    ->helperText('Tekst die onder de regelitems verschijnt in de Moneybird-offerte.')
+                    ->rows(4)
+                    ->columnSpanFull(),
+
                 Toggle::make('show_item_breakdown')
                     ->label('Regels tonen op PDF')
                     ->helperText('Uitgeschakeld: PDF toont alleen het totaalbedrag, zonder losse regels en subbedragen.')

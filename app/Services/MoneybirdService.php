@@ -302,6 +302,8 @@ class MoneybirdService
             $mbEstimate->contact_id = $quote->company->moneybird_contact_id;
             $mbEstimate->reference = $quote->quote_number;
             $mbEstimate->estimate_date = $quote->created_at->format('Y-m-d');
+            $mbEstimate->pre_text = $quote->pre_text;
+            $mbEstimate->post_text = $quote->post_text;
 
             // Build details and assign
             $mbEstimate->details = $this->buildEstimateDetails($moneybird, $quote);
@@ -365,6 +367,8 @@ class MoneybirdService
 
             // Send destroy + new in one PATCH
             $mbEstimate->details = array_merge($destroyDetails, $newDetails);
+            $mbEstimate->pre_text = $quote->pre_text;
+            $mbEstimate->post_text = $quote->post_text;
             $mbEstimate->save();
 
             return true;
@@ -393,10 +397,11 @@ class MoneybirdService
                 $subtotal += $quote->travel_total;
             }
 
-            // Description-only lines (no price shown in Moneybird)
+            // Description-only lines (quantity shown, no price shown in Moneybird)
             foreach ($items as $item) {
                 $detail = $moneybird->salesInvoiceDetail();
                 $detail->description = $item->description;
+                $detail->amount = (string) $item->quantity;
                 $details[] = $detail;
             }
 
