@@ -27,6 +27,9 @@ class Project extends Model implements HasMedia
         'completion_date',
         'project_value',
         'notes',
+        'hoogtemaat_klant',
+        'uitgezet_door_klant',
+        'kans_op_zetting',
     ];
 
     protected $casts = [
@@ -34,6 +37,9 @@ class Project extends Model implements HasMedia
         'invoicing_type' => InvoicingType::class,
         'start_date' => 'date',
         'completion_date' => 'date',
+        'hoogtemaat_klant' => 'boolean',
+        'uitgezet_door_klant' => 'boolean',
+        'kans_op_zetting' => 'boolean',
     ];
 
     /**

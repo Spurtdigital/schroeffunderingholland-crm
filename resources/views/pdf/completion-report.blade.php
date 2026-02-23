@@ -234,6 +234,37 @@
             font-style: italic;
         }
 
+        /* Checklist */
+        .checklist-section {
+            margin-bottom: 14px;
+        }
+        .checklist-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+        .checklist-table tr td {
+            padding: 4px 6px;
+            font-size: 8.5pt;
+            vertical-align: middle;
+            border: none;
+        }
+        .check-box {
+            width: 14px;
+        }
+        .check-box-inner {
+            width: 10px;
+            height: 10px;
+            border: 1.5px solid #000;
+            display: inline-block;
+        }
+        .check-box-inner.checked {
+            background-color: #000;
+        }
+        .check-label {
+            padding-left: 6px;
+        }
+
         /* Foto's */
         .photos-section {
             margin-bottom: 16px;
@@ -431,6 +462,35 @@
     <div class="notes-section">
         <p class="section-title">Opmerkingen</p>
         <p>{{ $project->notes }}</p>
+    </div>
+    @endif
+
+    <!-- Checklist -->
+    @if($project->hoogtemaat_klant || $project->uitgezet_door_klant || $project->kans_op_zetting)
+    <div class="checklist-section">
+        <p class="section-title">Checklist</p>
+        <table class="checklist-table">
+            <tbody>
+                @if($project->hoogtemaat_klant)
+                <tr>
+                    <td class="check-box"><div class="check-box-inner checked"></div></td>
+                    <td class="check-label">Hoogtemaat klant</td>
+                </tr>
+                @endif
+                @if($project->uitgezet_door_klant)
+                <tr>
+                    <td class="check-box"><div class="check-box-inner checked"></div></td>
+                    <td class="check-label">Uitgezet door de klant</td>
+                </tr>
+                @endif
+                @if($project->kans_op_zetting)
+                <tr>
+                    <td class="check-box"><div class="check-box-inner checked"></div></td>
+                    <td class="check-label">Kans op zetting niet uit te sluiten</td>
+                </tr>
+                @endif
+            </tbody>
+        </table>
     </div>
     @endif
 

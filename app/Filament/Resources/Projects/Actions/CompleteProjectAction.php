@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Notifications\ProjectCompletedNotification;
 use App\Services\PdfService;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
@@ -123,6 +124,25 @@ class CompleteProjectAction extends Action
                                 ->visibility('private'),
                         ]),
 
+                    Step::make('Checklist')
+                        ->icon('heroicon-o-clipboard-document-check')
+                        ->schema([
+                            Placeholder::make('checklist_info')
+                                ->label('')
+                                ->content(new HtmlString(
+                                    '<p class="text-sm text-gray-600 dark:text-gray-400">Vink hieronder de van toepassing zijnde punten aan.</p>'
+                                )),
+                            Checkbox::make('hoogtemaat_klant')
+                                ->label('Hoogtemaat klant')
+                                ->default(fn (Project $record) => (bool) $record->hoogtemaat_klant),
+                            Checkbox::make('uitgezet_door_klant')
+                                ->label('Uitgezet door de klant')
+                                ->default(fn (Project $record) => (bool) $record->uitgezet_door_klant),
+                            Checkbox::make('kans_op_zetting')
+                                ->label('Kans op zetting niet uit te sluiten')
+                                ->default(fn (Project $record) => (bool) $record->kans_op_zetting),
+                        ]),
+
                     Step::make('Samenvatting')
                         ->icon('heroicon-o-information-circle')
                         ->schema([
@@ -201,6 +221,9 @@ class CompleteProjectAction extends Action
             // Zet status op Completed (observer handelt completion_date af)
             $record->update([
                 'status' => ProjectStatus::Completed,
+                'hoogtemaat_klant' => (bool) ($data['hoogtemaat_klant'] ?? false),
+                'uitgezet_door_klant' => (bool) ($data['uitgezet_door_klant'] ?? false),
+                'kans_op_zetting' => (bool) ($data['kans_op_zetting'] ?? false),
             ]);
 
             // Frish de record zodat media beschikbaar is voor de PDF

@@ -206,7 +206,7 @@ class DatabaseSeeder extends Seeder
             $projectCompany = Company::firstOrCreate(
                 ['name' => $def['company_name']],
                 [
-                    'email' => strtolower(str_replace([' ', '.', '&'], ['.', '', 'en'], $def['company_name'])).'@example.nl',
+                    'email' => fake()->randomElement(['kevin@spurt.digital', 'bob@schroeffunderingholland.nl']),
                     'phone' => '010-'.rand(1000000, 9999999),
                 ]
             );
