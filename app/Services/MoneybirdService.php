@@ -383,7 +383,7 @@ class MoneybirdService
      *  2. Opening zin    → from Quote::pre_text (free field, set from GeneralSettings::default_pre_text)
      *  3. Aannames       → "In deze offerte gaan wij uit van het onderstaande:" + bullet list
      */
-    protected function buildPreText(Quote $quote): string
+    public function buildPreText(Quote $quote): string
     {
         $parts = [];
 
@@ -420,7 +420,7 @@ class MoneybirdService
      *  2. Free post_text  → per-quote extra text
      *  3. Closing text    → fixed blob from GeneralSettings::closing_text
      */
-    protected function buildPostText(Quote $quote): string
+    public function buildPostText(Quote $quote): string
     {
         $parts = [];
 

@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Quotes\Schemas;
 use App\Filament\Resources\Quotes\Pages\ViewQuote;
 use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Services\DistanceCalculatorService;
+use App\Services\MoneybirdService;
+use App\Settings\GeneralSettings;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Group;
@@ -49,7 +51,7 @@ class QuoteInfolist
                             ->placeholder('-'),
                     ]),
 
-                // ── Kolom links 3/4: Regels ───────────────────────────────────
+                // ── Kolom links 3/4: Regels + Offerte tekst ──────────────────
                 Group::make()
                     ->columnSpan(3)
                     ->schema([
@@ -57,6 +59,35 @@ class QuoteInfolist
                             'ownerRecord' => $record,
                             'pageClass' => ViewQuote::class,
                         ]),
+
+                        Section::make('Offerte tekst (Moneybird)')
+                            ->columns(2)
+                            ->collapsible()
+                            ->collapsed()
+                            ->schema([
+                                TextEntry::make('pre_text_preview')
+                                    ->label('Aanhef + opening + aannames (pre_text)')
+                                    ->columnSpanFull()
+                                    ->state(function ($record) {
+                                        $service = app(MoneybirdService::class);
+                                        return $service->buildPreText($record);
+                                    })
+                                    ->prose()
+                                    ->placeholder('(leeg)')
+                                    ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">leeg</em>')
+                                    ->html(),
+
+                                TextEntry::make('post_text_preview')
+                                    ->label('Betalingsvoorwaarden + slottekst (post_text)')
+                                    ->columnSpanFull()
+                                    ->state(function ($record) {
+                                        $service = app(MoneybirdService::class);
+                                        return $service->buildPostText($record);
+                                    })
+                                    ->placeholder('(leeg)')
+                                    ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">leeg</em>')
+                                    ->html(),
+                            ]),
                     ]),
 
                 // ── Kolom rechts 1/4: Klant + Lead + Historie ─────────────────

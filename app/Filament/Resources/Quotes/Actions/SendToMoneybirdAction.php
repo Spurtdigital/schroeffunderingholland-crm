@@ -8,6 +8,7 @@ use App\Services\MoneybirdService;
 use App\Services\QuoteCalculationService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Illuminate\Support\HtmlString;
 
 class SendToMoneybirdAction extends Action
 {
@@ -17,11 +18,36 @@ class SendToMoneybirdAction extends Action
             ->label('Verstuur naar Moneybird')
             ->icon('heroicon-o-paper-airplane')
             ->color('info')
-            ->requiresConfirmation()
             ->modalHeading('Versturen naar Moneybird')
-            ->modalDescription('Deze offerte wordt als concept naar Moneybird verstuurd. Je kunt hem daar afronden en versturen naar de klant.')
-            ->modalSubmitActionLabel('Ja, versturen')
+            ->modalSubmitActionLabel('Ja, versturen naar Moneybird')
+            ->modalWidth('2xl')
             ->visible(fn (Quote $record) => ! $record->moneybird_quote_id)
+            ->modalContent(function (Quote $record): HtmlString {
+                /** @var MoneybirdService $service */
+                $service = app(MoneybirdService::class);
+                $preText  = $service->buildPreText($record);
+                $postText = $service->buildPostText($record);
+
+                $preHtml  = $preText  ? nl2br(e($preText))  : '<em class="text-gray-400">Geen tekst</em>';
+                $postHtml = $postText ? nl2br(e($postText)) : '<em class="text-gray-400">Geen tekst</em>';
+
+                $html = '
+                <div class="space-y-4 text-sm">
+                    <p class="text-gray-600">Deze offerte wordt als concept naar Moneybird verstuurd. Controleer hieronder de tekst die wordt meegestuurd.</p>
+
+                    <div>
+                        <div class="font-semibold text-gray-700 mb-1">Aanhef + opening + aannames <span class="font-normal text-gray-400 text-xs">(pre_text)</span></div>
+                        <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 leading-relaxed whitespace-pre-wrap font-mono text-xs text-gray-800">'.$preHtml.'</div>
+                    </div>
+
+                    <div>
+                        <div class="font-semibold text-gray-700 mb-1">Betalingsvoorwaarden + slottekst <span class="font-normal text-gray-400 text-xs">(post_text)</span></div>
+                        <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 leading-relaxed whitespace-pre-wrap font-mono text-xs text-gray-800">'.$postHtml.'</div>
+                    </div>
+                </div>';
+
+                return new HtmlString($html);
+            })
             ->action(function (Quote $record, MoneybirdService $moneybirdService, QuoteCalculationService $calculationService) {
                 try {
                     // Check if Moneybird is configured
