@@ -11,6 +11,7 @@ class QuoteClause extends Model
         'title',
         'content',
         'active',
+        'type',
         'sort_order',
     ];
 
@@ -18,6 +19,14 @@ class QuoteClause extends Model
         'active' => 'boolean',
         'sort_order' => 'integer',
     ];
+
+    /**
+     * Is this clause a free-form section (heading + paragraph) rather than a bullet point?
+     */
+    public function isSection(): bool
+    {
+        return $this->type === 'section';
+    }
 
     /**
      * Get all quotes that have this clause selected.

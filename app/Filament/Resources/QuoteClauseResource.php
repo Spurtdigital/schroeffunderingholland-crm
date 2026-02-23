@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\QuoteClauseResource\Pages;
 use App\Models\QuoteClause;
 use Filament\Actions;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -44,6 +45,17 @@ class QuoteClauseResource extends Resource
                             ->helperText('Korte naam voor intern gebruik, bijv. "Stroom 230V vereist"')
                             ->columnSpan(2),
 
+                        Select::make('type')
+                            ->label('Type')
+                            ->options([
+                                'bullet' => 'Bullet (voorwaarden-lijst)',
+                                'section' => 'Sectie (vrije alinea met kopje)',
+                            ])
+                            ->default('bullet')
+                            ->required()
+                            ->helperText('Bullet = punt in de voorwaarden-lijst. Sectie = eigen kopje + alinea.')
+                            ->columnSpan(2),
+
                         TextInput::make('sort_order')
                             ->label('Volgorde')
                             ->numeric()
@@ -61,7 +73,7 @@ class QuoteClauseResource extends Resource
                         Textarea::make('content')
                             ->label('Clausuletekst')
                             ->required()
-                            ->rows(4)
+                            ->rows(6)
                             ->helperText('De volledige tekst die in de sluitingstekst van de offerte verschijnt')
                             ->columnSpanFull(),
                     ])
@@ -82,6 +94,11 @@ class QuoteClauseResource extends Resource
                     ->label('Naam')
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\BadgeColumn::make('type')
+                    ->label('Type')
+                    ->formatStateUsing(fn (string $state) => $state === 'section' ? 'Sectie' : 'Bullet')
+                    ->color(fn (string $state) => $state === 'section' ? 'info' : 'gray'),
 
                 Tables\Columns\TextColumn::make('content')
                     ->label('Tekst')

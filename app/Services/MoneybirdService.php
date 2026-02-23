@@ -380,32 +380,61 @@ class MoneybirdService
     /**
      * Build the post_text for a Moneybird estimate by combining selected clauses
      * (in sort_order) with any free-form post_text on the quote.
+     *
+     * Structure:
+     *  1. Bullet clauses  → "Bij deze aanbieding gaat X ervan uit dat:" + bullet list
+     *  2. Payment term    → "*Betalingsvoorwaarden:*" + content
+     *  3. Section clauses → "*Titel:*" + paragraph (in sort_order, interleaved with bullets)
+     *  4. Free post_text
+     *  5. Fixed closing text
      */
     protected function buildPostText(Quote $quote): string
     {
         $parts = [];
 
-        // Load selected clauses ordered by sort_order
-        $clauses = $quote->clauses()->orderBy('sort_order')->pluck('content')->toArray();
+        // Load all selected clauses ordered by sort_order (with type)
+        $clauses = $quote->clauses()->orderBy('sort_order')->get();
 
-        if (! empty($clauses)) {
-            // Format as a bullet list
-            $parts[] = 'Bij deze aanbieding gaat '.($this->settings->company_name ?? 'Schroeffundering Holland B.V.').' ervan uit dat:';
-            foreach ($clauses as $clause) {
-                $parts[] = '* '.$clause;
+        // Split into bullets and sections
+        $bullets = $clauses->where('type', 'bullet');
+        $sections = $clauses->where('type', 'section');
+
+        // 1. Bullet list
+        if ($bullets->isNotEmpty()) {
+            $companyName = $this->settings->company_name ?? 'Schroeffundering Holland B.V.';
+            $parts[] = 'Bij deze aanbieding gaat '.$companyName.' ervan uit dat:';
+            foreach ($bullets as $clause) {
+                $parts[] = '* '.$clause->content;
             }
         }
 
-        // Append payment term content
+        // 2. Payment term
         if ($quote->paymentTerm) {
+            $parts[] = '';
             $parts[] = '*Betalingsvoorwaarden:*';
-            $parts[] = $quote->paymentTerm->content;
+            $parts[] = '* '.$quote->paymentTerm->content;
         }
 
-        // Append any free-form post_text (extra info)
+        // 3. Section clauses (Extra info, Weersvoorspelling, Klic, Wachttijd, etc.)
+        foreach ($sections as $clause) {
+            $parts[] = '';
+            $parts[] = '*'.$clause->title.':*';
+            $parts[] = $clause->content;
+        }
+
+        // 4. Free post_text
         if (! empty(trim($quote->post_text ?? ''))) {
+            $parts[] = '';
             $parts[] = trim($quote->post_text);
         }
+
+        // 5. Fixed closing text
+        $parts[] = '';
+        $parts[] = 'We hopen u hiermee een passende aanbieding te hebben gedaan en hopen u hiermee voldoende geïnformeerd te hebben. Mochten er nog vragen zijn over deze aanbieding, dan horen wij dat heel graag.';
+        $parts[] = '';
+        $parts[] = 'Met vriendelijke groet,';
+        $parts[] = '';
+        $parts[] = ($this->settings->company_name ?? 'Schroeffundering Holland B.V.');
 
         return implode("\n", $parts);
     }
