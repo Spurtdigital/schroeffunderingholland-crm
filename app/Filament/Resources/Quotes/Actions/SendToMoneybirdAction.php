@@ -3,12 +3,17 @@
 namespace App\Filament\Resources\Quotes\Actions;
 
 use App\Enums\QuoteStatus;
+use App\Models\PaymentTerm;
 use App\Models\Quote;
+use App\Models\QuoteAssumption;
 use App\Services\MoneybirdService;
 use App\Services\QuoteCalculationService;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
-use Illuminate\Support\HtmlString;
+use Filament\Schemas\Components\Section;
 
 class SendToMoneybirdAction extends Action
 {
@@ -19,80 +24,92 @@ class SendToMoneybirdAction extends Action
             ->icon('heroicon-o-paper-airplane')
             ->color('info')
             ->modalHeading('Versturen naar Moneybird')
-            ->modalSubmitActionLabel('Ja, versturen naar Moneybird')
-            ->modalWidth('2xl')
+            ->modalDescription('Controleer en pas indien nodig de tekst aan. De offerte wordt als concept naar Moneybird verstuurd.')
+            ->modalSubmitActionLabel('Versturen naar Moneybird')
+            ->modalWidth('3xl')
             ->visible(fn (Quote $record) => ! $record->moneybird_quote_id)
-            ->modalContent(function (Quote $record): HtmlString {
-                /** @var MoneybirdService $service */
-                $service = app(MoneybirdService::class);
-                $preText  = $service->buildPreText($record);
-                $postText = $service->buildPostText($record);
-
-                $preHtml  = $preText  ? nl2br(e($preText))  : '<em class="text-gray-400">Geen tekst</em>';
-                $postHtml = $postText ? nl2br(e($postText)) : '<em class="text-gray-400">Geen tekst</em>';
-
-                $html = '
-                <div class="space-y-4 text-sm">
-                    <p class="text-gray-600">Deze offerte wordt als concept naar Moneybird verstuurd. Controleer hieronder de tekst die wordt meegestuurd.</p>
-
-                    <div>
-                        <div class="font-semibold text-gray-700 mb-1">Aanhef + opening + aannames <span class="font-normal text-gray-400 text-xs">(pre_text)</span></div>
-                        <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 leading-relaxed whitespace-pre-wrap font-mono text-xs text-gray-800">'.$preHtml.'</div>
-                    </div>
-
-                    <div>
-                        <div class="font-semibold text-gray-700 mb-1">Betalingsvoorwaarden + slottekst <span class="font-normal text-gray-400 text-xs">(post_text)</span></div>
-                        <div class="bg-gray-50 rounded-lg border border-gray-200 p-3 leading-relaxed whitespace-pre-wrap font-mono text-xs text-gray-800">'.$postHtml.'</div>
-                    </div>
-                </div>';
-
-                return new HtmlString($html);
+            ->fillForm(function (Quote $record): array {
+                return [
+                    'pre_text'        => $record->pre_text,
+                    'assumption_ids'  => $record->assumptions()->pluck('quote_assumptions.id')->toArray(),
+                    'payment_term_id' => $record->payment_term_id,
+                    'post_text'       => $record->post_text,
+                ];
             })
-            ->action(function (Quote $record, MoneybirdService $moneybirdService, QuoteCalculationService $calculationService) {
+            ->form([
+                Textarea::make('pre_text')
+                    ->label('Opening zin')
+                    ->helperText('Verschijnt na de aanhef en vóór de aannames in Moneybird.')
+                    ->rows(3)
+                    ->columnSpanFull(),
+
+                Section::make('Offerte-aannames')
+                    ->description('Worden als bulletlijst opgenomen onder de opening.')
+                    ->schema([
+                        CheckboxList::make('assumption_ids')
+                            ->label('')
+                            ->options(fn () => QuoteAssumption::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->columns(2)
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
+
+                Select::make('payment_term_id')
+                    ->label('Betalingsvoorwaarde')
+                    ->options(fn () => PaymentTerm::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                    ->placeholder('Geen betalingsvoorwaarde')
+                    ->searchable()
+                    ->nullable()
+                    ->columnSpanFull(),
+
+                Textarea::make('post_text')
+                    ->label('Vrije nawoord tekst')
+                    ->helperText('Verschijnt ná de betalingsvoorwaarden. De vaste sluitingstekst uit de instellingen wordt automatisch toegevoegd.')
+                    ->rows(3)
+                    ->columnSpanFull(),
+            ])
+            ->action(function (Quote $record, array $data, MoneybirdService $moneybirdService, QuoteCalculationService $calculationService) {
                 try {
-                    // Check if Moneybird is configured
                     if (! $moneybirdService->isConfigured()) {
-                        Notification::make()
-                            ->danger()
+                        Notification::make()->danger()
                             ->title('Moneybird niet geconfigureerd')
                             ->body('Configureer eerst de Moneybird API instellingen.')
                             ->send();
-
                         return;
                     }
 
-                    // Check if quote has items
                     if ($record->items()->count() === 0) {
-                        Notification::make()
-                            ->warning()
+                        Notification::make()->warning()
                             ->title('Geen regels')
                             ->body('Voeg eerst regels toe aan de offerte voordat je deze verstuurt naar Moneybird.')
                             ->send();
-
                         return;
                     }
 
-                    // Ensure totals are up to date before sending
+                    // Persist form changes to the quote first
+                    $record->update([
+                        'pre_text'        => $data['pre_text'],
+                        'post_text'       => $data['post_text'],
+                        'payment_term_id' => $data['payment_term_id'],
+                    ]);
+                    $record->assumptions()->sync($data['assumption_ids'] ?? []);
+                    $record->refresh();
+
+                    // Recalculate totals
                     $calculationService->calculateTotals($record);
                     $record->refresh();
 
-                    // Send quote to Moneybird
+                    // Send to Moneybird
                     $moneybirdService->sendQuote($record);
 
-                    // Update quote status
-                    $record->update([
-                        'status' => QuoteStatus::MoneybirdPrepared,
-                    ]);
+                    $record->update(['status' => QuoteStatus::MoneybirdPrepared]);
 
-                    // Show success notification
-                    Notification::make()
-                        ->success()
+                    Notification::make()->success()
                         ->title('Offerte verstuurd')
                         ->body("Offerte {$record->quote_number} is succesvol verstuurd naar Moneybird.")
                         ->send();
                 } catch (\Exception $e) {
-                    Notification::make()
-                        ->danger()
+                    Notification::make()->danger()
                         ->title('Verzenden mislukt')
                         ->body($e->getMessage())
                         ->send();
