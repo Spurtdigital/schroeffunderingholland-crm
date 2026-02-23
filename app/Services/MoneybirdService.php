@@ -338,7 +338,20 @@ class MoneybirdService
         }
 
         try {
-            $mbEstimate = $moneybird->estimate()->find($quote->moneybird_quote_id);
+            try {
+                $mbEstimate = $moneybird->estimate()->find($quote->moneybird_quote_id);
+            } catch (ApiException $e) {
+                // If the estimate no longer exists in Moneybird (404), clear the local ID
+                // and fall through to create a fresh one.
+                if (str_contains($e->getMessage(), '404') || str_contains($e->getMessage(), 'not_found')) {
+                    $quote->update(['moneybird_quote_id' => null]);
+                    $quote->refresh();
+
+                    return $this->sendQuote($quote);
+                }
+
+                throw new \Exception('Moneybird API fout: '.$e->getMessage());
+            }
 
             // Remove nested fields that should not be sent in the PATCH request.
             // The library always includes all multipleNestedEntities in the payload,

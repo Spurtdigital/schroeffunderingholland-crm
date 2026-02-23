@@ -85,12 +85,15 @@ class UpdateMoneybirdAction extends Action
                     $record->assumptions()->sync($data['assumption_ids'] ?? []);
                     $record->refresh();
 
-                    // Push to Moneybird
+                    // Push to Moneybird (will auto-recreate if 404)
+                    $hadId = (bool) $record->moneybird_quote_id;
                     $moneybirdService->updateQuote($record);
+                    $record->refresh();
 
+                    $isNew = $hadId && ! $record->moneybird_quote_id === false;
                     Notification::make()->success()
-                        ->title('Offerte bijgewerkt')
-                        ->body("Offerte {$record->quote_number} is bijgewerkt in Moneybird.")
+                        ->title('Offerte bijgewerkt in Moneybird')
+                        ->body("Offerte {$record->quote_number} is succesvol bijgewerkt in Moneybird.")
                         ->send();
                 } catch (\Exception $e) {
                     Notification::make()->danger()
