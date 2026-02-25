@@ -15,6 +15,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class QuoteForm
@@ -174,6 +175,36 @@ class QuoteForm
                     ->columns(3)
                     ->collapsible()
                     ->collapsed(fn ($record) => blank($record?->travel_distance))
+                    ->columnSpanFull(),
+
+                // Werkadres
+                Section::make('Werkadres')
+                    ->description('Vul in als het werkadres afwijkt van het factuuradres van de klant.')
+                    ->schema([
+                        Toggle::make('work_address_different')
+                            ->label('Werkadres wijkt af van factuuradres')
+                            ->live()
+                            ->columnSpanFull(),
+                        TextInput::make('work_street')
+                            ->label('Straat')
+                            ->columnSpan(2)
+                            ->visible(fn (Get $get) => $get('work_address_different')),
+                        TextInput::make('work_house_number')
+                            ->label('Huisnummer')
+                            ->columnSpan(1)
+                            ->visible(fn (Get $get) => $get('work_address_different')),
+                        TextInput::make('work_postal_code')
+                            ->label('Postcode')
+                            ->columnSpan(1)
+                            ->visible(fn (Get $get) => $get('work_address_different')),
+                        TextInput::make('work_city')
+                            ->label('Stad')
+                            ->columnSpan(2)
+                            ->visible(fn (Get $get) => $get('work_address_different')),
+                    ])
+                    ->columns(3)
+                    ->collapsible()
+                    ->collapsed(fn ($record) => ! $record?->work_address_different)
                     ->columnSpanFull(),
 
                 // Metadata (disabled)

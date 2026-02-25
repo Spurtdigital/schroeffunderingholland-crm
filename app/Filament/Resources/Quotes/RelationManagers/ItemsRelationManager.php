@@ -219,7 +219,7 @@ class ItemsRelationManager extends RelationManager
                     ->color('primary')
                     ->requiresConfirmation()
                     ->modalHeading('Reiskosten automatisch berekenen')
-                    ->modalDescription('De afstand wordt automatisch berekend via Google Maps naar het adres van het bedrijf.')
+                    ->modalDescription('De afstand wordt automatisch berekend via Google Maps. Als het werkadres afwijkt van het factuuradres wordt het werkadres gebruikt. De reiskosten worden berekend voor heen én terug.')
                     ->modalSubmitActionLabel('Bereken en toevoegen')
                     ->action(function (RelationManager $livewire): void {
                         $distanceService = app(DistanceCalculatorService::class);
@@ -237,8 +237,7 @@ class ItemsRelationManager extends RelationManager
                             return;
                         }
 
-                        $company = $quote->company;
-                        if (! $company) {
+                        if (! $quote->company) {
                             Notification::make()
                                 ->warning()
                                 ->title('Geen bedrijf gevonden')
@@ -248,29 +247,30 @@ class ItemsRelationManager extends RelationManager
                             return;
                         }
 
-                        $address = $distanceService->buildAddressFromCompany($company);
+                        $address = $distanceService->buildAddressFromQuote($quote);
                         if (! $address) {
                             Notification::make()
                                 ->warning()
                                 ->title('Geen adres beschikbaar')
-                                ->body('Het bedrijf heeft geen volledig adres.')
+                                ->body('Het bedrijf heeft geen volledig adres en er is geen werkadres ingevuld.')
                                 ->send();
 
                             return;
                         }
 
-                        // Calculate distance
+                        // Calculate distance (one way)
                         $result = $distanceService->calculateDistance($address);
 
                         if ($result['success']) {
                             $pricePerKm = $settings->default_travel_cost_per_km ?? 0.23;
-                            $total = round($result['distance_km'] * $pricePerKm, 2);
+                            $totalKm = $result['distance_km'] * 2; // heen én terug
+                            $total = round($totalKm * $pricePerKm, 2);
 
                             // Create the quote item
                             $quote->items()->create([
                                 'type' => QuoteItemType::Mileage->value,
-                                'description' => "Reiskosten ({$result['distance_text']})",
-                                'quantity' => $result['distance_km'],
+                                'description' => "Reiskosten heen en terug ({$result['distance_text']} × 2 = {$totalKm} km)",
+                                'quantity' => $totalKm,
                                 'unit_price' => $pricePerKm,
                                 'total' => $total,
                                 'itemable_type' => null,
@@ -283,7 +283,7 @@ class ItemsRelationManager extends RelationManager
                             Notification::make()
                                 ->success()
                                 ->title('Reiskosten toegevoegd')
-                                ->body("{$result['distance_text']} × €{$pricePerKm} = €{$total} (ca. {$result['duration_text']})")
+                                ->body("{$result['distance_text']} heen × 2 = {$totalKm} km × €{$pricePerKm} = €{$total} (ca. {$result['duration_text']} enkele reis)")
                                 ->send();
                         } else {
                             Notification::make()

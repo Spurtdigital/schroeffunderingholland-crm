@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Quote;
 use App\Settings\GeneralSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -191,6 +192,16 @@ class DistanceCalculatorService
         ]);
 
         return !empty($parts) ? implode(', ', $parts) : null;
+    }
+
+    /**
+     * Build address string from a quote (uses work address if different, else company address).
+     */
+    public function buildAddressFromQuote(Quote $quote): ?string
+    {
+        $address = $quote->workFullAddress();
+
+        return !empty($address) ? $address : null;
     }
 
     /**

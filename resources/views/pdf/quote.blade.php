@@ -307,8 +307,8 @@
             @if($quote->company->contact_person)
             <p><span class="label">T.a.v.:</span> {{ $quote->company->contact_person }}</p>
             @endif
-            @if($quote->company->address)
-            <p><span class="label">Adres:</span> {{ $quote->company->address }}</p>
+            @if($quote->company->street)
+            <p><span class="label">Adres:</span> {{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</p>
             @endif
             @if($quote->company->postal_code || $quote->company->city)
             <p><span class="label"></span> {{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</p>
@@ -325,9 +325,12 @@
             @if($quote->lead?->project_description)
             <p><span class="label">Project:</span> {{ $quote->lead->project_description }}</p>
             @endif
-            @if($quote->lead?->address)
+            @php
+                $werklocatie = $quote->workFullAddress();
+            @endphp
+            @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px;">{{ $quote->lead->full_address }}</p>
+            <p style="padding-left: 105px;">{{ $werklocatie }}</p>
             @endif
         </div>
     </div>
@@ -347,7 +350,7 @@
             <tbody>
                 @foreach($quote->items as $item)
                 <tr>
-                    <td>{{ $item->description }}</td>
+                    <td>{{ $item->description }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}</td>
                     <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }}</td>

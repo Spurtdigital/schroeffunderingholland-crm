@@ -34,6 +34,11 @@ class Quote extends Model
         'travel_distance',
         'travel_cost_per_km',
         'travel_total',
+        'work_address_different',
+        'work_street',
+        'work_house_number',
+        'work_postal_code',
+        'work_city',
         'moneybird_quote_id',
         'sent_at',
         'approved_at',
@@ -50,6 +55,7 @@ class Quote extends Model
         'travel_distance' => 'integer',
         'travel_cost_per_km' => 'decimal:2',
         'travel_total' => 'decimal:2',
+        'work_address_different' => 'boolean',
         'sent_at' => 'datetime',
         'approved_at' => 'datetime',
         'show_item_breakdown' => 'boolean',
@@ -216,5 +222,26 @@ class Quote extends Model
             $this->travel_total = $this->travel_distance * $this->travel_cost_per_km;
             $this->save();
         }
+    }
+
+    /**
+     * Get the effective work address for this quote.
+     * Returns the work address if different, otherwise falls back to the company address.
+     */
+    public function workFullAddress(): string
+    {
+        if ($this->work_address_different) {
+            return trim(implode(', ', array_filter([
+                trim(($this->work_street ?? '') . ' ' . ($this->work_house_number ?? '')),
+                $this->work_postal_code,
+                $this->work_city,
+            ])));
+        }
+
+        return trim(implode(', ', array_filter([
+            trim(($this->company->street ?? '') . ' ' . ($this->company->house_number ?? '')),
+            $this->company->postal_code,
+            $this->company->city,
+        ])));
     }
 }
