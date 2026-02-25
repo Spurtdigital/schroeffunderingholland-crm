@@ -243,13 +243,36 @@ class MoneybirdService
             // Build details array first (avoid overloaded property modification issue)
             $details = [];
             $quote = $invoice->project->quote;
-            if ($quote) {
-                // Get the appropriate tax rate ID (21% BTW)
+
+            $isPartialInvoice = $invoice->deposit_percentage && $invoice->deposit_percentage != 100;
+
+            if ($isPartialInvoice) {
+                // Partial invoice (deposit or final): send as a single line in Moneybird
+                // to avoid showing full amounts. E.g. "Aanbetaling 50% op order Q2026-0001"
+                $taxRateId = $this->getTaxRateId(21.0);
+                $detail = $moneybird->salesInvoiceDetail();
+
+                $percentage = rtrim(rtrim(number_format((float) $invoice->deposit_percentage, 2, '.', ''), '0'), '.');
+                $orderRef = $quote ? $quote->quote_number : $invoice->project->project_number;
+
+                $lineLabel = match ($invoice->invoice_type) {
+                    \App\Enums\InvoiceType::Final   => "Eindfactuur {$percentage}% op order {$orderRef}",
+                    default                         => "Aanbetaling {$percentage}% op order {$orderRef}",
+                };
+
+                $detail->description = $lineLabel;
+                $detail->price = (string) round($invoice->total / 1.21, 2); // excl. BTW
+                $detail->amount = '1';
+                $detail->tax_rate_id = $taxRateId;
+
+                $details[] = $detail;
+            } elseif ($quote) {
+                // Full invoice: send all quote items as individual lines
                 $taxRateId = $this->getTaxRateId(21.0);
 
                 foreach ($quote->items as $item) {
                     $detail = $moneybird->salesInvoiceDetail();
-                    $detail->description = $item->description;
+                    $detail->description = $this->itemDescription($item);
                     $detail->price = (string) $item->unit_price;
                     $detail->amount = (string) $item->quantity;
                     $detail->tax_rate_id = $taxRateId;
