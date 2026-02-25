@@ -51,6 +51,16 @@ class ItemsRelationManager extends RelationManager
                     ->maxLength(255)
                     ->columnSpan(3),
 
+                Forms\Components\TextInput::make('pile_length')
+                    ->label('Lengte fundament (m)')
+                    ->numeric()
+                    ->minValue(0.01)
+                    ->step(0.5)
+                    ->suffix('m')
+                    ->placeholder('bijv. 3.5')
+                    ->visible(fn (Forms\Components\TextInput $component) => $component->getRecord()?->type === \App\Enums\QuoteItemType::Product)
+                    ->columnSpan(1),
+
                 Forms\Components\TextInput::make('quantity')
                     ->label('Aantal')
                     ->numeric()
@@ -94,6 +104,10 @@ class ItemsRelationManager extends RelationManager
                     ->label('Omschrijving')
                     ->searchable()
                     ->wrap(),
+                Tables\Columns\TextColumn::make('pile_length')
+                    ->label('Lengte')
+                    ->formatStateUsing(fn ($state) => $state ? number_format((float) $state, 2, ',', '') . ' m' : '—')
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Aantal')
                     ->numeric(decimalPlaces: 2),
@@ -140,6 +154,16 @@ class ItemsRelationManager extends RelationManager
                             ->label('Omschrijving')
                             ->required()
                             ->maxLength(255)
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('pile_length')
+                            ->label('Lengte fundament (m)')
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->step(0.5)
+                            ->suffix('m')
+                            ->placeholder('bijv. 3.5')
+                            ->helperText('Optioneel — alleen invullen bij schroeffundamenten')
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('quantity')

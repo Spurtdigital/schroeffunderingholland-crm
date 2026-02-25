@@ -18,6 +18,7 @@ class QuoteItem extends Model
         'itemable_id',
         'type',
         'description',
+        'pile_length',
         'quantity',
         'unit_price',
         'total',
@@ -26,6 +27,7 @@ class QuoteItem extends Model
 
     protected $casts = [
         'type' => QuoteItemType::class,
+        'pile_length' => 'decimal:2',
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'total' => 'decimal:2',

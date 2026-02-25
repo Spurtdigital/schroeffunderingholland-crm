@@ -400,10 +400,11 @@ class MoneybirdService
     {
         $parts = [];
 
-        // 1. Aanhef
+        // 1. Aanhef — voornaam contactpersoon, anders bedrijfsnaam
         $company = $quote->company;
-        if ($company && $company->contact_person) {
-            $parts[] = 'Beste '.$company->contact_person.',';
+        if ($company) {
+            $name = $company->contact_person ?: $company->name;
+            $parts[] = 'Beste '.$name.',';
             $parts[] = '';
         }
 
@@ -481,7 +482,7 @@ class MoneybirdService
             // Description-only lines (quantity shown, no price shown in Moneybird)
             foreach ($items as $item) {
                 $detail = $moneybird->salesInvoiceDetail();
-                $detail->description = $item->description;
+                $detail->description = $this->itemDescription($item);
                 $detail->amount = (string) $item->quantity;
                 $details[] = $detail;
             }
@@ -506,7 +507,7 @@ class MoneybirdService
 
         foreach ($items as $item) {
             $detail = $moneybird->salesInvoiceDetail();
-            $detail->description = $item->description;
+            $detail->description = $this->itemDescription($item);
             $detail->price = (string) $item->unit_price;
             $detail->amount = (string) $item->quantity;
             $detail->tax_rate_id = $taxRateId;
@@ -515,6 +516,22 @@ class MoneybirdService
         }
 
         return $details;
+    }
+
+    /**
+     * Build the display description for a quote item.
+     * Appends pile length when set, e.g. "Schroefpaal 76mm (lengte: 3,5 m)".
+     */
+    protected function itemDescription(\App\Models\QuoteItem $item): string
+    {
+        $desc = $item->description;
+
+        if ($item->pile_length) {
+            $length = rtrim(rtrim(number_format((float) $item->pile_length, 2, ',', ''), '0'), ',');
+            $desc .= ' (lengte: '.$length.' m)';
+        }
+
+        return $desc;
     }
 
     /**
