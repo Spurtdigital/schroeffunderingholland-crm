@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Models\Supplier;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
@@ -25,11 +27,21 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->description(fn ($record) => $record->short_description),
-                TextColumn::make('supplier_name')
+                TextColumn::make('supplier.name')
                     ->label('Leverancier')
                     ->searchable()
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable()
+                    ->placeholder('—'),
+                TextColumn::make('supplier_article_number')
+                    ->label('Art.nr. leverancier')
+                    ->searchable()
+                    ->toggleable()
+                    ->placeholder('—'),
+                TextColumn::make('weight')
+                    ->label('Gewicht')
+                    ->formatStateUsing(fn ($state) => $state ? number_format((float) $state, 3, ',', '') . ' kg' : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('purchase_price')
                     ->label('Inkoopprijs')
                     ->money('EUR')
@@ -69,6 +81,10 @@ class ProductsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('supplier_id')
+                    ->label('Leverancier')
+                    ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id')->toArray())
+                    ->placeholder('Alle leveranciers'),
                 TernaryFilter::make('is_active')
                     ->label('Actief')
                     ->placeholder('Alle producten')

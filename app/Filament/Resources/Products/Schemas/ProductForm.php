@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Models\Supplier;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -43,10 +45,33 @@ class ProductForm
                             ->rows(4)
                             ->columnSpanFull()
                             ->helperText('Alleen intern zichtbaar'),
-                        TextInput::make('supplier_name')
+                    ]),
+
+                Section::make('Leverancier')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('supplier_id')
                             ->label('Leverancier')
-                            ->maxLength(255)
+                            ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id')->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->placeholder('Selecteer leverancier...')
                             ->columnSpanFull(),
+
+                        TextInput::make('supplier_article_number')
+                            ->label('Artikelnummer leverancier')
+                            ->maxLength(100)
+                            ->placeholder('bijv. SFH-001')
+                            ->helperText('Artikelnummer zoals de leverancier het hanteert'),
+
+                        TextInput::make('weight')
+                            ->label('Gewicht (kg)')
+                            ->numeric()
+                            ->suffix('kg')
+                            ->step('0.001')
+                            ->minValue(0)
+                            ->placeholder('bijv. 1.250'),
                     ]),
 
                 Section::make('Prijzen & Voorraad')

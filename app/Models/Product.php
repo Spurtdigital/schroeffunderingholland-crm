@@ -6,6 +6,7 @@ use App\Enums\StockMutationType;
 use App\Enums\StockReservationStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,9 @@ class Product extends Model
         'description',
         'sku',
         'supplier_name',
+        'supplier_id',
+        'supplier_article_number',
+        'weight',
         'purchase_price',
         'sales_price',
         'stock_quantity',
@@ -30,6 +34,7 @@ class Product extends Model
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'sales_price' => 'decimal:2',
+        'weight' => 'decimal:3',
         'stock_quantity' => 'integer',
         'min_stock_level' => 'integer',
         'is_active' => 'boolean',
@@ -41,6 +46,14 @@ class Product extends Model
     public function getPriceAttribute(): float
     {
         return (float) $this->sales_price;
+    }
+
+    /**
+     * Get the supplier this product belongs to.
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     /**
