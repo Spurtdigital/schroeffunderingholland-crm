@@ -63,6 +63,7 @@ class ManageSettings extends Page implements HasForms
             'default_pre_text' => $settings->default_pre_text,
             'default_post_text' => $settings->default_post_text,
             'closing_text' => $settings->closing_text,
+            'review_url' => $settings->review_url,
         ]);
     }
 
@@ -108,8 +109,14 @@ class ManageSettings extends Page implements HasForms
                             ->label('BTW-nummer')
                             ->maxLength(50),
                         TextInput::make('company_bank_account')
-                            ->label('Bankrekeningnummer')
+                            ->label('Bankrekeningnummer (IBAN)')
                             ->maxLength(50),
+                        TextInput::make('review_url')
+                            ->label('Review URL (Google / Trustpilot etc.)')
+                            ->url()
+                            ->maxLength(500)
+                            ->helperText('Wordt als link meegestuurd in de oplevermail zodat de klant direct een review kan achterlaten.')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
 
@@ -220,6 +227,7 @@ class ManageSettings extends Page implements HasForms
         $settings->default_pre_text = $data['default_pre_text'] ?? null;
         $settings->default_post_text = $data['default_post_text'] ?? null;
         $settings->closing_text = $data['closing_text'] ?? null;
+        $settings->review_url = $data['review_url'] ?? null;
         $settings->save();
 
         Notification::make()

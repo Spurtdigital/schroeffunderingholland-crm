@@ -140,6 +140,7 @@ Heb je vragen? Neem gerust contact met ons op.',
                     'project_nummer' => 'Project nummer',
                     'opleverdatum' => 'Datum van oplevering (dd-mm-yyyy)',
                     'aantal_fotos' => 'Aantal bijgevoegde foto\'s (0 = sectie verborgen)',
+                    'review_url' => 'Link naar reviewpagina (leeg als niet ingesteld)',
                 ],
                 'content' => "Wij zijn blij u te informeren dat het project voor {{bedrijf_naam}} is afgerond!
 

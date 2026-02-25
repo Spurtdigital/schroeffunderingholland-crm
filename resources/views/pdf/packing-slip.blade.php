@@ -191,6 +191,12 @@
         .materials-table tbody tr:last-child td {
             border-bottom: none;
         }
+        .materials-table tfoot td {
+            padding: 8px 8px;
+            font-size: 8pt;
+            font-weight: bold;
+            border-top: 2px solid #000;
+        }
 
         /* Opmerkingen sectie */
         .notes-section {
@@ -339,32 +345,60 @@
     <!-- Materialen Tabel -->
     <div class="materials-section">
         <h3>Te pakken materialen</h3>
+        @php
+            $hasItems = false;
+            $totalWeight = 0;
+            $hasWeight = false;
+            foreach ($project->items as $item) {
+                if ($item->itemable_type === 'App\\Models\\Product' && $item->itemable) {
+                    $hasItems = true;
+                    if ($item->itemable->weight) {
+                        $hasWeight = true;
+                        $totalWeight += $item->quantity * $item->itemable->weight;
+                    }
+                }
+            }
+        @endphp
+        @php $descWidth = $hasWeight ? '50%' : '65%'; @endphp
         <table class="materials-table">
             <thead>
                 <tr>
                     <th style="width: 12%;" class="text-center">Aantal</th>
-                    <th style="width: 65%;">Omschrijving</th>
+                    <th style="width: {{ $descWidth }};">Omschrijving</th>
                     <th style="width: 23%;">Artikelnummer</th>
+                    @if($hasWeight)
+                    <th style="width: 15%;" class="text-center">Gewicht</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
-                @php $hasItems = false; @endphp
                 @foreach($project->items as $item)
                     @if($item->itemable_type === 'App\\Models\\Product' && $item->itemable)
-                        @php $hasItems = true; @endphp
+                        @php $lineWeight = $item->itemable->weight ? $item->quantity * $item->itemable->weight : null; @endphp
                         <tr>
                             <td class="text-center text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                             <td>{{ $item->itemable->name ?? $item->description }}</td>
                             <td>{{ $item->itemable->sku ?? '-' }}</td>
+                            @if($hasWeight)
+                            <td class="text-center">{{ $lineWeight ? number_format($lineWeight, 1, ',', '.') . ' kg' : '-' }}</td>
+                            @endif
                         </tr>
                     @endif
                 @endforeach
                 @if(!$hasItems)
                 <tr>
-                    <td colspan="3" class="text-center" style="padding: 25px;">Geen materialen beschikbaar</td>
+                    <td colspan="{{ $hasWeight ? 4 : 3 }}" class="text-center" style="padding: 25px;">Geen materialen beschikbaar</td>
                 </tr>
                 @endif
             </tbody>
+            @if($hasWeight)
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align: right;">Totaalgewicht:</td>
+                    <td class="text-center">{{ number_format($totalWeight, 1, ',', '.') }} kg</td>
+                </tr>
+            </tfoot>
+            @endif
         </table>
     </div>
 

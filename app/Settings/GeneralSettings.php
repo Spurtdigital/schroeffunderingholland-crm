@@ -44,6 +44,8 @@ class GeneralSettings extends Settings
 
     public ?string $closing_text;
 
+    public ?string $review_url;
+
     public static function group(): string
     {
         return 'general';

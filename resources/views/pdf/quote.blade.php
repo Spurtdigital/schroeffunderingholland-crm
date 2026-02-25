@@ -429,8 +429,14 @@
 
 <!-- Footer -->
 <div class="footer">
-    @if($settings->company_kvk_number)
-    <p>KvK: {{ $settings->company_kvk_number }}@if($settings->company_vat_number) &nbsp;|&nbsp; BTW: {{ $settings->company_vat_number }}@endif</p>
+    @php
+        $footerParts = [];
+        if ($settings->company_kvk_number) $footerParts[] = 'KvK: ' . $settings->company_kvk_number;
+        if ($settings->company_vat_number)  $footerParts[] = 'BTW: ' . $settings->company_vat_number;
+        if ($settings->company_bank_account) $footerParts[] = 'IBAN: ' . $settings->company_bank_account;
+    @endphp
+    @if(count($footerParts))
+    <p>{!! implode(' &nbsp;|&nbsp; ', $footerParts) !!}</p>
     @endif
 </div>
 

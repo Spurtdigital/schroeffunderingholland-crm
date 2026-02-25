@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\EmailTemplate;
 use App\Models\Project;
 use App\Services\PdfService;
+use App\Settings\GeneralSettings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -39,6 +40,7 @@ class ProjectCompletedNotification extends Notification
 
         $company = $this->project->company;
         $photos = $this->project->getMedia('project-photos');
+        $reviewUrl = app(GeneralSettings::class)->review_url;
 
         $rendered = $template->renderToHtml([
             'klant_naam' => $company->contact_name ?? 'relatie',
@@ -46,12 +48,17 @@ class ProjectCompletedNotification extends Notification
             'project_nummer' => $this->project->project_number,
             'opleverdatum' => $this->project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y'),
             'aantal_fotos' => $photos->count(),
+            'review_url' => $reviewUrl ?? '',
         ]);
 
         $mail = (new MailMessage)
             ->subject($rendered['subject'])
             ->greeting('Dag '.($company->contact_name ?? 'relatie').',')
             ->line(new HtmlString($rendered['content']));
+
+        if ($reviewUrl) {
+            $mail->action('Laat een review achter', $reviewUrl);
+        }
 
         // Voeg foto's toe als bijlagen
         foreach ($photos as $media) {
@@ -76,6 +83,7 @@ class ProjectCompletedNotification extends Notification
         $company = $this->project->company;
         $photos = $this->project->getMedia('project-photos');
         $opleverdatum = $this->project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y');
+        $reviewUrl = app(GeneralSettings::class)->review_url;
 
         $mail = (new MailMessage)
             ->subject('Project afgerond - '.$this->project->project_number)
@@ -96,6 +104,10 @@ class ProjectCompletedNotification extends Notification
             ->line('Heeft u vragen over het project? Neem gerust contact met ons op.')
             ->salutation('Met vriendelijke groet,')
             ->salutation(config('mail.from.name', 'Schroeffundering Holland'));
+
+        if ($reviewUrl) {
+            $mail->action('Laat een review achter', $reviewUrl);
+        }
 
         // Voeg foto's toe als bijlagen
         foreach ($photos as $media) {
