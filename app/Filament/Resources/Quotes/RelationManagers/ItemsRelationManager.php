@@ -76,7 +76,6 @@ class ItemsRelationManager extends RelationManager
                     ->numeric()
                     ->prefix('€')
                     ->required()
-                    ->minValue(0)
                     ->step(0.01)
                     ->live()
                     ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
@@ -350,6 +349,52 @@ class ItemsRelationManager extends RelationManager
                         Notification::make()
                             ->success()
                             ->title('Vrije regel toegevoegd')
+                            ->send();
+                    }),
+
+                // Add Discount
+                Action::make('addDiscount')
+                    ->label('Korting toevoegen')
+                    ->icon('heroicon-o-tag')
+                    ->color('danger')
+                    ->form([
+                        Forms\Components\TextInput::make('description')
+                            ->label('Omschrijving')
+                            ->default('Korting')
+                            ->required()
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('discount_amount')
+                            ->label('Kortingsbedrag (excl. BTW)')
+                            ->numeric()
+                            ->prefix('€')
+                            ->required()
+                            ->minValue(0.01)
+                            ->step(0.01)
+                            ->helperText('Voer een positief bedrag in — wordt automatisch als aftrekpost opgeslagen.')
+                            ->columnSpanFull(),
+                    ])
+                    ->action(function (array $data, RelationManager $livewire): void {
+                        $amount = abs((float) $data['discount_amount']);
+
+                        $quote = $livewire->getOwnerRecord();
+                        $quote->items()->create([
+                            'type'         => QuoteItemType::Discount->value,
+                            'description'  => $data['description'],
+                            'quantity'     => 1,
+                            'unit_price'   => -$amount,
+                            'total'        => -$amount,
+                            'itemable_type' => null,
+                            'itemable_id'   => null,
+                        ]);
+
+                        app(QuoteCalculationService::class)->calculateTotals($quote);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Korting toegevoegd')
+                            ->body('€ ' . number_format($amount, 2, ',', '.') . ' korting is toegevoegd.')
                             ->send();
                     }),
             ])

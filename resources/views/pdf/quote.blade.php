@@ -349,11 +349,18 @@
             </thead>
             <tbody>
                 @foreach($quote->items as $item)
-                <tr>
+                @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
+                <tr @if($isDiscount) style="color: #c0392b;" @endif>
                     <td>{{ $item->description }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}</td>
-                    <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }}</td>
+                    <td class="text-center">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td class="text-right">{{ $isDiscount ? '—' : '€ ' . number_format($item->unit_price, 2, ',', '.') }}</td>
+                    <td class="text-right">
+                        @if($isDiscount)
+                            &minus;&nbsp;&euro;&nbsp;{{ number_format(abs($item->total), 2, ',', '.') }}
+                        @else
+                            &euro;&nbsp;{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }}
+                        @endif
+                    </td>
                 </tr>
                 @endforeach
                 @if($quote->travel_distance && $quote->travel_total)
