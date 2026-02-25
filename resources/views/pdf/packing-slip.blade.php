@@ -359,13 +359,13 @@
                 }
             }
         @endphp
-        @php $descWidth = $hasWeight ? '50%' : '65%'; @endphp
+        @php $descWidth = $hasWeight ? '42%' : '53%'; @endphp
         <table class="materials-table">
             <thead>
                 <tr>
                     <th style="width: 12%;" class="text-center">Aantal</th>
-                    <th style="width: {{ $descWidth }};">Omschrijving</th>
                     <th style="width: 23%;">Artikelnummer</th>
+                    <th style="width: {{ $descWidth }};">Omschrijving</th>
                     @if($hasWeight)
                     <th style="width: 15%;" class="text-center">Gewicht</th>
                     @endif
@@ -377,8 +377,8 @@
                         @php $lineWeight = $item->itemable->weight ? $item->quantity * $item->itemable->weight : null; @endphp
                         <tr>
                             <td class="text-center text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
-                            <td>{{ $item->itemable->name ?? $item->description }}</td>
                             <td>{{ $item->itemable->sku ?? '-' }}</td>
+                            <td>{{ $item->itemable->name ?? $item->description }}</td>
                             @if($hasWeight)
                             <td class="text-center">{{ $lineWeight ? number_format($lineWeight, 1, ',', '.') . ' kg' : '-' }}</td>
                             @endif
