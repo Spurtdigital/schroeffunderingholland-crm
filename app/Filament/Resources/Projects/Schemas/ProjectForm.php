@@ -101,11 +101,17 @@ class ProjectForm
                     ->columnSpanFull(),
 
                 // Planning
+                DatePicker::make('start_date')
+                    ->label('Montagedatum')
+                    ->native(false)
+                    ->displayFormat('d-m-Y')
+                    ->columnSpan(1),
+
                 DatePicker::make('completion_date')
                     ->label('Verwachte opleverdatum')
                     ->native(false)
                     ->displayFormat('d-m-Y')
-                    ->columnSpanFull(),
+                    ->columnSpan(1),
 
                 // Facturatie
                 Select::make('invoicing_type')

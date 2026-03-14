@@ -37,7 +37,7 @@ class ProjectsTable
                     ->badge()
                     ->sortable(),
                 TextColumn::make('start_date')
-                    ->label('Startdatum')
+                    ->label('Montagedatum')
                     ->date('d-m-Y')
                     ->sortable(),
                 TextColumn::make('completion_date')

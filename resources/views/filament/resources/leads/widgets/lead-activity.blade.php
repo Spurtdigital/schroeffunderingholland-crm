@@ -1,7 +1,9 @@
 <x-filament-widgets::widget class="fi-wi-lead-activity">
     <x-filament::section heading="Historie">
         @php
-            $activities = $record?->activities()->latest()->take(25)->get() ?? collect();
+            $activities = $record
+                ? \Spatie\Activitylog\Models\Activity::forSubject($record)->latest()->take(25)->get()
+                : collect();
 
             $eventConfig = [
                 'created' => ['label' => 'Aangemaakt', 'color' => '#16a34a', 'dot' => '#22c55e'],

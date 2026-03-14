@@ -30,7 +30,7 @@ class ConvertToProjectAction extends Action
 
         $this->modalHeading('Offerte omzetten naar project');
 
-        $this->modalDescription('Kies de facturatiemethode en verwachte opleverdatum voor dit project.');
+        $this->modalDescription('Kies de facturatiemethode, montagedatum en verwachte opleverdatum voor dit project.');
 
         $this->modalSubmitActionLabel('Project aanmaken');
 
@@ -47,6 +47,14 @@ class ConvertToProjectAction extends Action
                 ->required()
                 ->live()
                 ->helperText(fn ($state) => $state instanceof InvoicingType ? $state->getDescription() : null)
+                ->columnSpanFull(),
+
+            Forms\Components\DatePicker::make('start_date')
+                ->label('Montagedatum')
+                ->helperText('Wanneer start de montage?')
+                ->native(false)
+                ->displayFormat('d-m-Y')
+                ->minDate(now())
                 ->columnSpanFull(),
 
             Forms\Components\DatePicker::make('expected_completion_date')
@@ -73,14 +81,21 @@ class ConvertToProjectAction extends Action
         ]);
 
         $this->action(function (Model $record, array $data) {
+            // Derive the project number from the quote number so both share the
+            // same sequence (e.g. quote "E2026-0012" → project "P2026-0012").
+            // Fall back to an auto-generated number when the quote still has a
+            // concept placeholder (not yet synced with Moneybird).
+            $projectNumber = Project::projectNumberFromQuote($record->quote_number)
+                ?? Project::generateProjectNumber();
+
             // Create project from quote
             $project = Project::create([
                 'company_id' => $record->company_id,
                 'quote_id' => $record->id,
-                'project_number' => Project::generateProjectNumber(),
+                'project_number' => $projectNumber,
                 'status' => ProjectStatus::Active,
                 'invoicing_type' => $data['invoicing_type'],
-                'start_date' => now(),
+                'start_date' => $data['start_date'] ?? null,
                 'completion_date' => $data['expected_completion_date'] ?? null,
                 'notes' => $data['notes'] ?? "Project aangemaakt vanuit offerte {$record->quote_number}",
             ]);

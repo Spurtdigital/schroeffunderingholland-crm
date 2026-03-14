@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Projects\Pages;
 
 use App\Filament\Resources\Projects\Actions\CompleteProjectAction;
+use App\Filament\Resources\Projects\Actions\CreatePurchaseOrderFromProjectAction;
+use App\Filament\Resources\Projects\Actions\GeneratePurchaseOrdersFromProjectAction;
 use App\Filament\Resources\Projects\Actions\GenerateCompletionReportAction;
 use App\Filament\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
@@ -23,6 +25,8 @@ class EditProject extends EditRecord
             GenerateCompletionReportAction::make(),
             GeneratePackingSlipAction::make(),
             GenerateInvoiceAction::make(),
+            GeneratePurchaseOrdersFromProjectAction::make(),
+            CreatePurchaseOrderFromProjectAction::make(),
             DeleteAction::make(),
         ];
     }

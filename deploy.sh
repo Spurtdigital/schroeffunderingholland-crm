@@ -14,6 +14,28 @@ REMOTE_ROOT="/home/deb122730/domains/crm.schroeffunderingholland.nl"
 REMOTE_APP="$REMOTE_ROOT/app"
 REMOTE_PUBLIC="$REMOTE_ROOT/public_html"
 
+# =============================================================================
+# STAP 0: Tests draaien — deploy stopt bij falen
+# =============================================================================
+echo "==> [0/6] Tests draaien (blokkeert deploy bij falen)..."
+
+# Installeer dev-dependencies tijdelijk zodat Pest beschikbaar is
+ddev exec "cd /var/www/html && composer install --no-interaction --quiet 2>&1"
+
+# Draai de volledige test suite
+if ! ddev exec "cd /var/www/html && php vendor/bin/pest --no-coverage 2>&1"; then
+    echo ""
+    echo "❌ Tests gefaald — deploy geannuleerd."
+    echo "   Fix de falende tests en probeer opnieuw."
+    echo ""
+    # Herstel naar no-dev vendor zodat lokale omgeving schoon blijft
+    ddev exec "cd /var/www/html && composer install --no-dev --optimize-autoloader --no-interaction --quiet 2>&1"
+    exit 1
+fi
+
+echo "✅ Alle tests geslaagd — deploy gaat door."
+echo ""
+
 echo "==> [1/6] Vite build lokaal..."
 npm run build
 

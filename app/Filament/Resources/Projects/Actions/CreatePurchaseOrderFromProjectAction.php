@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Filament\Resources\Projects\Actions;
+
+use App\Models\Product;
+use App\Models\Project;
+use App\Models\PurchaseOrder;
+use App\Models\Supplier;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Set;
+
+class CreatePurchaseOrderFromProjectAction extends Action
+{
+    public static function getDefaultName(): ?string
+    {
+        return 'createPurchaseOrder';
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->label('Inkooporder');
+        $this->icon('heroicon-o-shopping-cart');
+        $this->color('warning');
+        $this->modalHeading('Nieuwe inkooporder aanmaken');
+        $this->modalWidth('2xl');
+
+        $this->form([
+            Select::make('supplier_id')
+                ->label('Leverancier')
+                ->options(fn () => Supplier::where('is_active', true)
+                    ->orderBy('name')
+                    ->pluck('name', 'id'))
+                ->searchable()
+                ->required()
+                ->live()
+                ->afterStateUpdated(function ($state, Set $set) {
+                    if ($state) {
+                        $supplier = Supplier::find($state);
+                        if ($supplier?->language) {
+                            $set('language', $supplier->language);
+                        }
+                    }
+                }),
+
+            Select::make('language')
+                ->label('Taal PDF')
+                ->options([
+                    'nl' => 'Nederlands',
+                    'en' => 'Engels',
+                    'de' => 'Duits',
+                ])
+                ->default('nl')
+                ->required(),
+
+            DatePicker::make('order_date')
+                ->label('Besteldatum')
+                ->required()
+                ->default(now())
+                ->native(false)
+                ->displayFormat('d-m-Y'),
+
+            DatePicker::make('expected_delivery_date')
+                ->label('Verwachte leverdatum')
+                ->native(false)
+                ->displayFormat('d-m-Y'),
+
+            Repeater::make('items')
+                ->label('Regels')
+                ->schema([
+                    Select::make('product_id')
+                        ->label('Product (optioneel)')
+                        ->options(fn () => Product::where('is_active', true)
+                            ->orderBy('name')
+                            ->pluck('name', 'id'))
+                        ->searchable()
+                        ->nullable()
+                        ->live()
+                        ->afterStateUpdated(function ($state, Set $set) {
+                            if ($state) {
+                                $product = Product::find($state);
+                                if ($product) {
+                                    $set('description', $product->name);
+                                    $set('supplier_article_number', $product->supplier_article_number ?? '');
+                                    $set('unit_price', (float) $product->purchase_price);
+                                }
+                            }
+                        })
+                        ->columnSpan(3),
+
+                    TextInput::make('description')
+                        ->label('Omschrijving')
+                        ->required()
+                        ->maxLength(255)
+                        ->columnSpan(3),
+
+                    TextInput::make('supplier_article_number')
+                        ->label('Art.nr. leverancier')
+                        ->maxLength(100)
+                        ->columnSpan(1),
+
+                    TextInput::make('quantity')
+                        ->label('Aantal')
+                        ->numeric()
+                        ->required()
+                        ->default(1)
+                        ->minValue(0.01)
+                        ->step(0.01)
+                        ->columnSpan(1),
+
+                    TextInput::make('unit_price')
+                        ->label('Eenheidsprijs')
+                        ->numeric()
+                        ->required()
+                        ->prefix('€')
+                        ->minValue(0)
+                        ->step(0.01)
+                        ->columnSpan(1),
+                ])
+                ->columns(3)
+                ->addActionLabel('Regel toevoegen')
+                ->defaultItems(0)
+                ->minItems(1)
+                ->collapsible()
+                ->reorderable(),
+        ]);
+
+        $this->action(function (array $data, Project $record) {
+            $order = PurchaseOrder::create([
+                'supplier_id' => $data['supplier_id'],
+                'project_id' => $record->id,
+                'language' => $data['language'],
+                'status' => 'draft',
+                'order_date' => $data['order_date'],
+                'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+            ]);
+
+            foreach (($data['items'] ?? []) as $index => $item) {
+                $quantity = (float) $item['quantity'];
+                $unitPrice = (float) $item['unit_price'];
+
+                $order->items()->create([
+                    'product_id' => $item['product_id'] ?? null,
+                    'description' => $item['description'],
+                    'supplier_article_number' => $item['supplier_article_number'] ?? null,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'total' => round($quantity * $unitPrice, 2),
+                    'sort_order' => $index + 1,
+                ]);
+            }
+
+            $order->recalculateTotals();
+
+            Notification::make()
+                ->success()
+                ->title('Inkooporder aangemaakt')
+                ->body("Order {$order->order_number} is aangemaakt en gekoppeld aan project {$record->project_number}.")
+                ->send();
+
+            return redirect()->route('filament.admin.resources.purchase-orders.edit', ['record' => $order]);
+        });
+    }
+}

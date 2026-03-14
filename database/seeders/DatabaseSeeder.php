@@ -285,6 +285,14 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        // 7. Seed quote assumptions
+        $this->command->info('💡 Seeding quote assumptions...');
+        $this->call(QuoteAssumptionsSeeder::class);
+
+        // 8. Seed email templates
+        $this->command->info('📧 Seeding email templates...');
+        $this->call(EmailTemplateSeeder::class);
+
         // Summary
         $this->command->info('');
         $this->command->info('✅ Seeding complete!');

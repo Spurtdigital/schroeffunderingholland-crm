@@ -42,12 +42,13 @@ class InfoRequiredNotification extends Notification implements ShouldQueue
             'klant_naam' => $this->lead->contact_name,
             'bedrijf_naam' => $this->lead->company_name,
             'bericht' => $this->message,
-            'bedrijf_email' => config('mail.from.address', 'info@schroeffunderingholland.nl'),
+            'bedrijf_email' => 'info@schroeffunderingholland.nl',
             'bedrijf_telefoon' => 'Zie onze website voor contactgegevens',
         ]);
         
         return (new MailMessage)
             ->subject($rendered['subject'])
+            ->replyTo('info@schroeffunderingholland.nl', 'Schroeffundering Holland')
             ->greeting('Dag ' . $this->lead->contact_name . ',')
             ->line(new HtmlString($rendered['content']));
     }
@@ -59,19 +60,16 @@ class InfoRequiredNotification extends Notification implements ShouldQueue
     {
         return (new MailMessage)
             ->subject('Extra informatie nodig - ' . $this->lead->company_name)
+            ->replyTo('info@schroeffunderingholland.nl', 'Schroeffundering Holland')
             ->greeting('Dag ' . $this->lead->contact_name . ',')
             ->line('Bedankt voor je interesse in onze diensten.')
             ->line('Om je een nauwkeurige offerte te kunnen maken, hebben we graag wat aanvullende informatie van je:')
             ->line('')
-            ->line($this->message)
+            ->line(new HtmlString(nl2br(e($this->message))))
             ->line('')
-            ->line('Je kunt deze informatie naar ons mailen of ons telefonisch bereiken op:')
-            ->lineIf(config('mail.from.name'), '**Bedrijf:** ' . config('mail.from.name'))
-            ->lineIf(config('mail.from.address'), '**Email:** ' . config('mail.from.address'))
-            ->line('**Telefoon:** Zie onze website voor contactgegevens')
+            ->line('Je kunt deze informatie sturen naar **info@schroeffunderingholland.nl**')
             ->line('')
             ->line('We horen graag van je!')
-            ->salutation('Met vriendelijke groet,')
-            ->salutation(config('mail.from.name', 'Schroeffundering Holland'));
+            ->salutation('Met vriendelijke groet, Schroeffundering Holland');
     }
 }

@@ -63,7 +63,8 @@ class OrderConfirmationNotification extends Notification implements ShouldQueue
             'project_nummer' => $this->project->project_number,
             'offerte_nummer' => $quote?->quote_number ?? 'N/A',
             'totaal' => $quote ? '€' . number_format($quote->total, 2, ',', '.') : 'N/A',
-            'verwachte_oplevering' => $this->project->expected_completion_date?->format('d-m-Y') ?? 'Nader te bepalen',
+            'montagedatum' => $this->project->start_date?->format('d-m-Y') ?? 'Nader te bepalen',
+            'verwachte_oplevering' => $this->project->completion_date?->format('d-m-Y') ?? 'Nader te bepalen',
             'facturatiemethode' => $facturatiemethode,
             'eerste_factuur_info' => $eersteFactuurInfo,
         ]);
@@ -71,22 +72,21 @@ class OrderConfirmationNotification extends Notification implements ShouldQueue
         $mail = (new MailMessage)
             ->subject($rendered['subject'])
             ->greeting('Dag ' . ($company->contact_name ?? 'relatie') . ',')
-            ->line(new HtmlString($rendered['content']))
-            ->action('Bekijk projectstatus', url('/admin/projects/' . $this->project->id . '/edit'));
+            ->line(new HtmlString($rendered['content']));
         
-        // Attach quote PDF if available and requested
+        // Attach order confirmation PDF if available and requested
         if ($this->attachQuotePdf && $quote) {
             $pdfService = app(PdfService::class);
             $mail->attachData(
-                $pdfService->getQuotePdfOutput($quote),
-                $pdfService->getQuotePdfFilename($quote),
+                $pdfService->getOrderConfirmationPdfOutput($this->project),
+                $pdfService->getOrderConfirmationPdfFilename($this->project),
                 ['mime' => 'application/pdf']
             );
         }
-        
+
         return $mail;
     }
-    
+
     /**
      * Fallback email when template is not found.
      */
@@ -110,8 +110,8 @@ class OrderConfirmationNotification extends Notification implements ShouldQueue
                 ->line('**Totaalbedrag:** €' . number_format($quote->total, 2, ',', '.'));
         }
         
-        if ($this->project->expected_completion_date) {
-            $mail->line('**Verwachte oplevering:** ' . $this->project->expected_completion_date->format('d-m-Y'));
+        if ($this->project->start_date) {
+            $mail->line('**Montagedatum:** ' . $this->project->start_date->format('d-m-Y'));
         }
         
         $mail->line('');
@@ -139,17 +139,16 @@ class OrderConfirmationNotification extends Notification implements ShouldQueue
             ->line('• Je ontvangt bericht over de planning')
             ->line('• Bij vragen kun je altijd contact met ons opnemen')
             ->line('')
-            ->action('Bekijk projectstatus', url('/admin/projects/' . $this->project->id . '/edit'))
             ->line('Heb je vragen? Neem gerust contact met ons op!')
             ->salutation('Met vriendelijke groet,')
             ->salutation(config('mail.from.name', 'Schroeffundering Holland'));
         
-        // Attach quote PDF if available and requested
+        // Attach order confirmation PDF if available and requested
         if ($this->attachQuotePdf && $quote) {
             $pdfService = app(PdfService::class);
             $mail->attachData(
-                $pdfService->getQuotePdfOutput($quote),
-                $pdfService->getQuotePdfFilename($quote),
+                $pdfService->getOrderConfirmationPdfOutput($this->project),
+                $pdfService->getOrderConfirmationPdfFilename($this->project),
                 ['mime' => 'application/pdf']
             );
         }

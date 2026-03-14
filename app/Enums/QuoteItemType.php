@@ -13,6 +13,7 @@ enum QuoteItemType: string implements HasLabel, HasIcon, HasColor
     case Labor = 'labor';
     case Mileage = 'mileage';
     case Discount = 'discount';
+    case Machine = 'machine';
 
     public function getLabel(): ?string
     {
@@ -22,6 +23,7 @@ enum QuoteItemType: string implements HasLabel, HasIcon, HasColor
             self::Labor    => 'Arbeid',
             self::Mileage  => 'Reiskosten',
             self::Discount => 'Korting',
+            self::Machine  => 'Machine',
         };
     }
 
@@ -33,6 +35,7 @@ enum QuoteItemType: string implements HasLabel, HasIcon, HasColor
             self::Labor    => 'heroicon-o-wrench-screwdriver',
             self::Mileage  => 'heroicon-o-truck',
             self::Discount => 'heroicon-o-tag',
+            self::Machine  => 'heroicon-o-cog-6-tooth',
         };
     }
 
@@ -40,6 +43,7 @@ enum QuoteItemType: string implements HasLabel, HasIcon, HasColor
     {
         return match($this) {
             self::Discount => 'danger',
+            self::Machine  => 'warning',
             default        => null,
         };
     }

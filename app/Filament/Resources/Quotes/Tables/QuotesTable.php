@@ -21,6 +21,8 @@ class QuotesTable
             ->columns([
                 TextColumn::make('quote_number')
                     ->label('Offertenummer')
+                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'Concept' : $state)
+                    ->color(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'gray' : null)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('company.name')

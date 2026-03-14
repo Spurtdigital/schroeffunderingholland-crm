@@ -8,6 +8,7 @@ use App\Filament\Resources\Projects\Pages\ListProjects;
 use App\Filament\Resources\Projects\Pages\ViewProject;
 use App\Filament\Resources\Projects\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Projects\RelationManagers\ItemsRelationManager;
+use App\Filament\Resources\Projects\RelationManagers\PurchaseOrdersRelationManager;
 use App\Filament\Resources\Projects\Schemas\ProjectForm;
 use App\Filament\Resources\Projects\Schemas\ProjectInfolist;
 use App\Filament\Resources\Projects\Tables\ProjectsTable;
@@ -53,6 +54,7 @@ class ProjectResource extends Resource
         return [
             ItemsRelationManager::class,
             InvoicesRelationManager::class,
+            PurchaseOrdersRelationManager::class,
         ];
     }
 

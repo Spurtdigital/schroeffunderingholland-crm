@@ -168,8 +168,8 @@ class MoneybirdService
                 $contact->company_name = $company->name;
                 $contact->email = $company->email;
                 $contact->phone = $company->phone;
-                $contact->address1 = $company->street;
-                $contact->address2 = $company->house_number;
+                $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                $contact->address2 = null;
                 $contact->zipcode = $company->postal_code;
                 $contact->city = $company->city;
                 $contact->save($contact);
@@ -179,8 +179,8 @@ class MoneybirdService
                 $contact->company_name = $company->name;
                 $contact->email = $company->email;
                 $contact->phone = $company->phone;
-                $contact->address1 = $company->street;
-                $contact->address2 = $company->house_number;
+                $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                $contact->address2 = null;
                 $contact->zipcode = $company->postal_code;
                 $contact->city = $company->city;
                 $contact->save();
@@ -240,46 +240,16 @@ class MoneybirdService
 
             $mbInvoice->subject = $subject;
 
-            // Build details array first (avoid overloaded property modification issue)
+            // Build details array — always a single line per invoice
             $details = [];
-            $quote = $invoice->project->quote;
+            $taxRateId = $this->getTaxRateId(21.0);
 
-            $isPartialInvoice = $invoice->deposit_percentage && $invoice->deposit_percentage != 100;
-
-            if ($isPartialInvoice) {
-                // Partial invoice (deposit or final): send as a single line in Moneybird
-                // to avoid showing full amounts. E.g. "Aanbetaling 50% op order Q2026-0001"
-                $taxRateId = $this->getTaxRateId(21.0);
-                $detail = $moneybird->salesInvoiceDetail();
-
-                $percentage = rtrim(rtrim(number_format((float) $invoice->deposit_percentage, 2, '.', ''), '0'), '.');
-                $orderRef = $quote ? $quote->quote_number : $invoice->project->project_number;
-
-                $lineLabel = match ($invoice->invoice_type) {
-                    \App\Enums\InvoiceType::Final   => "Eindfactuur {$percentage}% op order {$orderRef}",
-                    default                         => "Aanbetaling {$percentage}% op order {$orderRef}",
-                };
-
-                $detail->description = $lineLabel;
-                $detail->price = (string) round($invoice->total / 1.21, 2); // excl. BTW
-                $detail->amount = '1';
-                $detail->tax_rate_id = $taxRateId;
-
-                $details[] = $detail;
-            } elseif ($quote) {
-                // Full invoice: send all quote items as individual lines
-                $taxRateId = $this->getTaxRateId(21.0);
-
-                foreach ($quote->items as $item) {
-                    $detail = $moneybird->salesInvoiceDetail();
-                    $detail->description = $this->itemDescription($item);
-                    $detail->price = (string) $item->unit_price;
-                    $detail->amount = (string) $item->quantity;
-                    $detail->tax_rate_id = $taxRateId;
-
-                    $details[] = $detail;
-                }
-            }
+            $detail = $moneybird->salesInvoiceDetail();
+            $detail->description = $subject;
+            $detail->price = (string) round($invoice->subtotal, 2);
+            $detail->amount = '1';
+            $detail->tax_rate_id = $taxRateId;
+            $details[] = $detail;
 
             // Assign all details at once
             $mbInvoice->details = $details;
@@ -333,11 +303,39 @@ class MoneybirdService
 
             $mbEstimate->save();
 
-            // Store Moneybird estimate ID and timestamp
-            $quote->update([
+            // Moneybird assigns its own estimate number (e.g. "E2026-0012") after saving.
+            // Use that as the canonical quote number so both systems stay in sync.
+            $moneybirdEstimateNumber = $mbEstimate->estimate_id ?? null;
+
+            // Persist the Moneybird estimate ID, the new quote number and the sent timestamp.
+            $updateData = [
                 'moneybird_quote_id' => $mbEstimate->id,
                 'sent_at' => now(),
-            ]);
+            ];
+
+            if ($moneybirdEstimateNumber) {
+                $updateData['quote_number'] = $moneybirdEstimateNumber;
+            }
+
+            $quote->update($updateData);
+
+            // If the quote number changed and a project was already created from this
+            // quote, keep the project number in sync (same sequence, P-prefix).
+            if ($moneybirdEstimateNumber && $quote->project_id) {
+                $quote->load('project');
+                if ($quote->project) {
+                    $newProjectNumber = \App\Models\Project::projectNumberFromQuote($moneybirdEstimateNumber);
+                    if ($newProjectNumber) {
+                        $quote->project->update(['project_number' => $newProjectNumber]);
+                    }
+                }
+            }
+
+            // Keep the reference field in Moneybird in sync with the new number.
+            if ($moneybirdEstimateNumber && $mbEstimate->reference !== $moneybirdEstimateNumber) {
+                $mbEstimate->reference = $moneybirdEstimateNumber;
+                $mbEstimate->save();
+            }
 
             return true;
         } catch (ApiException $e) {
@@ -431,19 +429,25 @@ class MoneybirdService
             $parts[] = '';
         }
 
-        // 2. Free pre_text (opening zin, e.g. "Hierbij ontvangt u van ons...")
+        // 2. Machine (indien gekoppeld)
+        if ($quote->machine) {
+            $parts[] = 'Montage machine: '.$quote->machine->name;
+            $parts[] = '';
+        }
+
+        // 3. Free pre_text (opening zin, e.g. "Hierbij ontvangt u van ons...")
         $preText = trim($quote->pre_text ?? '');
         if (! empty($preText)) {
             $parts[] = $preText;
         }
 
-        // 3. Aannames bullet list
-        $assumptions = $quote->assumptions()->orderBy('sort_order')->pluck('content')->toArray();
-        if (! empty($assumptions)) {
+        // 4. Aannames bullet list
+        $assumptions = $quote->assumptions()->withPivot('pivot_value')->orderBy('sort_order')->get();
+        if ($assumptions->isNotEmpty()) {
             $parts[] = '';
             $parts[] = 'In deze offerte gaan wij uit van het onderstaande:';
-            foreach ($assumptions as $content) {
-                $parts[] = '* '.$content;
+            foreach ($assumptions as $assumption) {
+                $parts[] = '* ' . $assumption->resolveContent($assumption->pivot->pivot_value);
             }
         }
 
@@ -476,10 +480,27 @@ class MoneybirdService
         $closingText = trim($this->settings->closing_text ?? '');
         if (! empty($closingText)) {
             $parts[] = '';
-            $parts[] = $closingText;
+            $parts[] = $this->markdownToMoneybird($closingText);
         }
 
         return implode("\n", $parts);
+    }
+
+    /**
+     * Convert standard Markdown to Moneybird's formatting syntax.
+     * Moneybird uses *text* for bold/italic (single asterisk), not **text**.
+     */
+    protected function markdownToMoneybird(string $text): string
+    {
+        // **bold** → *bold*
+        $text = preg_replace('/\*\*(.+?)\*\*/s', '*$1*', $text);
+
+        // __bold__ → *bold*
+        $text = preg_replace('/__(.+?)__/s', '*$1*', $text);
+
+        // _italic_ or *italic* (single) → keep as-is, already valid in Moneybird
+
+        return $text;
     }
 
     /**
@@ -502,7 +523,7 @@ class MoneybirdService
                 $subtotal += $quote->travel_total;
             }
 
-            // Description-only lines (quantity shown, no price shown in Moneybird)
+            // Description-only lines (aantal wel, bedrag niet naar Moneybird)
             foreach ($items as $item) {
                 $detail = $moneybird->salesInvoiceDetail();
                 $detail->description = $this->itemDescription($item);
@@ -512,14 +533,22 @@ class MoneybirdService
 
             // Travel costs as description line if applicable
             if ($quote->travel_distance && $quote->travel_total) {
+                $originAddress = trim($this->settings->company_address ?? '');
+                $destAddress   = trim($quote->workFullAddress() ?? '');
+                $travelDesc    = $originAddress && $destAddress
+                    ? "Reiskosten: {$originAddress} → {$destAddress} en retour ({$quote->travel_distance} km × 2)"
+                    : "Reiskosten ({$quote->travel_distance} km)";
+
                 $detail = $moneybird->salesInvoiceDetail();
-                $detail->description = "Reiskosten ({$quote->travel_distance} km)";
+                $detail->description = $travelDesc;
+                $detail->amount = '1';
                 $details[] = $detail;
             }
 
             // Single total line
+            $displayNumber = $quote->project?->project_number ?? $quote->quote_number;
             $totalDetail = $moneybird->salesInvoiceDetail();
-            $totalDetail->description = "Totaal project {$quote->quote_number}";
+            $totalDetail->description = $displayNumber;
             $totalDetail->price = (string) round($subtotal, 2);
             $totalDetail->amount = '1';
             $totalDetail->tax_rate_id = $taxRateId;

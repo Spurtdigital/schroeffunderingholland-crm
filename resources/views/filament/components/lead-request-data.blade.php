@@ -12,7 +12,18 @@
                     {{ ucfirst(str_replace(['-', '_'], ' ', $key)) }}
                 </td>
                 <td style="padding:4px 0; color:#374151; word-break:break-word;">
-                    {{ is_array($value) ? implode(', ', $value) : $value }}
+                    @php
+                        $isImageUrl = is_string($value)
+                            && filter_var($value, FILTER_VALIDATE_URL)
+                            && preg_match('/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $value);
+                    @endphp
+                    @if($isImageUrl)
+                        <a href="{{ $value }}" target="_blank">
+                            <img src="{{ $value }}" style="max-width:200px; max-height:150px; border-radius:4px; display:block;" alt="Bijlage" />
+                        </a>
+                    @else
+                        {{ is_array($value) ? implode(', ', $value) : $value }}
+                    @endif
                 </td>
             </tr>
         @endforeach

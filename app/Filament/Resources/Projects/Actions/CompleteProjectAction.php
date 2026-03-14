@@ -13,8 +13,10 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
 class CompleteProjectAction extends Action
@@ -46,7 +48,6 @@ class CompleteProjectAction extends Action
             // Eager load items
             $record->load('items');
             $items = $record->items->sortBy('sort_order');
-            $grandTotal = $items->sum(fn ($i) => (float) $i->total);
 
             // Info regels
             $lines = [];
@@ -68,23 +69,13 @@ class CompleteProjectAction extends Action
                     : $item->type;
                 $description = e($item->description ?? '—');
                 $quantity = rtrim(rtrim(number_format((float) $item->quantity, 2, ',', '.'), '0'), ',');
-                $unitPrice = '€ '.number_format((float) $item->unit_price, 2, ',', '.');
-                $total = '€ '.number_format((float) $item->total, 2, ',', '.');
 
                 $tableRows .= '<tr class="border-b border-gray-100 dark:border-gray-700">'
                     ."<td class=\"py-1 pr-3 text-gray-500 dark:text-gray-400 whitespace-nowrap\">{$type}</td>"
                     ."<td class=\"py-1 pr-3\">{$description}</td>"
-                    ."<td class=\"py-1 pr-3 text-right tabular-nums whitespace-nowrap\">{$quantity}</td>"
-                    ."<td class=\"py-1 pr-3 text-right tabular-nums whitespace-nowrap\">{$unitPrice}</td>"
-                    ."<td class=\"py-1 text-right tabular-nums whitespace-nowrap font-medium\">{$total}</td>"
+                    ."<td class=\"py-1 text-right tabular-nums whitespace-nowrap\">{$quantity}</td>"
                     .'</tr>';
             }
-
-            $totalFormatted = '€ '.number_format($grandTotal, 2, ',', '.');
-            $tableRows .= '<tr>'
-                .'<td colspan="4" class="pt-2 text-right font-semibold text-gray-700 dark:text-gray-300 pr-3">Totaal excl. btw</td>'
-                ."<td class=\"pt-2 text-right tabular-nums font-bold\">{$totalFormatted}</td>"
-                .'</tr>';
 
             $itemsTable = $items->isNotEmpty()
                 ? '<div class="mt-4">'
@@ -95,9 +86,7 @@ class CompleteProjectAction extends Action
                   .'<tr class="border-b border-gray-200 dark:border-gray-600 text-left text-xs text-gray-400 uppercase tracking-wide">'
                   .'<th class="pb-1 pr-3 font-medium">Type</th>'
                   .'<th class="pb-1 pr-3 font-medium">Omschrijving</th>'
-                  .'<th class="pb-1 pr-3 font-medium text-right">Aantal</th>'
-                  .'<th class="pb-1 pr-3 font-medium text-right">Stukprijs</th>'
-                  .'<th class="pb-1 font-medium text-right">Totaal</th>'
+                  .'<th class="pb-1 font-medium text-right">Aantal</th>'
                   .'</tr>'
                   .'</thead>'
                   ."<tbody>{$tableRows}</tbody>"
@@ -141,6 +130,15 @@ class CompleteProjectAction extends Action
                             Checkbox::make('kans_op_zetting')
                                 ->label('Kans op zetting niet uit te sluiten')
                                 ->default(fn (Project $record) => (bool) $record->kans_op_zetting),
+                            Checkbox::make('indraaimoment')
+                                ->label('Indraaimoment')
+                                ->default(fn (Project $record) => (bool) $record->indraaimoment)
+                                ->live(),
+                            TextInput::make('indraaimoment_value')
+                                ->label('Indraaimoment waarde')
+                                ->placeholder('bijv. 45 Nm')
+                                ->default(fn (Project $record) => $record->indraaimoment_value)
+                                ->visible(fn (Get $get) => (bool) $get('indraaimoment')),
                         ]),
 
                     Step::make('Samenvatting')
@@ -199,7 +197,7 @@ class CompleteProjectAction extends Action
             // Sla geüploade foto's op als media
             if (! empty($data['photos'])) {
                 foreach ((array) $data['photos'] as $tmpPath) {
-                    $fullPath = storage_path('app/'.$tmpPath);
+                    $fullPath = Storage::disk('local')->path($tmpPath);
                     if (file_exists($fullPath)) {
                         $record
                             ->addMedia($fullPath)
@@ -224,6 +222,8 @@ class CompleteProjectAction extends Action
                 'hoogtemaat_klant' => (bool) ($data['hoogtemaat_klant'] ?? false),
                 'uitgezet_door_klant' => (bool) ($data['uitgezet_door_klant'] ?? false),
                 'kans_op_zetting' => (bool) ($data['kans_op_zetting'] ?? false),
+                'indraaimoment' => (bool) ($data['indraaimoment'] ?? false),
+                'indraaimoment_value' => ($data['indraaimoment'] ?? false) ? ($data['indraaimoment_value'] ?? null) : null,
             ]);
 
             // Frish de record zodat media beschikbaar is voor de PDF

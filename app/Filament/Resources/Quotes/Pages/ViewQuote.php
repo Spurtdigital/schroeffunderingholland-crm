@@ -11,10 +11,19 @@ use App\Filament\Resources\Quotes\Actions\SyncFromMoneybirdAction;
 use App\Filament\Resources\Quotes\Actions\UpdateMoneybirdAction;
 use App\Filament\Resources\Quotes\QuoteResource;
 use App\Filament\Resources\Quotes\Schemas\QuoteForm;
+use App\Models\Machine;
 use App\Models\Quote;
 use App\Models\QuoteAssumption;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Section as FormSection;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use App\Services\QuoteCalculationService;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewQuote extends ViewRecord
@@ -30,17 +39,13 @@ class ViewQuote extends ViewRecord
                 ->modalWidth('5xl')
                 ->form(fn ($form) => QuoteForm::configure($form))
                 ->after(function (Quote $record, array $data) {
-                    // Herbereken totalen
                     app(QuoteCalculationService::class)->calculateTotals($record);
 
-                    // Sync handmatig geselecteerde aannames
                     $assumptionIds = $data['assumption_ids'] ?? [];
                     $record->assumptions()->sync($assumptionIds);
 
-                    // Auto-sync SKU-gekoppelde aannames
                     $this->autoSyncSkuAssumptions($record);
 
-                    // Refresh infolist
                     $this->refreshFormData([
                         'status', 'subtotal', 'vat_amount', 'total',
                         'pre_text', 'post_text', 'payment_term_id',
@@ -48,13 +53,111 @@ class ViewQuote extends ViewRecord
                     ]);
                 }),
 
-            GeneratePdfAction::make(),
             SendQuoteAction::make(),
             ApproveQuoteAction::make(),
             ConvertToProjectAction::make(),
-            SendToMoneybirdAction::make(),
-            UpdateMoneybirdAction::make(),
-            SyncFromMoneybirdAction::make(),
+
+            // PDF dropdown
+            ActionGroup::make([
+                GeneratePdfAction::make(),
+
+                Action::make('toggleItemBreakdown')
+                    ->label(fn (Quote $record) => $record->show_item_breakdown ? 'Regels verbergen op PDF' : 'Regels tonen op PDF')
+                    ->icon(fn (Quote $record) => $record->show_item_breakdown ? 'heroicon-o-eye-slash' : 'heroicon-o-eye')
+                    ->action(function (Quote $record) {
+                        $record->update(['show_item_breakdown' => ! $record->show_item_breakdown]);
+                        $this->refreshFormData(['show_item_breakdown']);
+                    }),
+            ])
+                ->label('PDF')
+                ->icon('heroicon-o-document-text')
+                ->color('info')
+                ->button(),
+
+            // Instellingen dropdown
+            ActionGroup::make([
+                Action::make('editWorkAddress')
+                    ->label('Werkadres & machine')
+                    ->icon('heroicon-o-map-pin')
+                    ->fillForm(fn (Quote $record) => [
+                        'work_address_different' => $record->work_address_different,
+                        'work_street'            => $record->work_street,
+                        'work_house_number'      => $record->work_house_number,
+                        'work_postal_code'       => $record->work_postal_code,
+                        'work_city'              => $record->work_city,
+                        'machine_id'             => $record->machine_id,
+                    ])
+                    ->form([
+                        Select::make('machine_id')
+                            ->label('Montage machine')
+                            ->options(fn () => Machine::where('active', true)->orderBy('name')->pluck('name', 'id'))
+                            ->searchable()
+                            ->nullable()
+                            ->placeholder('Geen machine geselecteerd'),
+
+                        Toggle::make('work_address_different')
+                            ->label('Werkadres wijkt af van factuuradres')
+                            ->live(),
+
+                        FormSection::make()
+                            ->columns(3)
+                            ->schema([
+                                TextInput::make('work_street')
+                                    ->label('Straat')
+                                    ->visible(fn (Get $get) => $get('work_address_different'))
+                                    ->columnSpan(2),
+
+                                TextInput::make('work_house_number')
+                                    ->label('Huisnummer')
+                                    ->visible(fn (Get $get) => $get('work_address_different'))
+                                    ->columnSpan(1),
+
+                                TextInput::make('work_postal_code')
+                                    ->label('Postcode')
+                                    ->visible(fn (Get $get) => $get('work_address_different'))
+                                    ->columnSpan(1),
+
+                                TextInput::make('work_city')
+                                    ->label('Stad')
+                                    ->visible(fn (Get $get) => $get('work_address_different'))
+                                    ->columnSpan(2),
+                            ])
+                            ->visible(fn (Get $get) => $get('work_address_different'))
+                            ->extraAttributes(['style' => 'padding:0;box-shadow:none;border:none;']),
+                    ])
+                    ->action(function (Quote $record, array $data) {
+                        $record->update([
+                            'machine_id'            => $data['machine_id'],
+                            'work_address_different' => $data['work_address_different'],
+                            'work_street'           => $data['work_street'] ?? null,
+                            'work_house_number'     => $data['work_house_number'] ?? null,
+                            'work_postal_code'      => $data['work_postal_code'] ?? null,
+                            'work_city'             => $data['work_city'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Opgeslagen')
+                            ->send();
+
+                        $this->refreshFormData(['machine_id', 'work_address_different', 'work_street', 'work_house_number', 'work_postal_code', 'work_city']);
+                    }),
+            ])
+                ->label('Instellingen')
+                ->icon('heroicon-o-cog-6-tooth')
+                ->color('gray')
+                ->button(),
+
+            // Moneybird dropdown
+            ActionGroup::make([
+                SendToMoneybirdAction::make(),
+                UpdateMoneybirdAction::make(),
+                SyncFromMoneybirdAction::make(),
+            ])
+                ->label('Moneybird')
+                ->icon('heroicon-o-cloud-arrow-up')
+                ->color('gray')
+                ->button(),
         ];
     }
 

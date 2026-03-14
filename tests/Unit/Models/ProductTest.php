@@ -28,7 +28,7 @@ test('product can track stock quantity', function () {
 test('product can calculate reserved quantity', function () {
     $product = Product::factory()->create();
     $quote = Quote::factory()->create();
-    
+
     StockReservation::factory()->for($product)->for($quote)->create(['quantity' => 5]);
     StockReservation::factory()->for($product)->for($quote)->create(['quantity' => 3]);
 
@@ -38,15 +38,24 @@ test('product can calculate reserved quantity', function () {
 test('product can calculate available stock', function () {
     $product = Product::factory()->create(['stock_quantity' => 50]);
     $quote = Quote::factory()->create();
-    
+
     StockReservation::factory()->for($product)->for($quote)->create(['quantity' => 10]);
 
     expect($product->available_stock)->toBe(40);
 });
 
 test('product can check if low stock', function () {
-    $lowStockProduct = Product::factory()->lowStock()->create();
-    $normalProduct = Product::factory()->create(['stock_quantity' => 100]);
+    // Explicit values with unique SKUs — independent of catalog/seeder state.
+    $lowStockProduct = Product::factory()->create([
+        'sku'             => 'TEST-LOW-STOCK-' . uniqid(),
+        'stock_quantity'  => 3,
+        'min_stock_level' => 10,
+    ]);
+    $normalProduct = Product::factory()->create([
+        'sku'             => 'TEST-NORMAL-STOCK-' . uniqid(),
+        'stock_quantity'  => 100,
+        'min_stock_level' => 10,
+    ]);
 
     expect($lowStockProduct->isLowStock())->toBeTrue()
         ->and($normalProduct->isLowStock())->toBeFalse();
@@ -73,7 +82,7 @@ test('product can reserve stock', function () {
 
 test('product can add stock', function () {
     $product = Product::factory()->create(['stock_quantity' => 10]);
-    
+
     $product->addStock(5);
 
     expect($product->fresh()->stock_quantity)->toBe(15);
@@ -81,7 +90,7 @@ test('product can add stock', function () {
 
 test('product can consume stock', function () {
     $product = Product::factory()->create(['stock_quantity' => 10]);
-    
+
     $product->consumeStock(3);
 
     expect($product->fresh()->stock_quantity)->toBe(7);

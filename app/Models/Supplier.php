@@ -18,6 +18,11 @@ class Supplier extends Model
         'website',
         'notes',
         'is_active',
+        'language',
+        'address',
+        'postal_code',
+        'city',
+        'country',
     ];
 
     protected $casts = [
@@ -30,5 +35,13 @@ class Supplier extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Get all purchase orders for this supplier.
+     */
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
     }
 }

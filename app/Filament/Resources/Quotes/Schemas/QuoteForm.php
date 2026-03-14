@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Quotes\Schemas;
 
 use App\Enums\QuoteProcessingMethod;
 use App\Enums\QuoteStatus;
+use App\Models\Machine;
 use App\Models\PaymentTerm;
 use App\Models\QuoteAssumption;
 use App\Settings\GeneralSettings;
@@ -29,6 +30,10 @@ class QuoteForm
                     ->label('Offertenummer')
                     ->disabled()
                     ->dehydrated(false)
+                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-')
+                        ? 'Concept (nog niet verstuurd naar Moneybird)'
+                        : $state
+                    )
                     ->placeholder('Wordt automatisch gegenereerd')
                     ->columnSpan(1),
                 Select::make('company_id')
@@ -42,6 +47,13 @@ class QuoteForm
                     ->relationship('lead', 'name')
                     ->searchable()
                     ->preload()
+                    ->columnSpan(1),
+                Select::make('machine_id')
+                    ->label('Montage machine')
+                    ->options(fn () => Machine::where('active', true)->orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->nullable()
+                    ->placeholder('Geen machine geselecteerd')
                     ->columnSpan(1),
                 Select::make('status')
                     ->label('Status')
@@ -60,6 +72,12 @@ class QuoteForm
                     ->default(QuoteProcessingMethod::System)
                     ->required()
                     ->helperText('Kies of de offerte via het systeem of als concept in Moneybird wordt verwerkt.')
+                    ->columnSpan(1),
+
+                Toggle::make('show_item_breakdown')
+                    ->label('Regels tonen op PDF')
+                    ->helperText('Uitgeschakeld: PDF toont alleen het totaalbedrag, zonder losse regels en subbedragen.')
+                    ->default(true)
                     ->columnSpan(1),
 
                 // Bedragen (disabled - worden automatisch berekend)
@@ -139,12 +157,6 @@ class QuoteForm
                     ->helperText('Extra tekst die ná de betalingsvoorwaarden verschijnt in de Moneybird-offerte. De vaste sluitingstekst wordt automatisch toegevoegd vanuit de instellingen.')
                     ->default(fn () => app(GeneralSettings::class)->default_post_text)
                     ->rows(4)
-                    ->columnSpanFull(),
-
-                Toggle::make('show_item_breakdown')
-                    ->label('Regels tonen op PDF')
-                    ->helperText('Uitgeschakeld: PDF toont alleen het totaalbedrag, zonder losse regels en subbedragen.')
-                    ->default(true)
                     ->columnSpanFull(),
 
                 // Reiskosten

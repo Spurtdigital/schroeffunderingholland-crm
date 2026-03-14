@@ -193,4 +193,12 @@ class Product extends Model
             'reason' => $reason,
         ]);
     }
+
+    /**
+     * Get all purchase order items for this product.
+     */
+    public function purchaseOrderItems(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
 }

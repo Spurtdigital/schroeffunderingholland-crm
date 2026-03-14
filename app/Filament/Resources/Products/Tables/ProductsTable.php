@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Tables;
 
 use App\Models\Supplier;
+use App\Filament\Resources\Products\Actions\CreatePurchaseOrderAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -101,6 +102,7 @@ class ProductsTable
             ->recordActions([
                 EditAction::make()
                     ->label('Bewerken'),
+                CreatePurchaseOrderAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

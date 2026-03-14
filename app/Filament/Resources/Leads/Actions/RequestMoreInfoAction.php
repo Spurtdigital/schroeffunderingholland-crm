@@ -65,18 +65,17 @@ class RequestMoreInfoAction
                     return '• '.($labels[$key] ?? $key);
                 })->implode("\n");
 
-                $message = "Voor het opstellen van een offerte hebben wij de volgende informatie nodig:\n\n";
-                $message .= $items;
+                $message = $items;
 
                 if (! empty($data['additional_message'])) {
                     $message .= "\n\n".$data['additional_message'];
                 }
 
-                // Update lead with internal note
-                $record->update([
+                // Build update data
+                $updateData = [
                     'internal_notes' => ($record->internal_notes ? $record->internal_notes."\n\n" : '')
                         .'['.now()->format('d-m-Y H:i')."] Meer info gevraagd:\n".$message,
-                ]);
+                ];
 
                 // Send email if requested
                 if ($data['send_email'] && $record->email) {
@@ -86,8 +85,11 @@ class RequestMoreInfoAction
 
                         // Zet status op InfoRequested als mail verstuurd
                         if ($record->status === LeadStatus::New || $record->status === LeadStatus::Contacted) {
-                            $record->update(['status' => LeadStatus::InfoRequested]);
+                            $updateData['status'] = LeadStatus::InfoRequested;
                         }
+
+                        // Update lead in één keer
+                        $record->update($updateData);
 
                         Notification::make()
                             ->success()
@@ -102,6 +104,9 @@ class RequestMoreInfoAction
                             ->send();
                     }
                 } else {
+                    // Update lead in één keer (geen email, dus geen status-wijziging)
+                    $record->update($updateData);
+
                     Notification::make()
                         ->success()
                         ->title('Opgeslagen')
