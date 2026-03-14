@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Projects\Schemas;
 use App\Filament\Resources\Projects\Pages\ViewProject;
 use App\Filament\Resources\Projects\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Projects\RelationManagers\ItemsRelationManager;
+use App\Filament\Resources\Projects\RelationManagers\PurchaseOrdersRelationManager;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Group;
@@ -38,7 +39,7 @@ class ProjectInfolist
                             ->label('Facturatiemethode'),
 
                         TextEntry::make('start_date')
-                            ->label('Startdatum')
+                            ->label('Montagedatum')
                             ->date('d-m-Y')
                             ->placeholder('-'),
 
@@ -58,6 +59,11 @@ class ProjectInfolist
                         ]),
 
                         Livewire::make(InvoicesRelationManager::class, fn ($record) => [
+                            'ownerRecord' => $record,
+                            'pageClass' => ViewProject::class,
+                        ]),
+
+                        Livewire::make(PurchaseOrdersRelationManager::class, fn ($record) => [
                             'ownerRecord' => $record,
                             'pageClass' => ViewProject::class,
                         ]),

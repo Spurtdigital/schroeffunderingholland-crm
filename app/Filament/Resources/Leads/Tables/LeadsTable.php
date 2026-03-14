@@ -45,7 +45,7 @@ class LeadsTable
                     ->label('Aangemaakt op')
                     ->dateTime('d-m-Y H:i')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 TextColumn::make('updated_at')
                     ->label('Laatst gewijzigd')
                     ->dateTime('d-m-Y H:i')
@@ -69,6 +69,6 @@ class LeadsTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('id', 'desc');
     }
 }

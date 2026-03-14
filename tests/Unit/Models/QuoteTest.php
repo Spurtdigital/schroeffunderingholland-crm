@@ -14,11 +14,12 @@ test('quote can be created', function () {
         ->and($quote->quote_number)->not->toBeNull();
 });
 
-test('quote auto-generates quote number', function () {
+test('quote auto-generates a unique concept quote number', function () {
     $quote1 = Quote::factory()->create();
     $quote2 = Quote::factory()->create();
 
-    expect($quote1->quote_number)->toContain('Q')
+    // Before syncing with Moneybird, the quote number is a temporary concept placeholder.
+    expect($quote1->quote_number)->toStartWith('CONCEPT-')
         ->and($quote1->quote_number)->not->toBe($quote2->quote_number);
 });
 

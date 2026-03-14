@@ -7,6 +7,7 @@ use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Services\DistanceCalculatorService;
 use App\Services\MoneybirdService;
 use App\Settings\GeneralSettings;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Group;
@@ -24,13 +25,18 @@ class QuoteInfolist
 
                 // ── Rij 1: Offerte-informatie – volledige breedte ─────────────
                 Section::make('Offerte-informatie')
-                    ->columns(5)
+                    ->columns(8)
                     ->columnSpanFull()
                     ->schema([
                         TextEntry::make('quote_number')
                             ->label('Offertenummer')
                             ->weight('bold')
-                            ->size('lg'),
+                            ->size('lg')
+                            ->state(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-')
+                                ? 'Concept (nog niet verstuurd naar Moneybird)'
+                                : $record->quote_number
+                            )
+                            ->color(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'gray' : null),
 
                         TextEntry::make('status')
                             ->label('Status')
@@ -38,6 +44,10 @@ class QuoteInfolist
 
                         TextEntry::make('total')
                             ->label('Totaal incl. BTW')
+                            ->money('EUR'),
+
+                        TextEntry::make('subtotal')
+                            ->label('Excl. BTW')
                             ->money('EUR'),
 
                         TextEntry::make('valid_until')
@@ -49,6 +59,18 @@ class QuoteInfolist
                             ->label('Verzonden op')
                             ->dateTime('d-m-Y H:i')
                             ->placeholder('-'),
+
+                        TextEntry::make('machine.name')
+                            ->label('Montage machine')
+                            ->placeholder('-'),
+
+                        IconEntry::make('show_item_breakdown')
+                            ->label('Regels op PDF')
+                            ->boolean()
+                            ->trueIcon('heroicon-o-eye')
+                            ->falseIcon('heroicon-o-eye-slash')
+                            ->trueColor('success')
+                            ->falseColor('gray'),
                     ]),
 
                 // ── Kolom links 3/4: Regels + Offerte tekst ──────────────────
@@ -194,11 +216,13 @@ class QuoteInfolist
 
                                 TextEntry::make('subtotal')
                                     ->label('Subtotaal excl. BTW')
-                                    ->money('EUR'),
+                                    ->money('EUR')
+                                    ->visible(fn ($record) => $record->show_item_breakdown),
 
                                 TextEntry::make('vat_amount')
                                     ->label('BTW')
-                                    ->money('EUR'),
+                                    ->money('EUR')
+                                    ->visible(fn ($record) => $record->show_item_breakdown),
                             ]),
 
                         Section::make('Offerte-aannames')

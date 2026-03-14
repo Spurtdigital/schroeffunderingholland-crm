@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Project;
+use App\Models\PurchaseOrder;
 use App\Models\Quote;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -171,6 +174,110 @@ class FilamentResourcesLoadTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get("/admin/leads/{$lead->id}");
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    // -------------------------------------------------------------------------
+    // Invoice
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function invoice_list_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $response = $this->get('/admin/invoices');
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    #[Test]
+    public function invoice_edit_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $invoice = Invoice::first();
+
+        $response = $this->get("/admin/invoices/{$invoice->id}/edit");
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    // -------------------------------------------------------------------------
+    // Supplier
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function supplier_list_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $response = $this->get('/admin/suppliers');
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    #[Test]
+    public function supplier_edit_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $supplier = Supplier::factory()->create();
+
+        $response = $this->get("/admin/suppliers/{$supplier->id}/edit");
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    // -------------------------------------------------------------------------
+    // Purchase Order
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function purchase_order_list_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $response = $this->get('/admin/purchase-orders');
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    #[Test]
+    public function purchase_order_view_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $purchaseOrder = PurchaseOrder::factory()->create();
+
+        $response = $this->get("/admin/purchase-orders/{$purchaseOrder->id}");
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
+    }
+
+    #[Test]
+    public function purchase_order_edit_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $purchaseOrder = PurchaseOrder::factory()->create();
+
+        $response = $this->get("/admin/purchase-orders/{$purchaseOrder->id}/edit");
 
         $response->assertStatus(200);
         $response->assertDontSee('Whoops');

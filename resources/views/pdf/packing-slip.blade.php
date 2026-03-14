@@ -333,7 +333,10 @@
             <p><span class="label">Offertenummer:</span> {{ $project->quote->quote_number }}</p>
             @endif
             @if($project->start_date)
-            <p><span class="label">Startdatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
+            <p><span class="label">Montagedatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
+            @endif
+            @if($project->quote?->machine)
+            <p><span class="label">Machine:</span> {{ $project->quote->machine->name }}</p>
             @endif
             @if($project->quote?->lead?->address)
             <p><span class="label">Werklocatie:</span></p>
@@ -420,7 +423,7 @@
             <img src="{{ $signatureBase64 }}" alt="Handtekening">
         </div>
         <div class="signature-line">
-            <p>Datum: {{ $project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y') }}</p>
+            <p>Datum: {{ $project->completion_date?->format('d-m-Y') ?? '___________________________' }}</p>
         </div>
     </div>
     @else
@@ -430,7 +433,7 @@
             <div style="width: 200px; height: 60px; border: 1px solid #ccc; border-radius: 4px;"></div>
         </div>
         <div class="signature-line">
-            <p>Datum: {{ $project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y') }}</p>
+            <p>Datum: {{ $project->completion_date?->format('d-m-Y') ?? '___________________________' }}</p>
         </div>
     </div>
     @endif

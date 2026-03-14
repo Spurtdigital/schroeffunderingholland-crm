@@ -19,6 +19,7 @@ class QuoteItem extends Model
         'type',
         'description',
         'pile_length',
+        'machine_id',
         'quantity',
         'unit_price',
         'total',
@@ -28,6 +29,7 @@ class QuoteItem extends Model
     protected $casts = [
         'type' => QuoteItemType::class,
         'pile_length' => 'decimal:2',
+        'machine_id' => 'integer',
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'total' => 'decimal:2',
@@ -55,49 +57,36 @@ class QuoteItem extends Model
         });
     }
 
-    /**
-     * Get the quote this item belongs to.
-     */
     public function quote(): BelongsTo
     {
         return $this->belongsTo(Quote::class);
     }
 
-    /**
-     * Get the polymorphic itemable model (Product or null for free lines).
-     */
+    public function machine(): BelongsTo
+    {
+        return $this->belongsTo(Machine::class);
+    }
+
     public function itemable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    /**
-     * Check if this item is a product.
-     */
     public function isProduct(): bool
     {
         return $this->type === QuoteItemType::Product && $this->itemable_type === Product::class;
     }
 
-    /**
-     * Check if this item is a free line.
-     */
     public function isFreeLine(): bool
     {
         return $this->type === QuoteItemType::FreeLine;
     }
 
-    /**
-     * Check if this item is labor.
-     */
     public function isLabor(): bool
     {
         return $this->type === QuoteItemType::Labor;
     }
 
-    /**
-     * Check if this item is mileage.
-     */
     public function isMileage(): bool
     {
         return $this->type === QuoteItemType::Mileage;

@@ -23,11 +23,13 @@
         }
     }
 
-    // Bereken totalen
+    // Bereken totalen — altijd vanuit de factuur zelf (niet de offerte)
     $quote = $invoice->project->quote ?? null;
-    $subtotal = $quote ? $quote->subtotal : $invoice->amount;
-    $vatAmount = $quote ? $quote->vat_amount : ($invoice->amount * 0.21);
-    $total = $quote ? $quote->total : ($invoice->amount * 1.21);
+    $subtotal = $invoice->subtotal;
+    $vatAmount = $invoice->vat_amount;
+    $total = $invoice->total;
+    $isDeposit = $invoice->invoice_type === \App\Enums\InvoiceType::Deposit;
+    $isFinal   = $invoice->invoice_type === \App\Enums\InvoiceType::Final;
 @endphp
 <!DOCTYPE html>
 <html lang="nl">
@@ -112,27 +114,30 @@
 
         /* Factuur titel balk */
         .doc-title-bar {
-            background: linear-gradient(to right, #2563a8 0%, #4a8fd9 100%);
-            color: white;
-            padding: 10px 14px;
+            color: #000;
+            padding: 10px 0;
             margin-bottom: 14px;
             overflow: hidden;
+            border-bottom: 2px solid #000;
         }
         .doc-title-bar .doc-title {
             float: left;
             font-size: 16pt;
             font-weight: bold;
             letter-spacing: 2px;
+            color: #000;
         }
         .doc-title-bar .doc-meta {
             float: right;
             text-align: right;
             font-size: 8pt;
             line-height: 1.6;
+            color: #000;
         }
         .doc-title-bar .doc-meta .doc-number {
             font-size: 11pt;
             font-weight: bold;
+            color: #000;
         }
 
         /* Info boxen */
@@ -209,13 +214,14 @@
             font-size: 8.5pt;
         }
         .totals-table .total-final {
-            background: linear-gradient(to right, #2563a8 0%, #4a8fd9 100%);
-            color: white;
+            background-color: #2563a8;
+            color: #fff;
             font-weight: bold;
             font-size: 10pt;
         }
         .totals-table .total-final td {
             padding: 7px 8px;
+            color: #fff;
         }
 
         /* Betaalgegevens */
@@ -349,23 +355,22 @@
                 </tr>
             </thead>
             <tbody>
-                @if($quote)
-                    @foreach($quote->items as $item)
-                    <tr>
-                        <td>{{ $item->description }}</td>
-                        <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
-                        <td class="text-right">&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}</td>
-                        <td class="text-right">&euro;&nbsp;{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }}</td>
-                    </tr>
-                    @endforeach
-                @else
-                    <tr>
-                        <td>{{ $invoice->project->name }}</td>
-                        <td class="text-center">1</td>
-                        <td class="text-right">&euro;&nbsp;{{ number_format($invoice->amount, 2, ',', '.') }}</td>
-                        <td class="text-right">&euro;&nbsp;{{ number_format($invoice->amount, 2, ',', '.') }}</td>
-                    </tr>
-                @endif
+                @php
+                    $orderRef = $quote ? $quote->quote_number : $invoice->project->project_number;
+                    if ($isDeposit) {
+                        $lineDesc = "Aanbetaling op order {$orderRef}";
+                    } elseif ($isFinal) {
+                        $lineDesc = "Restbetaling op order {$orderRef}";
+                    } else {
+                        $lineDesc = "Opdracht {$orderRef}";
+                    }
+                @endphp
+                <tr>
+                    <td>{{ $lineDesc }}</td>
+                    <td class="text-center">1</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($subtotal, 2, ',', '.') }}</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($subtotal, 2, ',', '.') }}</td>
+                </tr>
             </tbody>
         </table>
     </div>

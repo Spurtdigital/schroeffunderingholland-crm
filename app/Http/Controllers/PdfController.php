@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\PurchaseOrder;
+use App\Models\Quote;
 use App\Services\PdfService;
 
 class PdfController extends Controller
@@ -10,6 +12,14 @@ class PdfController extends Controller
     public function __construct(
         protected PdfService $pdfService
     ) {}
+
+    /**
+     * Generate and download quote PDF
+     */
+    public function quotePdf(Quote $quote)
+    {
+        return $this->pdfService->generateQuotePdf($quote, download: true);
+    }
 
     /**
      * Generate and download packing slip PDF for a project
@@ -36,5 +46,13 @@ class PdfController extends Controller
 
         // Fallback: genereer on-the-fly
         return $this->pdfService->generateCompletionReportPdf($project, download: true);
+    }
+
+    /**
+     * Generate and download purchase order PDF
+     */
+    public function purchaseOrderPdf(PurchaseOrder $purchaseOrder)
+    {
+        return $this->pdfService->generatePurchaseOrderPdf($purchaseOrder, download: true);
     }
 }

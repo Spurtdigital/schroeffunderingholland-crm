@@ -5,11 +5,16 @@ namespace App\Filament\Resources\Quotes\Actions;
 use App\Enums\QuoteStatus;
 use App\Enums\StockReservationStatus;
 use App\Models\Product;
+use App\Models\QuoteAssumption;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Notifications\QuoteSentNotification;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Model;
 
 class SendQuoteAction extends Action
@@ -29,18 +34,93 @@ class SendQuoteAction extends Action
 
         $this->color('success');
 
-        $this->requiresConfirmation();
-
         $this->modalHeading('Offerte versturen');
 
-        $this->modalDescription('Weet je zeker dat je deze offerte wilt versturen? Voorraad wordt gereserveerd voor producten in deze offerte.');
+        $this->modalDescription('Controleer de gegevens en verstuur de offerte. Voorraad wordt automatisch gereserveerd.');
 
         $this->modalSubmitActionLabel('Ja, verstuur');
 
-        $this->visible(fn (Model $record): bool => $record->status === QuoteStatus::Draft
-        );
+        $this->form(fn (Model $record) => [
+            TextInput::make('contact_person')
+                ->label('T.a.v. (contactpersoon)')
+                ->default($record->company?->contact_person)
+                ->maxLength(255),
 
-        $this->action(function (Model $record) {
+            TextInput::make('email')
+                ->label('E-mailadres klant')
+                ->email()
+                ->default($record->company?->email)
+                ->required()
+                ->maxLength(255),
+
+            Section::make('Offerte-aannames')
+                ->description('Selecteer de aannames die van toepassing zijn op deze offerte. Ze worden als bullet-lijst opgenomen in de offerte.')
+                ->schema(function () use ($record) {
+                    $variableAssumptions = QuoteAssumption::where('active', true)
+                        ->where('has_variable_input', true)
+                        ->orderBy('sort_order')
+                        ->get();
+
+                    $defaultIds = $record->assumptions()->pluck('quote_assumptions.id')->toArray();
+                    if (empty($defaultIds)) {
+                        // Auto-check by SKU
+                        $skus = $record->items()
+                            ->with('itemable')
+                            ->get()
+                            ->map(fn ($item) => strtoupper($item->itemable?->sku ?? ''))
+                            ->filter()
+                            ->toArray();
+
+                        $defaultIds = QuoteAssumption::where('active', true)
+                            ->whereNotNull('trigger_sku')
+                            ->get()
+                            ->filter(function ($a) use ($skus) {
+                                $trigger = strtoupper($a->trigger_sku);
+                                foreach ($skus as $sku) {
+                                    if (str_contains($sku, $trigger)) return true;
+                                }
+                                return false;
+                            })
+                            ->pluck('id')
+                            ->toArray();
+                    }
+
+                    // Pre-fill pivot values for existing selections
+                    $pivotValues = $record->assumptions()
+                        ->withPivot('pivot_value')
+                        ->get()
+                        ->pluck('pivot.pivot_value', 'id')
+                        ->toArray();
+
+                    $components = [
+                        CheckboxList::make('assumption_ids')
+                            ->label('')
+                            ->options(fn () => QuoteAssumption::where('active', true)
+                                ->orderBy('sort_order')
+                                ->pluck('title', 'id')
+                                ->toArray())
+                            ->default($defaultIds)
+                            ->columns(1)
+                            ->live(),
+                    ];
+
+                    foreach ($variableAssumptions as $assumption) {
+                        $components[] = TextInput::make("assumption_value_{$assumption->id}")
+                            ->label($assumption->variable_input_label ?? 'Waarde')
+                            ->suffix($assumption->variable_input_suffix)
+                            ->default($pivotValues[$assumption->id] ?? null)
+                            ->placeholder('bijv. 3,5')
+                            ->visible(fn (Get $get) => in_array($assumption->id, (array) ($get('assumption_ids') ?? [])))
+                            ->required(fn (Get $get) => in_array($assumption->id, (array) ($get('assumption_ids') ?? [])));
+                    }
+
+                    return $components;
+                }),
+        ]);
+
+        $this->visible(fn (Model $record): bool => $record->status === QuoteStatus::Draft);
+
+        $this->action(function (Model $record, array $data) {
             // Check if we have items
             if ($record->items()->count() === 0) {
                 Notification::make()
@@ -58,31 +138,27 @@ class SendQuoteAction extends Action
                     $product = Product::find($item->itemable_id);
 
                     if ($product) {
-                        // Check if we have enough available stock (considering existing reservations)
-                        if ($product->available_stock < $item->quantity) {
-                            Notification::make()
-                                ->warning()
-                                ->title('Onvoldoende voorraad')
-                                ->body("Product '{$product->name}' heeft onvoldoende beschikbare voorraad ({$product->available_stock} beschikbaar, {$item->quantity} nodig).")
-                                ->send();
-
-                            return;
-                        }
-
-                        // Create stock reservation (this automatically updates reserved_quantity via accessor)
                         StockReservation::create([
                             'product_id' => $product->id,
-                            'quote_id' => $record->id,
-                            'quantity' => $item->quantity,
-                            'status' => StockReservationStatus::Active,
+                            'quote_id'   => $record->id,
+                            'quantity'   => $item->quantity,
+                            'status'     => StockReservationStatus::Active,
                         ]);
                     }
                 }
             }
 
+            // Sync selected assumptions with pivot values
+            $syncData = [];
+            foreach ($data['assumption_ids'] ?? [] as $assumptionId) {
+                $pivotValue = $data["assumption_value_{$assumptionId}"] ?? null;
+                $syncData[$assumptionId] = ['pivot_value' => $pivotValue];
+            }
+            $record->assumptions()->sync($syncData);
+
             // Update quote status
             $record->update([
-                'status' => QuoteStatus::Sent,
+                'status'  => QuoteStatus::Sent,
                 'sent_at' => now(),
             ]);
 
@@ -92,9 +168,8 @@ class SendQuoteAction extends Action
                 ->body("Offerte {$record->quote_number} is verstuurd en voorraad is gereserveerd.")
                 ->send();
 
-            // Send email notification to all users
-            $users = User::all();
-            foreach ($users as $user) {
+            // Send internal notification to all users
+            foreach (User::all() as $user) {
                 $user->notify(new QuoteSentNotification($record));
             }
         });

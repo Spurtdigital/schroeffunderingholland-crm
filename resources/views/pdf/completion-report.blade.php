@@ -25,9 +25,6 @@
 
     // Alle projectitems
     $items = $project->items;
-    $grandTotal = $items->sum(fn($i) => (float) $i->total);
-    $vatAmount = round($grandTotal * 0.21, 2);
-    $totalIncl = $grandTotal + $vatAmount;
 
     // Foto's als base64
     $photos = $project->getMedia('project-photos');
@@ -400,9 +397,9 @@
             <p><span class="label">Offertenummer:</span> {{ $project->quote->quote_number }}</p>
             @endif
             @if($project->start_date)
-            <p><span class="label">Startdatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
+            <p><span class="label">Montagedatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
             @endif
-            <p><span class="label">Opleverdatum:</span> {{ $project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y') }}</p>
+            <p><span class="label">Opleverdatum:</span> {{ $project->completion_date?->format('d-m-Y') ?? '—' }}</p>
             @if($project->quote?->lead?->full_address)
             <p><span class="label">Werklocatie:</span></p>
             <p style="padding-left: 105px;">{{ $project->quote->lead->full_address }}</p>
@@ -416,11 +413,9 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 18%;">Type</th>
-                    <th style="width: 42%;">Omschrijving</th>
-                    <th style="width: 10%;" class="text-right">Aantal</th>
-                    <th style="width: 15%;" class="text-right">Stukprijs</th>
-                    <th style="width: 15%;" class="text-right">Totaal</th>
+                    <th style="width: 20%;">Type</th>
+                    <th style="width: 65%;">Omschrijving</th>
+                    <th style="width: 15%;" class="text-right">Aantal</th>
                 </tr>
             </thead>
             <tbody>
@@ -429,31 +424,13 @@
                     <td>{{ $item->type instanceof \App\Enums\QuoteItemType ? $item->type->getLabel() : $item->type }}</td>
                     <td>{{ $item->description ?? '—' }}</td>
                     <td class="text-right">{{ rtrim(rtrim(number_format((float)$item->quantity, 2, ',', '.'), '0'), ',') }}</td>
-                    <td class="text-right">€&nbsp;{{ number_format((float)$item->unit_price, 2, ',', '.') }}</td>
-                    <td class="text-right">€&nbsp;{{ number_format((float)$item->total, 2, ',', '.') }}</td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="text-center" style="padding: 20px; color: #888; font-style: italic;">Geen items beschikbaar</td>
+                    <td colspan="3" class="text-center" style="padding: 20px; color: #888; font-style: italic;">Geen items beschikbaar</td>
                 </tr>
                 @endforelse
             </tbody>
-            @if($items->isNotEmpty())
-            <tfoot>
-                <tr class="totals-row">
-                    <td colspan="4" class="text-right">Subtotaal excl. btw</td>
-                    <td class="text-right">€&nbsp;{{ number_format($grandTotal, 2, ',', '.') }}</td>
-                </tr>
-                <tr class="vat-row">
-                    <td colspan="4" class="text-right">BTW 21%</td>
-                    <td class="text-right">€&nbsp;{{ number_format($vatAmount, 2, ',', '.') }}</td>
-                </tr>
-                <tr class="total-incl-row">
-                    <td colspan="4" class="text-right">Totaal incl. btw</td>
-                    <td class="text-right">€&nbsp;{{ number_format($totalIncl, 2, ',', '.') }}</td>
-                </tr>
-            </tfoot>
-            @endif
         </table>
     </div>
 
@@ -466,7 +443,7 @@
     @endif
 
     <!-- Checklist -->
-    @if($project->hoogtemaat_klant || $project->uitgezet_door_klant || $project->kans_op_zetting)
+    @if($project->hoogtemaat_klant || $project->uitgezet_door_klant || $project->kans_op_zetting || $project->indraaimoment)
     <div class="checklist-section">
         <p class="section-title">Checklist</p>
         <table class="checklist-table">
@@ -487,6 +464,12 @@
                 <tr>
                     <td class="check-box"><div class="check-box-inner checked"></div></td>
                     <td class="check-label">Kans op zetting niet uit te sluiten</td>
+                </tr>
+                @endif
+                @if($project->indraaimoment)
+                <tr>
+                    <td class="check-box"><div class="check-box-inner checked"></div></td>
+                    <td class="check-label">Indraaimoment{{ $project->indraaimoment_value ? ': ' . $project->indraaimoment_value : '' }}</td>
                 </tr>
                 @endif
             </tbody>
@@ -532,7 +515,7 @@
             @else
             <p class="sig-meta">Naam: ___________________________</p>
             @endif
-            <p class="sig-meta">Datum: {{ now()->format('d-m-Y') }}</p>
+            <p class="sig-meta">Datum: {{ $project->completion_date?->format('d-m-Y') ?? '___________________________' }}</p>
         </div>
         <div class="signature-col">
             <h4>Handtekening klant</h4>
@@ -546,7 +529,7 @@
             @else
             <p class="sig-meta">Naam: ___________________________</p>
             @endif
-            <p class="sig-meta">Datum: {{ $project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y') }}</p>
+            <p class="sig-meta">Datum: {{ $project->completion_date?->format('d-m-Y') ?? '___________________________' }}</p>
         </div>
     </div>
 

@@ -1,5 +1,5 @@
 @php
-    $activities = $getRecord()->activities()->latest()->take(25)->get();
+    $activities = \Spatie\Activitylog\Models\Activity::forSubject($getRecord())->latest()->take(25)->get();
 
     $eventConfig = [
         'created' => ['label' => 'Aangemaakt', 'color' => '#16a34a', 'dot' => '#22c55e'],

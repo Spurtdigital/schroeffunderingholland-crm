@@ -45,31 +45,22 @@ test('creating a lead logs the initial status in properties', function () {
     expect($activity->properties['attributes']['status'])->toBe(LeadStatus::New->value);
 });
 
-test('updating a lead status logs an updated activity', function () {
+test('updating a lead does not create extra activity entries', function () {
+    // De LogsActivity trait is verwijderd van Lead; updates worden niet automatisch gelogd.
+    // Alleen de LeadObserver::created() logt — bij updates verwachten we géén nieuwe entries.
     $lead = Lead::factory()->create(['status' => LeadStatus::New]);
 
-    $lead->update(['status' => LeadStatus::Contacted]);
-
-    $activity = Activity::where('subject_id', $lead->id)
+    $countAfter = Activity::where('subject_id', $lead->id)
         ->where('subject_type', Lead::class)
-        ->where('event', 'updated')
-        ->latest()
-        ->first();
+        ->count();
 
-    expect($activity)->not->toBeNull()
-        ->and($activity->properties['old']['status'])->toBe(LeadStatus::New->value)
-        ->and($activity->properties['attributes']['status'])->toBe(LeadStatus::Contacted->value);
-});
+    $lead->update(['status' => LeadStatus::Contacted]);
+    $lead->update(['notes' => 'Aangepaste notitie']);
 
-test('updating a lead field that is not logged does not create extra activity', function () {
-    $lead = Lead::factory()->create();
+    $countAfterUpdates = Activity::where('subject_id', $lead->id)
+        ->where('subject_type', Lead::class)
+        ->count();
 
-    $countBefore = Activity::where('subject_id', $lead->id)->count();
-
-    // 'converted_to_quote_id' is not in logOnly, so should not log
-    $lead->update(['converted_to_quote_id' => null]);
-
-    $countAfter = Activity::where('subject_id', $lead->id)->count();
-
-    expect($countAfter)->toBe($countBefore);
+    // Geen nieuwe entries na updates — alleen de created entry
+    expect($countAfterUpdates)->toBe($countAfter);
 });

@@ -66,3 +66,14 @@ test('project can use split invoicing', function () {
 
     expect($project->usesSplitInvoicing())->toBeTrue();
 });
+
+test('project number is derived from quote number', function () {
+    // Moneybird-style quote number → project gets same sequence with P prefix
+    expect(Project::projectNumberFromQuote('E2026-0012'))->toBe('P2026-0012');
+    expect(Project::projectNumberFromQuote('E2026-0001'))->toBe('P2026-0001');
+});
+
+test('project number fallback when quote is still concept', function () {
+    // CONCEPT-... placeholders should not produce a project number
+    expect(Project::projectNumberFromQuote('CONCEPT-20260302120000000000'))->toBeNull();
+});

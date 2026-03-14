@@ -49,7 +49,7 @@ class UpcomingProjectsWidget extends BaseWidget
                     ->badge(),
 
                 TextColumn::make('start_date')
-                    ->label('Startdatum')
+                    ->label('Montagedatum')
                     ->date('d-m-Y')
                     ->placeholder('-')
                     ->color(fn (?string $state) => $state && now()->isSameDay($state) ? 'warning' : null),

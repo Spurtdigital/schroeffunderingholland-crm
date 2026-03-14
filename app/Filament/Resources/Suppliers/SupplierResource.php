@@ -65,6 +65,16 @@ class SupplierResource extends Resource
                             ->url()
                             ->maxLength(255),
 
+                        \Filament\Forms\Components\Select::make('language')
+                            ->label('Voorkeurstaal (inkooporders)')
+                            ->options([
+                                'nl' => 'Nederlands',
+                                'en' => 'Engels',
+                                'de' => 'Duits',
+                            ])
+                            ->default('nl')
+                            ->required(),
+
                         Toggle::make('is_active')
                             ->label('Actief')
                             ->default(true)
@@ -73,6 +83,28 @@ class SupplierResource extends Resource
                         Textarea::make('notes')
                             ->label('Notities')
                             ->rows(3)
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make('Adres')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('address')
+                            ->label('Straat + huisnummer')
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+
+                        TextInput::make('postal_code')
+                            ->label('Postcode')
+                            ->maxLength(20),
+
+                        TextInput::make('city')
+                            ->label('Stad')
+                            ->maxLength(255),
+
+                        TextInput::make('country')
+                            ->label('Land')
+                            ->maxLength(255)
                             ->columnSpanFull(),
                     ]),
             ]);

@@ -106,27 +106,30 @@
 
         /* Offerte titel balk */
         .doc-title-bar {
-            background: linear-gradient(to right, #2563a8 0%, #4a8fd9 100%);
-            color: white;
-            padding: 10px 14px;
+            color: #000;
+            padding: 10px 0;
             margin-bottom: 14px;
             overflow: hidden;
+            border-bottom: 2px solid #000;
         }
         .doc-title-bar .doc-title {
             float: left;
             font-size: 16pt;
             font-weight: bold;
             letter-spacing: 2px;
+            color: #000;
         }
         .doc-title-bar .doc-meta {
             float: right;
             text-align: right;
             font-size: 8pt;
             line-height: 1.6;
+            color: #000;
         }
         .doc-title-bar .doc-meta .doc-number {
             font-size: 11pt;
             font-weight: bold;
+            color: #000;
         }
 
         /* Info boxen */
@@ -203,13 +206,14 @@
             font-size: 8.5pt;
         }
         .totals-table .total-final {
-            background: linear-gradient(to right, #2563a8 0%, #4a8fd9 100%);
-            color: white;
+            background-color: #2563a8;
+            color: #fff;
             font-weight: bold;
             font-size: 10pt;
         }
         .totals-table .total-final td {
             padding: 7px 8px;
+            color: #fff;
         }
 
         /* Opmerkingen */
@@ -229,21 +233,18 @@
             color: #000;
         }
 
-        /* Ondertekening */
-        .signature-section {
-            margin-top: 20px;
-            overflow: hidden;
+        /* Aannames bullet-lijst */
+        .assumptions-section {
+            margin-bottom: 14px;
         }
-        .signature-box {
-            float: left;
-            width: 45%;
-            border-top: 1px solid #999;
-            padding-top: 6px;
-            font-size: 7.5pt;
-            color: #555;
+        .assumptions-section ul {
+            margin: 0;
+            padding-left: 16px;
         }
-        .signature-box:last-child {
-            float: right;
+        .assumptions-section ul li {
+            font-size: 8pt;
+            line-height: 1.6;
+            color: #000;
         }
 
         /* Footer */
@@ -293,7 +294,7 @@
         <div class="doc-title">OFFERTE</div>
         <div class="doc-meta">
             <div class="doc-number">{{ $quote->quote_number }}</div>
-            <div>{{ $quote->created_at->format('d-m-Y') }}</div>
+            <div>{{ ($quote->created_at ?? now())->format('d-m-Y') }}</div>
             @if($quote->valid_until)
             <div>Geldig tot: {{ $quote->valid_until->format('d-m-Y') }}</div>
             @endif
@@ -329,13 +330,33 @@
                 $werklocatie = $quote->workFullAddress();
             @endphp
             @if($werklocatie)
-            <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px;">{{ $werklocatie }}</p>
+            <p><span class="label">Werklocatie:</span> {{ $werklocatie }}</p>
             @endif
         </div>
     </div>
 
-    <!-- Items Tabel -->
+    <!-- Aanhef + pre_text -->
+    @php
+        $aanhef = $quote->company->contact_person ?? null;
+    @endphp
+    @if($aanhef)
+    <p style="margin-bottom: 10px; font-size: 9pt;">Beste {{ $aanhef }},</p>
+    @endif
+
+    @if($quote->pre_text)
+    <p style="margin-bottom: 14px; font-size: 9pt; line-height: 1.5;">{{ $quote->pre_text }}</p>
+    @endif
+
+    @if($quote->assumptions->isNotEmpty())
+    <div class="assumptions-section">
+        <ul>
+            @foreach($quote->assumptions->sortBy('sort_order') as $assumption)
+            <li>{{ $assumption->resolveContent($assumption->pivot->pivot_value) }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
     @if($quote->show_item_breakdown)
     <div class="items-section">
         <table class="items-table">
@@ -351,7 +372,7 @@
                 @foreach($quote->items as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
                 <tr @if($isDiscount) style="color: #c0392b;" @endif>
-                    <td>{{ $item->description }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}</td>
+                    <td>{{ $item->description }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
                     <td class="text-center">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
                     <td class="text-right">{{ $isDiscount ? '—' : '€ ' . number_format($item->unit_price, 2, ',', '.') }}</td>
                     <td class="text-right">
@@ -364,13 +385,42 @@
                 </tr>
                 @endforeach
                 @if($quote->travel_distance && $quote->travel_total)
+                @php
+                    $originAddr = trim($settings->company_address ?? '');
+                    $destAddr   = trim($quote->workFullAddress() ?? '');
+                    $travelDesc = $originAddr && $destAddr
+                        ? "Reiskosten: {$originAddr} → {$destAddr} en retour"
+                        : 'Reiskosten';
+                @endphp
                 <tr>
-                    <td>Reiskosten ({{ number_format($quote->travel_distance, 0, ',', '.') }} km &times; &euro;&nbsp;{{ number_format($quote->travel_cost_per_km, 2, ',', '.') }})</td>
+                    <td>{{ $travelDesc }} ({{ number_format($quote->travel_distance, 0, ',', '.') }} km &times; &euro;&nbsp;{{ number_format($quote->travel_cost_per_km, 2, ',', '.') }})</td>
                     <td class="text-center">1</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
                 @endif
+            </tbody>
+        </table>
+    </div>
+    @else
+    <div class="items-section">
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 70%;">Omschrijving</th>
+                    <th style="width: 15%;" class="text-center">Aantal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($quote->items as $item)
+                @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
+                @if(!$isDiscount)
+                <tr>
+                    <td>{{ $item->description }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
+                    <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                </tr>
+                @endif
+                @endforeach
             </tbody>
         </table>
     </div>
@@ -416,21 +466,9 @@
     </div>
     @endif
 
-    <!-- Ondertekening -->
-    <div class="signature-section clearfix">
-        <div class="signature-box">
-            <p>Handtekening opdrachtgever</p>
-            <br><br><br>
-            <p>Naam: ___________________________</p>
-            <p style="margin-top:4px;">Datum: ___________________________</p>
-        </div>
-        <div class="signature-box">
-            <p>Voor akkoord {{ $settings->company_name ?? 'Schroeffundering Holland' }}</p>
-            <br><br><br>
-            <p>Naam: ___________________________</p>
-            <p style="margin-top:4px;">Datum: ___________________________</p>
-        </div>
-    </div>
+    @if($quote->post_text)
+    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{{ $quote->post_text }}</p>
+    @endif
 
 </div><!-- /content -->
 

@@ -6,6 +6,7 @@ use App\Services\MoneybirdService;
 use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -156,10 +157,15 @@ class ManageSettings extends Page implements HasForms
                             ->helperText('Vrije extra tekst die ná de clausules en vóór de sluitingstekst verschijnt. Per offerte aan te passen.')
                             ->rows(4)
                             ->columnSpanFull(),
-                        Textarea::make('closing_text')
+                        MarkdownEditor::make('closing_text')
                             ->label('Sluitingstekst (Moneybird)')
-                            ->helperText('Vaste tekst die altijd onderaan elke offerte verschijnt, na betalingsvoorwaarden en clausules (Extra info, Weersvoorspelling, Klic, Wachttijd, groet etc.).')
-                            ->rows(16)
+                            ->helperText('Vaste tekst die altijd onderaan elke offerte verschijnt. Gebruik **vet** voor dikgedrukte tekst.')
+                            ->toolbarButtons([
+                                'bold',
+                                'italic',
+                                'bulletList',
+                                'orderedList',
+                            ])
                             ->columnSpanFull(),
                     ])
                     ->columns(2),

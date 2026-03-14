@@ -8,12 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Lead extends Model
 {
-    use HasFactory, LogsActivity, Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'company_id',
@@ -102,26 +100,4 @@ class Lead extends Model
         return $this->status === LeadStatus::Converted && $this->converted_to_quote_id !== null;
     }
 
-    /**
-     * Activity log options
-     */
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly([
-                'status',
-                'name',
-                'email',
-                'phone',
-                'company_id',
-                'notes',
-                'internal_notes',
-                'postal_code',
-                'street',
-                'house_number',
-                'city',
-            ])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
-    }
 }

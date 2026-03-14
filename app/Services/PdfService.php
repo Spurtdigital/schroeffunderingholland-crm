@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Invoice;
 use App\Models\Project;
+use App\Models\PurchaseOrder;
 use App\Models\Quote;
 use App\Settings\GeneralSettings;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -24,7 +25,7 @@ class PdfService
     public function generateQuotePdf(Quote $quote, bool $download = false): \Illuminate\Http\Response
     {
         $pdf = Pdf::loadView('pdf.quote', [
-            'quote' => $quote->load(['company', 'lead', 'items']),
+            'quote' => $quote->load(['company', 'lead', 'items.machine', 'machine']),
             'settings' => $this->settings,
         ]);
 
@@ -62,7 +63,7 @@ class PdfService
     public function saveQuotePdf(Quote $quote): string
     {
         $pdf = Pdf::loadView('pdf.quote', [
-            'quote' => $quote->load(['company', 'lead', 'items']),
+            'quote' => $quote->load(['company', 'lead', 'items.machine', 'machine']),
             'settings' => $this->settings,
         ]);
 
@@ -94,7 +95,7 @@ class PdfService
     public function getQuotePdfOutput(Quote $quote): string
     {
         $pdf = Pdf::loadView('pdf.quote', [
-            'quote' => $quote->load(['company', 'lead', 'items']),
+            'quote' => $quote->load(['company', 'lead', 'items.machine', 'machine', 'assumptions']),
             'settings' => $this->settings,
         ]);
 
@@ -136,7 +137,7 @@ class PdfService
     public function generatePackingSlipPdf(Project $project, bool $download = false): \Illuminate\Http\Response
     {
         $pdf = Pdf::loadView('pdf.packing-slip', [
-            'project' => $project->load(['company', 'items.itemable', 'quote.lead']),
+            'project' => $project->load(['company', 'items.itemable', 'quote.lead', 'quote.machine']),
             'settings' => $this->settings,
             'signatureBase64' => $this->getSignatureBase64($project),
         ]);
@@ -156,7 +157,7 @@ class PdfService
     public function savePackingSlipPdf(Project $project): string
     {
         $pdf = Pdf::loadView('pdf.packing-slip', [
-            'project' => $project->load(['company', 'items.itemable', 'quote.lead']),
+            'project' => $project->load(['company', 'items.itemable', 'quote.lead', 'quote.machine']),
             'settings' => $this->settings,
             'signatureBase64' => $this->getSignatureBase64($project),
         ]);
@@ -173,7 +174,7 @@ class PdfService
     public function getPackingSlipPdfOutput(Project $project): string
     {
         $pdf = Pdf::loadView('pdf.packing-slip', [
-            'project' => $project->load(['company', 'items.itemable', 'quote.lead']),
+            'project' => $project->load(['company', 'items.itemable', 'quote.lead', 'quote.machine']),
             'settings' => $this->settings,
             'signatureBase64' => $this->getSignatureBase64($project),
         ]);
@@ -251,6 +252,76 @@ class PdfService
     public function getCompletionReportPdfFilename(Project $project): string
     {
         return "opleverrapport-{$project->project_number}.pdf";
+    }
+
+    /**
+     * Get order confirmation PDF output for email attachment
+     */
+    public function getOrderConfirmationPdfOutput(Project $project): string
+    {
+        $quote = $project->quote;
+
+        $pdf = Pdf::loadView('pdf.order-confirmation', [
+            'quote'    => $quote->load(['company', 'lead', 'items.machine']),
+            'project'  => $project,
+            'settings' => $this->settings,
+        ]);
+
+        return $pdf->output();
+    }
+
+    /**
+     * Get order confirmation PDF filename for email attachment
+     */
+    public function getOrderConfirmationPdfFilename(Project $project): string
+    {
+        return "opdrachtbevestiging-{$project->project_number}.pdf";
+    }
+
+    /**
+     * Generate PDF for a purchase order (stream or download)
+     */
+    public function generatePurchaseOrderPdf(PurchaseOrder $order, bool $download = false): \Illuminate\Http\Response
+    {
+        $pdf = Pdf::loadView('pdf.purchase-order', [
+            'order'    => $order->load(['supplier', 'items.product']),
+            'settings' => $this->settings,
+        ]);
+
+        $filename = $this->getPurchaseOrderPdfFilename($order);
+
+        if ($download) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
+    }
+
+    /**
+     * Get purchase order PDF output for email attachment
+     */
+    public function getPurchaseOrderPdfOutput(PurchaseOrder $order): string
+    {
+        $pdf = Pdf::loadView('pdf.purchase-order', [
+            'order'    => $order->load(['supplier', 'items.product']),
+            'settings' => $this->settings,
+        ]);
+
+        return $pdf->output();
+    }
+
+    /**
+     * Get purchase order PDF filename
+     */
+    public function getPurchaseOrderPdfFilename(PurchaseOrder $order): string
+    {
+        $prefix = match($order->language) {
+            'de'    => 'bestellung',
+            'en'    => 'purchase-order',
+            default => 'inkooporder',
+        };
+
+        return "{$prefix}-{$order->order_number}.pdf";
     }
 
     /**

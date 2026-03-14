@@ -19,6 +19,7 @@ class Quote extends Model
     protected $fillable = [
         'company_id',
         'lead_id',
+        'machine_id',
         'project_id',
         'quote_number',
         'status',
@@ -85,7 +86,8 @@ class Quote extends Model
      */
     public function assumptions(): BelongsToMany
     {
-        return $this->belongsToMany(QuoteAssumption::class, 'quote_assumption_quote');
+        return $this->belongsToMany(QuoteAssumption::class, 'quote_assumption_quote')
+            ->withPivot('pivot_value');
     }
 
     /**
@@ -102,6 +104,11 @@ class Quote extends Model
     public function lead(): BelongsTo
     {
         return $this->belongsTo(Lead::class);
+    }
+
+    public function machine(): BelongsTo
+    {
+        return $this->belongsTo(Machine::class);
     }
 
     /**
@@ -166,18 +173,17 @@ class Quote extends Model
     }
 
     /**
-     * Generate a unique quote number.
+     * Generate a temporary concept quote number.
+     *
+     * This is a placeholder used until the quote is sent to Moneybird,
+     * at which point quote_number is replaced with the official Moneybird
+     * estimate number (e.g. "E2026-0012").
      */
     public static function generateQuoteNumber(): string
     {
-        $year = now()->year;
-        $lastQuote = static::whereYear('created_at', $year)
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $number = $lastQuote ? ((int) substr($lastQuote->quote_number, -4)) + 1 : 1;
-
-        return sprintf('Q%d-%04d', $year, $number);
+        // Use a microsecond-based suffix to guarantee uniqueness even
+        // when multiple quotes are created in the same second.
+        return 'CONCEPT-' . now()->format('YmdHisu');
     }
 
     /**

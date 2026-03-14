@@ -84,11 +84,15 @@ Goedgekeurd op: {{goedgekeurd_op}}
                 ],
                 'content' => 'Bedankt voor je interesse in Schroeffundering Holland.
 
-Voor een nauwkeurige offerte hebben we graag nog de volgende informatie:
+Voor het opstellen van een nauwkeurige offerte hebben wij nog de volgende informatie nodig:
 
 {{bericht}}
 
-Je kunt deze informatie sturen naar {{bedrijf_email}} of bel ons op {{bedrijf_telefoon}}.',
+Je kunt deze informatie sturen naar:
+
+{{bedrijf_email}}
+
+We horen graag van je!',
                 'active' => true,
             ],
             [
@@ -102,6 +106,7 @@ Je kunt deze informatie sturen naar {{bedrijf_email}} of bel ons op {{bedrijf_te
                     'project_nummer' => 'Project nummer',
                     'offerte_nummer' => 'Offerte nummer',
                     'totaal' => 'Totaalbedrag incl. BTW',
+                    'montagedatum' => 'Startdatum van de montage (dd-mm-yyyy)',
                     'verwachte_oplevering' => 'Verwachte opleverdatum',
                     'facturatiemethode' => 'Uitleg facturatiemethode (50/50, 30/70, 100%)',
                     'eerste_factuur_info' => 'Info over eerste factuur indien van toepassing',
@@ -113,6 +118,7 @@ Hierbij bevestigen we de opdracht voor project {{project_nummer}} op basis van o
 📋 Project Details
 Project nummer: {{project_nummer}}
 Totaalbedrag: {{totaal}}
+Montagedatum: {{montagedatum}}
 Verwachte oplevering: {{verwachte_oplevering}}
 
 💰 Facturering
