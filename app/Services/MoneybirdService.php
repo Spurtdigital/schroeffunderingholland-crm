@@ -161,7 +161,7 @@ class MoneybirdService
         }
 
         try {
-            // Check if contact already exists
+            // Check if contact already exists locally
             if ($company->moneybird_contact_id) {
                 // Update existing contact
                 $contact = $moneybird->contact()->find($company->moneybird_contact_id);
@@ -174,27 +174,74 @@ class MoneybirdService
                 $contact->city = $company->city;
                 $contact->save($contact);
             } else {
-                // Create new contact
-                $contact = $moneybird->contact();
-                $contact->company_name = $company->name;
-                $contact->email = $company->email;
-                $contact->phone = $company->phone;
-                $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
-                $contact->address2 = null;
-                $contact->zipcode = $company->postal_code;
-                $contact->city = $company->city;
-                $contact->save();
+                // Search Moneybird first to avoid creating duplicates
+                $existingContactId = $this->findMoneybirdContactId($moneybird, $company);
 
-                // Store Moneybird contact ID
-                $company->update([
-                    'moneybird_contact_id' => $contact->id,
-                ]);
+                if ($existingContactId) {
+                    // Link to the existing Moneybird contact without overwriting their data
+                    $company->update(['moneybird_contact_id' => $existingContactId]);
+                } else {
+                    // No match found — create a new contact
+                    $contact = $moneybird->contact();
+                    $contact->company_name = $company->name;
+                    $contact->email = $company->email;
+                    $contact->phone = $company->phone;
+                    $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                    $contact->address2 = null;
+                    $contact->zipcode = $company->postal_code;
+                    $contact->city = $company->city;
+                    $contact->save();
+
+                    // Store Moneybird contact ID
+                    $company->update([
+                        'moneybird_contact_id' => $contact->id,
+                    ]);
+                }
             }
 
             return true;
         } catch (ApiException $e) {
             throw new \Exception('Moneybird API fout: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Search Moneybird for an existing contact matching the given company.
+     * Searches by company name, then optionally by e-mail.
+     * Returns the Moneybird contact ID string when a match is found, null otherwise.
+     */
+    protected function findMoneybirdContactId(Moneybird $moneybird, Company $company): ?string
+    {
+        try {
+            // Search by company name
+            if (! empty($company->name)) {
+                $results = $moneybird->contact()->search($company->name);
+
+                foreach ($results as $contact) {
+                    $mbName = $contact->company_name
+                        ?? trim(($contact->firstname ?? '') . ' ' . ($contact->lastname ?? ''));
+
+                    if (strcasecmp(trim($mbName), trim($company->name)) === 0) {
+                        return (string) $contact->id;
+                    }
+                }
+            }
+
+            // Fallback: search by e-mail
+            if (! empty($company->email)) {
+                $results = $moneybird->contact()->search($company->email);
+
+                foreach ($results as $contact) {
+                    if (! empty($contact->email) && strtolower($contact->email) === strtolower($company->email)) {
+                        return (string) $contact->id;
+                    }
+                }
+            }
+        } catch (ApiException $e) {
+            // If search fails (e.g. network issue) we fall through and create a new contact
+        }
+
+        return null;
     }
 
     /**
@@ -293,7 +340,6 @@ class MoneybirdService
             // Create new estimate in Moneybird
             $mbEstimate = $moneybird->estimate();
             $mbEstimate->contact_id = $quote->company->moneybird_contact_id;
-            $mbEstimate->reference = $quote->quote_number;
             $mbEstimate->estimate_date = $quote->created_at->format('Y-m-d');
             $mbEstimate->pre_text = $this->buildPreText($quote);
             $mbEstimate->post_text = $this->buildPostText($quote);
@@ -329,12 +375,6 @@ class MoneybirdService
                         $quote->project->update(['project_number' => $newProjectNumber]);
                     }
                 }
-            }
-
-            // Keep the reference field in Moneybird in sync with the new number.
-            if ($moneybirdEstimateNumber && $mbEstimate->reference !== $moneybirdEstimateNumber) {
-                $mbEstimate->reference = $moneybirdEstimateNumber;
-                $mbEstimate->save();
             }
 
             return true;

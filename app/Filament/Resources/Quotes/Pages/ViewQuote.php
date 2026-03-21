@@ -25,6 +25,7 @@ use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Pages\ViewRecord;
+use Livewire\Attributes\On;
 
 class ViewQuote extends ViewRecord
 {
@@ -164,6 +165,12 @@ class ViewQuote extends ViewRecord
     public function getRelationManagers(): array
     {
         return [];
+    }
+
+    #[On('quote-totals-updated')]
+    public function refreshRecord(): void
+    {
+        $this->record = $this->record->fresh();
     }
 
     /**

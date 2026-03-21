@@ -1,0 +1,11 @@
+.fi-ta-text-summary {
+    display: flex !important;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.fi-ta-text-summary > span:last-child {
+    margin-left: auto;
+    text-align: end;
+    white-space: nowrap;
+}

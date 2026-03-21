@@ -20,8 +20,11 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\Summarizers\Sum;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 
 class ItemsRelationManager extends RelationManager
 {
@@ -32,6 +35,16 @@ class ItemsRelationManager extends RelationManager
     protected static ?string $modelLabel = 'regel';
 
     protected static ?string $pluralModelLabel = 'regels';
+
+    /**
+     * Recalculate quote totals and notify the parent ViewQuote page to refresh.
+     */
+    protected function recalculateAndRefresh(): void
+    {
+        $quote = $this->getOwnerRecord();
+        app(QuoteCalculationService::class)->calculateTotals($quote);
+        $this->dispatch('quote-totals-updated');
+    }
 
     // Default form for editing existing items
     public function form(Schema $schema): Schema
@@ -127,13 +140,35 @@ class ItemsRelationManager extends RelationManager
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Aantal')
-                    ->numeric(decimalPlaces: 2),
+                    ->numeric(decimalPlaces: 2)
+                    ->alignment(Alignment::End),
                 Tables\Columns\TextColumn::make('unit_price')
                     ->label('Prijs')
-                    ->money('EUR'),
+                    ->money('EUR')
+                    ->alignment(Alignment::End)
+                    ->summarize([
+                        Summarizer::make()->using(fn () => 'Subtotaal excl. BTW'),
+                        Summarizer::make()->using(fn () => 'BTW (21%)'),
+                        Summarizer::make()
+                            ->using(fn () => 'Totaal incl. BTW')
+                            ->extraAttributes(['style' => 'font-weight:600;']),
+                    ]),
                 Tables\Columns\TextColumn::make('total')
                     ->label('Totaal')
-                    ->money('EUR'),
+                    ->money('EUR')
+                    ->alignment(Alignment::End)
+                    ->summarize([
+                        Sum::make()->label('')->money('EUR'),
+                        Sum::make()
+                            ->label('')
+                            ->money('EUR')
+                            ->using(fn ($query) => round($query->sum('total') * 0.21, 2)),
+                        Sum::make()
+                            ->label('')
+                            ->money('EUR')
+                            ->using(fn ($query) => round($query->sum('total') * 1.21, 2))
+                            ->extraAttributes(['style' => 'font-weight:600;']),
+                    ]),
                 Tables\Columns\TextColumn::make('machine.name')
                     ->label('Machine')
                     ->placeholder('—')
@@ -215,7 +250,7 @@ class ItemsRelationManager extends RelationManager
                         $quote->items()->create($data);
 
                         // Force recalculation of quote totals
-                        app(QuoteCalculationService::class)->calculateTotals($quote);
+                        $livewire->recalculateAndRefresh();
 
                         Notification::make()
                             ->success()
@@ -275,7 +310,7 @@ class ItemsRelationManager extends RelationManager
                         $quote = $livewire->getOwnerRecord();
                         $quote->items()->create($data);
 
-                        app(QuoteCalculationService::class)->calculateTotals($quote);
+                        $livewire->recalculateAndRefresh();
 
                         Notification::make()
                             ->success()
@@ -381,7 +416,7 @@ class ItemsRelationManager extends RelationManager
                         $quote->items()->create($data);
 
                         // Force recalculation of quote totals
-                        app(QuoteCalculationService::class)->calculateTotals($quote);
+                        $livewire->recalculateAndRefresh();
 
                         Notification::make()
                             ->success()
@@ -459,7 +494,7 @@ class ItemsRelationManager extends RelationManager
                             ]);
 
                             // Force recalculation of quote totals
-                            app(QuoteCalculationService::class)->calculateTotals($quote);
+                            $livewire->recalculateAndRefresh();
 
                             Notification::make()
                                 ->success()
@@ -512,7 +547,7 @@ class ItemsRelationManager extends RelationManager
                             'itemable_id'   => null,
                         ]);
 
-                        app(QuoteCalculationService::class)->calculateTotals($quote);
+                        $livewire->recalculateAndRefresh();
 
                         Notification::make()
                             ->success()
@@ -531,15 +566,13 @@ class ItemsRelationManager extends RelationManager
                     ->label('Bewerken')
                     ->after(function ($record, RelationManager $livewire) {
                         // Recalculate totals after editing
-                        $quote = $livewire->getOwnerRecord();
-                        app(QuoteCalculationService::class)->calculateTotals($quote);
+                        $livewire->recalculateAndRefresh();
                     }),
                 DeleteAction::make()
                     ->label('Verwijderen')
                     ->after(function ($record, RelationManager $livewire) {
                         // Recalculate totals after deleting
-                        $quote = $livewire->getOwnerRecord();
-                        app(QuoteCalculationService::class)->calculateTotals($quote);
+                        $livewire->recalculateAndRefresh();
                     }),
             ])
             ->toolbarActions([
@@ -548,8 +581,7 @@ class ItemsRelationManager extends RelationManager
                         ->label('Verwijderen')
                         ->after(function (RelationManager $livewire) {
                             // Recalculate totals after bulk delete
-                            $quote = $livewire->getOwnerRecord();
-                            app(QuoteCalculationService::class)->calculateTotals($quote);
+                            $livewire->recalculateAndRefresh();
                         }),
                 ]),
             ])
