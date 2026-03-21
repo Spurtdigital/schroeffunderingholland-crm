@@ -41,6 +41,9 @@ class EditQuote extends EditRecord
 
         // Auto-add SKU-triggered assumptions not already selected
         $this->autoSyncSkuAssumptions($quote);
+
+        // Refresh the form so the calculated totals are visible immediately
+        $this->refreshFormData(['subtotal', 'vat_amount', 'total']);
     }
 
     /**

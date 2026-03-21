@@ -49,29 +49,53 @@ class SyncMoneybirdQuoteStatuses extends Command
                 // Map Moneybird state to CRM status
                 $newStatus = $this->mapMoneybirdStateToCrmStatus($estimate);
                 
-                if (!$newStatus) {
+                // Check if quote_number needs updating (CONCEPT → Moneybird estimate number)
+                $quoteNumberNeedsUpdate = $estimate->estimate_id
+                    && str_starts_with($quote->quote_number ?? '', 'CONCEPT-');
+                
+                if (!$newStatus && !$quoteNumberNeedsUpdate) {
                     $this->line("  - Geen status wijziging nodig (Moneybird: {$estimate->state})");
                     continue;
                 }
                 
-                if ($quote->status === $newStatus) {
+                if ($quote->status === $newStatus && !$quoteNumberNeedsUpdate) {
                     $this->line("  ✓ Status al correct: {$newStatus->getLabel()}");
                     continue;
                 }
                 
                 // Prepare update data
-                $updateData = ['status' => $newStatus];
+                $updateData = [];
+                
+                if ($newStatus) {
+                    $updateData['status'] = $newStatus;
+                }
                 
                 // Set timestamp fields based on status
+                if ($newStatus === QuoteStatus::Sent && !$quote->sent_at && $estimate->sent_at) {
+                    $updateData['sent_at'] = \Carbon\Carbon::parse($estimate->sent_at);
+                }
+                
                 if ($newStatus === QuoteStatus::Approved && !$quote->approved_at && $estimate->accepted_at) {
                     $updateData['approved_at'] = \Carbon\Carbon::parse($estimate->accepted_at);
+                }
+                
+                // Replace CONCEPT-number with Moneybird estimate number if still a placeholder
+                if ($quoteNumberNeedsUpdate) {
+                    $updateData['quote_number'] = $estimate->estimate_id;
                 }
                 
                 // Update quote status
                 $oldStatus = $quote->status;
                 $quote->update($updateData);
                 
-                $this->info("  ✅ Status gewijzigd: {$oldStatus->getLabel()} → {$newStatus->getLabel()}");
+                $parts = [];
+                if ($newStatus && $newStatus !== $oldStatus) {
+                    $parts[] = "{$oldStatus->getLabel()} → {$newStatus->getLabel()}";
+                }
+                if ($quoteNumberNeedsUpdate) {
+                    $parts[] = "offertenummer → {$estimate->estimate_id}";
+                }
+                $this->info("  ✅ Bijgewerkt: " . implode(', ', $parts));
                 $synced++;
                 
             } catch (\Exception $e) {

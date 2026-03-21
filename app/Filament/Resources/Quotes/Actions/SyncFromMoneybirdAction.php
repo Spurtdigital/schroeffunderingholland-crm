@@ -35,17 +35,21 @@ class SyncFromMoneybirdAction extends Action
                     // Map Moneybird state to CRM status
                     $newStatus = self::mapMoneybirdStateToCrmStatus($estimate);
 
-                    if (! $newStatus) {
+                    // Also check if quote_number needs updating (CONCEPT → Moneybird estimate number)
+                    $quoteNumberNeedsUpdate = $estimate->estimate_id
+                        && str_starts_with($record->quote_number ?? '', 'CONCEPT-');
+
+                    if (! $newStatus && ! $quoteNumberNeedsUpdate) {
                         Notification::make()
                             ->info()
                             ->title('Geen wijziging')
-                            ->body("Status in Moneybird is nog '{$estimate->state}' (concept). Geen update nodig.")
+                            ->body("Status in Moneybird is '{$estimate->state}'. Geen update nodig.")
                             ->send();
 
                         return;
                     }
 
-                    if ($record->status === $newStatus) {
+                    if ($record->status === $newStatus && ! $quoteNumberNeedsUpdate) {
                         Notification::make()
                             ->info()
                             ->title('Status al actueel')
@@ -56,21 +60,45 @@ class SyncFromMoneybirdAction extends Action
                     }
 
                     // Prepare update data
-                    $updateData = ['status' => $newStatus];
+                    $updateData = [];
+
+                    if ($newStatus) {
+                        $updateData['status'] = $newStatus;
+                    }
 
                     // Set timestamp fields based on status
+                    if ($newStatus === QuoteStatus::Sent && ! $record->sent_at && $estimate->sent_at) {
+                        $updateData['sent_at'] = \Carbon\Carbon::parse($estimate->sent_at);
+                    }
+
                     if ($newStatus === QuoteStatus::Approved && ! $record->approved_at && $estimate->accepted_at) {
                         $updateData['approved_at'] = \Carbon\Carbon::parse($estimate->accepted_at);
                     }
 
-                    // Update status
+                    // Replace CONCEPT-number with Moneybird estimate number if still a placeholder
+                    if ($estimate->estimate_id && str_starts_with($record->quote_number ?? '', 'CONCEPT-')) {
+                        $updateData['quote_number'] = $estimate->estimate_id;
+                    }
+
+                    // Update quote
                     $oldStatus = $record->status;
                     $record->update($updateData);
 
+                    $statusChanged = $newStatus && $newStatus !== $oldStatus;
+                    $numberChanged = isset($updateData['quote_number']);
+
+                    $bodyParts = [];
+                    if ($statusChanged) {
+                        $bodyParts[] = "Status: '{$oldStatus->getLabel()}' → '{$newStatus->getLabel()}'";
+                    }
+                    if ($numberChanged) {
+                        $bodyParts[] = "Offertenummer bijgewerkt naar {$updateData['quote_number']}";
+                    }
+
                     Notification::make()
                         ->success()
-                        ->title('Status gesynchroniseerd')
-                        ->body("Status gewijzigd van '{$oldStatus->getLabel()}' naar '{$newStatus->getLabel()}'")
+                        ->title('Gesynchroniseerd vanuit Moneybird')
+                        ->body(implode("\n", $bodyParts))
                         ->send();
 
                 } catch (\Exception $e) {

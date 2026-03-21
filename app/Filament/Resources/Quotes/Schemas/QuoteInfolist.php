@@ -33,10 +33,12 @@ class QuoteInfolist
                             ->weight('bold')
                             ->size('lg')
                             ->state(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-')
-                                ? 'Concept (nog niet verstuurd naar Moneybird)'
+                                ? 'Concept'
                                 : $record->quote_number
                             )
-                            ->color(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'gray' : null),
+                            ->color(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'warning' : null)
+                            ->hintIcon(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'heroicon-o-information-circle' : null)
+                            ->hintIconTooltip(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'Nog niet verstuurd naar Moneybird' : null),
 
                         TextEntry::make('status')
                             ->label('Status')
