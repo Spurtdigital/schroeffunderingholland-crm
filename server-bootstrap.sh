@@ -58,7 +58,7 @@ php artisan migrate --force
 echo "==> [7/8] Dummy data seeden (admin@sfh.nl / password)..."
 php artisan db:seed --force
 
-echo "==> [8/8] Filament Shield rollen aanmaken + cache opbouwen..."
+echo "==> [8/9] Filament Shield rollen aanmaken + cache opbouwen..."
 php artisan shield:generate --all --panel=admin --no-interaction
 # LET OP: config:cache wordt NIET gedraaid omdat Antagonist CLI php een andere
 # variables_order heeft dan web php, waardoor APP_KEY leeg in de cache terecht komt.
@@ -66,6 +66,16 @@ php artisan shield:generate --all --panel=admin --no-interaction
 php artisan route:cache
 php artisan view:cache
 php artisan event:cache
+
+echo "==> [9/9] Laravel scheduler instellen in crontab..."
+# Voeg scheduler toe als deze nog niet bestaat
+CRON_LINE="* * * * * /usr/local/bin/php $REMOTE_APP/artisan schedule:run >> /dev/null 2>&1"
+if crontab -l 2>/dev/null | grep -q "artisan schedule:run"; then
+  echo "     Scheduler cron bestaat al, overgeslagen"
+else
+  (crontab -l 2>/dev/null; echo "$CRON_LINE") | crontab -
+  echo "     Scheduler cron toegevoegd"
+fi
 
 echo ""
 echo "Bootstrap voltooid!"
