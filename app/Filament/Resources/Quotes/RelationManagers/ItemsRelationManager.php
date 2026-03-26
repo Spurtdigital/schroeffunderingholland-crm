@@ -159,11 +159,11 @@ class ItemsRelationManager extends RelationManager
                     ->alignment(Alignment::End)
                     ->summarize([
                         Sum::make()->label('')->money('EUR'),
-                        Sum::make()
+                        Summarizer::make()
                             ->label('')
                             ->money('EUR')
                             ->using(fn ($query) => round($query->sum('total') * 0.21, 2)),
-                        Sum::make()
+                        Summarizer::make()
                             ->label('')
                             ->money('EUR')
                             ->using(fn ($query) => round($query->sum('total') * 1.21, 2))
