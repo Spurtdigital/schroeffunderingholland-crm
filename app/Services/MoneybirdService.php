@@ -278,8 +278,8 @@ class MoneybirdService
 
             // Set reference (kenmerk) based on invoice type
             $mbInvoice->reference = match ($invoice->invoice_type) {
-                \App\Enums\InvoiceType::Deposit => "Aanbetaling op order {$orderRef}",
-                \App\Enums\InvoiceType::Final => "Order {$orderRef}",
+                \App\Enums\InvoiceType::Deposit => "Aanbetaling order {$orderRef}",
+                \App\Enums\InvoiceType::Final => "Order {$orderRef} | eindfactuur",
                 \App\Enums\InvoiceType::Single => "Order {$orderRef}",
             };
 
@@ -796,14 +796,18 @@ class MoneybirdService
             // Check if company already exists
             $company = Company::where('moneybird_contact_id', $contactId)->first();
 
+            // Parse street and house number from Moneybird address1
+            // Moneybird stores full address in address1 (e.g. "Dorpstraat 42a")
+            [$parsedStreet, $parsedHouseNumber] = self::parseAddress($contact->address1);
+
             if (! $company) {
                 // Create new company
                 $company = Company::create([
                     'name' => $contact->company_name ?: 'Onbekend',
                     'email' => $contact->email,
                     'phone' => $contact->phone,
-                    'street' => $contact->address1,
-                    'house_number' => $contact->address2,
+                    'street' => $parsedStreet,
+                    'house_number' => $parsedHouseNumber,
                     'postal_code' => $contact->zipcode,
                     'city' => $contact->city,
                     'moneybird_contact_id' => $contact->id,
@@ -814,8 +818,8 @@ class MoneybirdService
                     'name' => $contact->company_name ?: $company->name,
                     'email' => $contact->email ?: $company->email,
                     'phone' => $contact->phone ?: $company->phone,
-                    'street' => $contact->address1 ?: $company->street,
-                    'house_number' => $contact->address2 ?: $company->house_number,
+                    'street' => $parsedStreet ?: $company->street,
+                    'house_number' => $parsedHouseNumber ?: $company->house_number,
                     'postal_code' => $contact->zipcode ?: $company->postal_code,
                     'city' => $contact->city ?: $company->city,
                 ]);
@@ -825,5 +829,32 @@ class MoneybirdService
         } catch (ApiException $e) {
             throw new \Exception('Moneybird API fout: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Parse a Dutch address string into street and house number.
+     * Examples: "Dorpstraat 42" -> ["Dorpstraat", "42"]
+     *           "Dorpstraat 42a" -> ["Dorpstraat", "42a"]
+     *           "Lange Voorhout 12-14" -> ["Lange Voorhout", "12-14"]
+     *           "Dorpstraat" -> ["Dorpstraat", null]
+     *
+     * @return array{0: string|null, 1: string|null}
+     */
+    public static function parseAddress(?string $address): array
+    {
+        if (blank($address)) {
+            return [null, null];
+        }
+
+        $address = trim($address);
+
+        // Match: everything up to the last space before a number, then the number (with optional suffix)
+        // e.g. "Dorpstraat 42a", "Lange Voorhout 12-14", "Kerkweg 3 bis"
+        if (preg_match('/^(.+?)\s+(\d[\w\-\s]*)$/u', $address, $matches)) {
+            return [trim($matches[1]), trim($matches[2])];
+        }
+
+        // No house number found — return full string as street
+        return [$address, null];
     }
 }

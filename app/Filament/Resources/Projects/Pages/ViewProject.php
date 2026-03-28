@@ -4,10 +4,10 @@ namespace App\Filament\Resources\Projects\Pages;
 
 use App\Filament\Resources\Projects\Actions\CompleteProjectAction;
 use App\Filament\Resources\Projects\Actions\CreatePurchaseOrderFromProjectAction;
-use App\Filament\Resources\Projects\Actions\GeneratePurchaseOrdersFromProjectAction;
 use App\Filament\Resources\Projects\Actions\GenerateCompletionReportAction;
 use App\Filament\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
+use App\Filament\Resources\Projects\Actions\GeneratePurchaseOrdersFromProjectAction;
 use App\Filament\Resources\Projects\Actions\ResendCompletionMailAction;
 use App\Filament\Resources\Projects\ProjectResource;
 use App\Filament\Resources\Projects\Widgets\ProjectNotesWidget;
@@ -18,6 +18,16 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewProject extends ViewRecord
 {
     protected static string $resource = ProjectResource::class;
+
+    /**
+     * Return empty array to prevent relation manager tabs at the bottom
+     * of the view page — they are already embedded in the infolist
+     * via Livewire::make() in ProjectInfolist.
+     */
+    protected function getAllRelationManagers(): array
+    {
+        return [];
+    }
 
     protected function getHeaderActions(): array
     {
