@@ -336,8 +336,8 @@
         <div class="info-box">
             <p><span class="label">Project:</span> {{ $invoice->project->name }}</p>
             <p><span class="label">Projectnummer:</span> {{ $invoice->project->project_number }}</p>
-            @if($quote)
-            <p><span class="label">Offertenummer:</span> {{ $quote->quote_number }}</p>
+            @if($quote && $quote->displayNumber())
+            <p><span class="label">Offertenummer:</span> {{ $quote->displayNumber() }}</p>
             @endif
             <p><span class="label">Type factuur:</span> {{ $invoice->invoice_type->getLabel() }}</p>
         </div>
@@ -356,7 +356,7 @@
             </thead>
             <tbody>
                 @php
-                    $orderRef = $quote ? $quote->quote_number : $invoice->project->project_number;
+                    $orderRef = ($quote?->displayNumber()) ?? $invoice->project->project_number;
                     if ($isDeposit) {
                         $lineDesc = "Aanbetaling op order {$orderRef}";
                     } elseif ($isFinal) {

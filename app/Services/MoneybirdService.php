@@ -586,7 +586,7 @@ class MoneybirdService
             }
 
             // Single total line
-            $displayNumber = $quote->project?->project_number ?? $quote->quote_number;
+            $displayNumber = $quote->project?->project_number ?? $quote->displayNumber() ?? 'Offerte';
             $totalDetail = $moneybird->salesInvoiceDetail();
             $totalDetail->description = $displayNumber;
             $totalDetail->price = (string) round($subtotal, 2);

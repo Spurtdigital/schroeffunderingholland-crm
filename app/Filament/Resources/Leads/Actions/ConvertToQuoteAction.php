@@ -62,7 +62,7 @@ class ConvertToQuoteAction extends Action
             Notification::make()
                 ->success()
                 ->title('Offerte aangemaakt')
-                ->body("Offerte {$quote->quote_number} is aangemaakt. Je kunt nu producten toevoegen.")
+                ->body("Offerte ".($quote->displayNumber() ?? 'Concept')." is aangemaakt. Je kunt nu producten toevoegen.")
                 ->send();
 
             // Redirect to quote view page

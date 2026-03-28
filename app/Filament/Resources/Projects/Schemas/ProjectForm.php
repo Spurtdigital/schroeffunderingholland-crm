@@ -51,10 +51,11 @@ class ProjectForm
                         $quote = $record->quote;
                         $url = route('filament.admin.resources.quotes.edit', ['record' => $quote->id]);
                         $total = number_format($quote->total, 2, ',', '.');
+                        $displayNum = $quote->displayNumber() ?? 'Concept';
 
                         return new \Illuminate\Support\HtmlString(
                             "<a href='{$url}' class='text-primary-600 hover:underline' target='_blank'>
-                                {$quote->quote_number} - €{$total}
+                                {$displayNum} - €{$total}
                             </a>"
                         );
                     })

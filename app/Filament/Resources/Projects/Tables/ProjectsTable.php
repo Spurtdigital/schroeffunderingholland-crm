@@ -26,6 +26,8 @@ class ProjectsTable
                     ->sortable(),
                 TextColumn::make('quote.quote_number')
                     ->label('Offerte')
+                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'Concept' : $state)
+                    ->color(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'gray' : null)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('status')

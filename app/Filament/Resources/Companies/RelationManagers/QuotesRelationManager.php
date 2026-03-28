@@ -31,7 +31,11 @@ class QuotesRelationManager extends RelationManager
                 Forms\Components\TextInput::make('quote_number')
                     ->label('Offertenummer')
                     ->disabled()
-                    ->dehydrated(false),
+                    ->dehydrated(false)
+                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-')
+                        ? 'Concept (nog niet verstuurd naar Moneybird)'
+                        : $state
+                    ),
                 Forms\Components\Select::make('status')
                     ->label('Status')
                     ->options(QuoteStatus::class)
@@ -57,6 +61,8 @@ class QuotesRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('quote_number')
                     ->label('Nummer')
+                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'Concept' : $state)
+                    ->color(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'gray' : null)
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')

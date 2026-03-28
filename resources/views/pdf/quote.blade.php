@@ -27,7 +27,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Offerte {{ $quote->quote_number }}</title>
+    <title>Offerte {{ $quote->displayNumber() ?? 'Concept' }}</title>
     <style>
         @font-face {
             font-family: 'Montserrat';

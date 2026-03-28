@@ -55,6 +55,7 @@ class LeadForm
                 Select::make('converted_to_quote_id')
                     ->label('Geconverteerd naar offerte')
                     ->relationship('convertedToQuote', 'quote_number')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->displayNumber() ?? 'Concept')
                     ->searchable()
                     ->preload()
                     ->disabled()
