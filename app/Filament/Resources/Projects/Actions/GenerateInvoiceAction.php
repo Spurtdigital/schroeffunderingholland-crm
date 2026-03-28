@@ -115,9 +115,29 @@ class GenerateInvoiceAction extends Action
             }
             
             // Calculate amounts
-            $subtotal = ($quote->subtotal * $percentage) / 100;
-            $vatAmount = ($quote->vat_amount * $percentage) / 100;
-            $total = ($quote->total * $percentage) / 100;
+            if ($data['invoice_type_choice'] === 'second') {
+                // Final invoice: project total (from project items) minus already invoiced
+                $projectSubtotal = $record->items()->sum('total');
+                $projectVat = round($projectSubtotal * 0.21, 2);
+                $projectTotal = round($projectSubtotal + $projectVat, 2);
+
+                $alreadyInvoicedSubtotal = $record->invoices()->sum('subtotal');
+                $alreadyInvoicedVat = $record->invoices()->sum('vat_amount');
+                $alreadyInvoicedTotal = $record->invoices()->sum('total');
+
+                $subtotal = round($projectSubtotal - $alreadyInvoicedSubtotal, 2);
+                $vatAmount = round($projectVat - $alreadyInvoicedVat, 2);
+                $total = round($projectTotal - $alreadyInvoicedTotal, 2);
+
+                // Ensure no negative amounts
+                $subtotal = max(0, $subtotal);
+                $vatAmount = max(0, $vatAmount);
+                $total = max(0, $total);
+            } else {
+                $subtotal = ($quote->subtotal * $percentage) / 100;
+                $vatAmount = ($quote->vat_amount * $percentage) / 100;
+                $total = ($quote->total * $percentage) / 100;
+            }
             
             // Generate notes
             $notes = $data['notes'] ?? '';

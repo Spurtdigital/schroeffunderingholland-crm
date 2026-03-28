@@ -270,14 +270,24 @@ class MoneybirdService
             // Create new invoice in Moneybird
             $mbInvoice = $moneybird->salesInvoice();
             $mbInvoice->contact_id = $invoice->project->company->moneybird_contact_id;
-            $mbInvoice->reference = $invoice->invoice_number;
             $mbInvoice->invoice_date = $invoice->invoice_date->format('Y-m-d');
+
+            // Build the quote/order reference for kenmerk
+            $quoteNumber = $invoice->project->quote?->displayNumber();
+            $orderRef = $quoteNumber ?? $invoice->project->project_number;
+
+            // Set reference (kenmerk) based on invoice type
+            $mbInvoice->reference = match ($invoice->invoice_type) {
+                \App\Enums\InvoiceType::Deposit => "Aanbetaling op order {$orderRef}",
+                \App\Enums\InvoiceType::Final => "Order {$orderRef}",
+                \App\Enums\InvoiceType::Single => "Order {$orderRef}",
+            };
 
             // Set subject based on invoice type
             $subject = match ($invoice->invoice_type) {
-                \App\Enums\InvoiceType::Deposit => "Aanbetaling project {$invoice->project->project_number}",
-                \App\Enums\InvoiceType::Final => "Eindfactuur project {$invoice->project->project_number}",
-                \App\Enums\InvoiceType::Single => "Factuur project {$invoice->project->project_number}",
+                \App\Enums\InvoiceType::Deposit => "Aanbetaling offerte {$orderRef}",
+                \App\Enums\InvoiceType::Final => "Eindfactuur order {$orderRef}",
+                \App\Enums\InvoiceType::Single => "Factuur order {$orderRef}",
             };
 
             // Add percentage to subject if applicable
@@ -481,13 +491,22 @@ class MoneybirdService
             $parts[] = $preText;
         }
 
-        // 4. Aannames bullet list
+        // 4. Aannames bullet list — grouped by category
         $assumptions = $quote->assumptions()->withPivot('pivot_value')->orderBy('sort_order')->get();
         if ($assumptions->isNotEmpty()) {
             $parts[] = '';
             $parts[] = 'In deze offerte gaan wij uit van het onderstaande:';
-            foreach ($assumptions as $assumption) {
-                $parts[] = '* ' . $assumption->resolveContent($assumption->pivot->pivot_value);
+
+            $grouped = $assumptions->groupBy(fn ($a) => $a->category ?? '');
+
+            foreach ($grouped as $category => $items) {
+                if ($category !== '' && $grouped->count() > 1) {
+                    $parts[] = '';
+                    $parts[] = $category . ':';
+                }
+                foreach ($items as $assumption) {
+                    $parts[] = '* ' . $assumption->resolveContent($assumption->pivot->pivot_value);
+                }
             }
         }
 
@@ -567,7 +586,7 @@ class MoneybirdService
             foreach ($items as $item) {
                 $detail = $moneybird->salesInvoiceDetail();
                 $detail->description = $this->itemDescription($item);
-                $detail->amount = (string) $item->quantity;
+                $detail->amount = (string) $this->formatQuantity($item->quantity);
                 $details[] = $detail;
             }
 
@@ -601,7 +620,7 @@ class MoneybirdService
             $detail = $moneybird->salesInvoiceDetail();
             $detail->description = $this->itemDescription($item);
             $detail->price = (string) $item->unit_price;
-            $detail->amount = (string) $item->quantity;
+            $detail->amount = (string) $this->formatQuantity($item->quantity);
             $detail->tax_rate_id = $taxRateId;
 
             $details[] = $detail;
@@ -612,11 +631,21 @@ class MoneybirdService
 
     /**
      * Build the display description for a quote item.
-     * Appends pile length when set, e.g. "Schroefpaal 76mm (lengte: 3,5 m)".
+     * Prepends SKU for product items, appends pile length when set.
+     * e.g. "Artikelnummer: SKU1234 Schroefpaal 76mm (lengte: 3,5 m)".
      */
     protected function itemDescription(\App\Models\QuoteItem $item): string
     {
-        $desc = $item->description;
+        $parts = [];
+
+        // Prepend SKU for product items
+        if ($item->isProduct() && $item->itemable?->sku) {
+            $parts[] = 'Artikelnummer: '.$item->itemable->sku;
+        }
+
+        $parts[] = $item->description;
+
+        $desc = implode(' ', $parts);
 
         if ($item->pile_length) {
             $length = rtrim(rtrim(number_format((float) $item->pile_length, 2, ',', ''), '0'), ',');
@@ -624,6 +653,21 @@ class MoneybirdService
         }
 
         return $desc;
+    }
+
+    /**
+     * Format a quantity value: show whole numbers without decimals (12.00 → 12),
+     * keep decimals when meaningful (3.50 → 3,5).
+     */
+    protected function formatQuantity(float|string $quantity): string
+    {
+        $qty = (float) $quantity;
+
+        if ($qty == (int) $qty) {
+            return (string) (int) $qty;
+        }
+
+        return rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.');
     }
 
     /**

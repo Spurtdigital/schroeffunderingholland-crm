@@ -32,11 +32,6 @@ class ViewProject extends ViewRecord
         ];
     }
 
-    public function getRelationManagers(): array
-    {
-        return [];
-    }
-
     protected function getFooterWidgets(): array
     {
         return [

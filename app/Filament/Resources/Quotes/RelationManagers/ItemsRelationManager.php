@@ -93,11 +93,12 @@ class ItemsRelationManager extends RelationManager
                     ->label('Aantal')
                     ->numeric()
                     ->required()
-                    ->minValue(0.01)
+                    ->minValue(0)
                     ->step(0.01)
-                    ->live()
+                    ->live(debounce: 500)
                     ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
                     ->visible(fn (Forms\Components\TextInput $component) => $component->getRecord()?->type !== \App\Enums\QuoteItemType::Machine)
+                    ->helperText('Gebruik 0 voor optionele regels.')
                     ->columnSpan(1),
 
                 Forms\Components\TextInput::make('unit_price')
@@ -106,7 +107,7 @@ class ItemsRelationManager extends RelationManager
                     ->prefix('€')
                     ->required()
                     ->step(0.01)
-                    ->live()
+                    ->live(debounce: 500)
                     ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                     ->visible(fn (Forms\Components\TextInput $component) => $component->getRecord()?->type !== \App\Enums\QuoteItemType::Machine)
                     ->columnSpan(1),
@@ -140,7 +141,8 @@ class ItemsRelationManager extends RelationManager
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Aantal')
-                    ->numeric(decimalPlaces: 2)
+                    ->formatStateUsing(fn ($state) => (float) $state == 0 ? 'Optioneel' : number_format((float) $state, 2, ',', '.'))
+                    ->color(fn ($state) => (float) $state == 0 ? 'warning' : null)
                     ->alignment(Alignment::End),
                 Tables\Columns\TextColumn::make('unit_price')
                     ->label('Prijs')
@@ -218,10 +220,11 @@ class ItemsRelationManager extends RelationManager
                             ->numeric()
                             ->default(1)
                             ->required()
-                            ->minValue(0.01)
+                            ->minValue(0)
                             ->step(0.01)
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
+                            ->helperText('Gebruik 0 voor optionele regels.')
                             ->columnSpan(1),
 
                         Forms\Components\TextInput::make('unit_price')
@@ -231,7 +234,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0)
                             ->step(0.01)
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                             ->columnSpan(1),
 
@@ -279,7 +282,7 @@ class ItemsRelationManager extends RelationManager
                             ->minValue(0.25)
                             ->step(0.25)
                             ->suffix('uur')
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
                             ->columnSpan(1),
 
@@ -290,7 +293,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0.01)
                             ->step(0.01)
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                             ->columnSpan(1),
 
@@ -382,10 +385,11 @@ class ItemsRelationManager extends RelationManager
                             ->numeric()
                             ->default(1)
                             ->required()
-                            ->minValue(0.01)
+                            ->minValue(0)
                             ->step(0.01)
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
+                            ->helperText('Gebruik 0 voor optionele regels.')
                             ->columnSpan(1),
 
                         Forms\Components\TextInput::make('unit_price')
@@ -395,7 +399,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0)
                             ->step(0.01)
-                            ->live()
+                            ->live(debounce: 500)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                             ->columnSpan(1),
 
