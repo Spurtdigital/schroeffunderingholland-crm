@@ -18,14 +18,24 @@ beforeEach(function () {
 
 /**
  * Helper: create a product linked to a supplier, with a unique SKU.
+ * Creates both the legacy supplier_id field AND a pivot table record.
  */
 function makeProductWithSupplier(Supplier $supplier, array $overrides = []): Product
 {
-    return Product::factory()->create(array_merge([
+    $product = Product::factory()->create(array_merge([
         'sku'            => 'TST-' . uniqid(),
         'supplier_id'    => $supplier->id,
         'purchase_price' => 50.00,
     ], $overrides));
+
+    // Also create pivot record for the multi-supplier system
+    $product->suppliers()->attach($supplier->id, [
+        'supplier_sku'   => $overrides['supplier_article_number'] ?? null,
+        'purchase_price' => $overrides['purchase_price'] ?? 50.00,
+        'is_preferred'   => true,
+    ]);
+
+    return $product;
 }
 
 /**
