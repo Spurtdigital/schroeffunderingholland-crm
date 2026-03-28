@@ -56,17 +56,17 @@ class ProjectInfolist
                         Livewire::make(ItemsRelationManager::class, fn ($record) => [
                             'ownerRecord' => $record,
                             'pageClass' => ViewProject::class,
-                        ]),
+                        ])->key('items-relation-manager'),
 
                         Livewire::make(InvoicesRelationManager::class, fn ($record) => [
                             'ownerRecord' => $record,
                             'pageClass' => ViewProject::class,
-                        ]),
+                        ])->key('invoices-relation-manager'),
 
                         Livewire::make(PurchaseOrdersRelationManager::class, fn ($record) => [
                             'ownerRecord' => $record,
                             'pageClass' => ViewProject::class,
-                        ]),
+                        ])->key('purchase-orders-relation-manager'),
                     ]),
 
                 // ── Kolom rechts 1/4: Klant + Offerte + Historie ──────────────
