@@ -194,7 +194,7 @@ class QuoteInfolist
                                             return $address;
                                         }
 
-                                        $result = $service->calculateDistance($address);
+                                        $result = $service->calculateDistance(str_replace("\n", ', ', $address));
                                         if ($result['success']) {
                                             return $address.'||'.$result['distance_km'].'||'.$result['duration_text'];
                                         }
@@ -207,10 +207,10 @@ class QuoteInfolist
                                         }
                                         $parts = explode('||', $state);
                                         if (count($parts) === 3) {
-                                            return e($parts[0]).' <span class="text-gray-500 text-sm font-medium">('.$parts[1].' km)</span>';
+                                            return nl2br(e($parts[0])).' <span class="text-gray-500 text-sm font-medium">('.$parts[1].' km)</span>';
                                         }
 
-                                        return e($state);
+                                        return nl2br(e($state));
                                     })
                                     ->html()
                                     ->hintIcon(fn ($state) => $state && str_contains($state, '||') ? 'heroicon-o-information-circle' : null)

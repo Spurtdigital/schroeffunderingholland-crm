@@ -183,7 +183,7 @@ class Quote extends Model
     {
         // Use a microsecond-based suffix to guarantee uniqueness even
         // when multiple quotes are created in the same second.
-        return 'CONCEPT-' . now()->format('YmdHisu');
+        return 'CONCEPT-'.now()->format('YmdHisu');
     }
 
     /**
@@ -259,17 +259,13 @@ class Quote extends Model
     public function workFullAddress(): string
     {
         if ($this->work_address_different) {
-            return trim(implode(', ', array_filter([
-                trim(($this->work_street ?? '') . ' ' . ($this->work_house_number ?? '')),
-                $this->work_postal_code,
-                $this->work_city,
-            ])));
+            $street = trim(($this->work_street ?? '').' '.($this->work_house_number ?? ''));
+            $postalCity = trim(($this->work_postal_code ?? '').' '.($this->work_city ?? ''));
+        } else {
+            $street = trim(($this->company->street ?? '').' '.($this->company->house_number ?? ''));
+            $postalCity = trim(($this->company->postal_code ?? '').' '.($this->company->city ?? ''));
         }
 
-        return trim(implode(', ', array_filter([
-            trim(($this->company->street ?? '') . ' ' . ($this->company->house_number ?? '')),
-            $this->company->postal_code,
-            $this->company->city,
-        ])));
+        return trim(implode("\n", array_filter([$street, $postalCity])));
     }
 }

@@ -307,8 +307,6 @@
             @endif
             @if($quote->company->street)
             <p><span class="label">Adres:</span> {{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</p>
-            @endif
-            @if($quote->company->postal_code || $quote->company->city)
             <p><span class="label"></span> {{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</p>
             @endif
             @if($quote->company->phone)
@@ -332,7 +330,7 @@
             @endphp
             @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{{ $werklocatie }}</p>
+            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{!! nl2br(e($werklocatie)) !!}</p>
             @elseif($quote->lead?->project_description)
             <p><span class="label">Project:</span> {{ $quote->lead->project_description }}</p>
             @endif

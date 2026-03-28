@@ -19,14 +19,15 @@ class DistanceCalculatorService
     /**
      * Calculate distance from company location to destination address.
      *
-     * @param string $destinationAddress Full address (street, postal code, city)
+     * @param  string  $destinationAddress  Full address (street, postal code, city)
      * @return array ['success' => bool, 'distance_km' => int|null, 'distance_text' => string|null, 'duration_text' => string|null, 'error' => string|null]
      */
     public function calculateDistance(string $destinationAddress): array
     {
         // Check if API key is configured
-        if (!$this->settings->google_maps_api_key) {
+        if (! $this->settings->google_maps_api_key) {
             Log::warning('Google Maps API key not configured');
+
             return [
                 'success' => false,
                 'error' => 'Google Maps API key niet geconfigureerd',
@@ -38,8 +39,9 @@ class DistanceCalculatorService
 
         // Build origin address from company settings
         $origin = $this->getCompanyAddress();
-        if (!$origin) {
+        if (! $origin) {
             Log::warning('Company address not configured in settings');
+
             return [
                 'success' => false,
                 'error' => 'Bedrijfsadres niet volledig ingevuld in instellingen',
@@ -58,14 +60,15 @@ class DistanceCalculatorService
                 'language' => 'nl',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Google Maps API request failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return [
                     'success' => false,
-                    'error' => 'Google Maps API verzoek mislukt (HTTP ' . $response->status() . ')',
+                    'error' => 'Google Maps API verzoek mislukt (HTTP '.$response->status().')',
                     'distance_km' => null,
                     'distance_text' => null,
                     'duration_text' => null,
@@ -77,19 +80,19 @@ class DistanceCalculatorService
             // Check API response status
             if ($data['status'] !== 'OK') {
                 $errorMessage = $data['error_message'] ?? 'Onbekende fout';
-                
+
                 // Provide user-friendly error messages
                 if ($data['status'] === 'REQUEST_DENIED') {
                     $errorMessage = 'Google Maps API toegang geweigerd. Controleer of Distance Matrix API is ingeschakeld in Google Cloud Console.';
                 } elseif ($data['status'] === 'INVALID_REQUEST') {
                     $errorMessage = 'Ongeldig verzoek. Controleer of de adressen correct zijn.';
                 }
-                
+
                 Log::error('Google Maps API returned error', [
                     'status' => $data['status'],
                     'error_message' => $data['error_message'] ?? 'Unknown error',
                 ]);
-                
+
                 return [
                     'success' => false,
                     'error' => $errorMessage,
@@ -102,6 +105,7 @@ class DistanceCalculatorService
             // Check if we have results
             if (empty($data['rows'][0]['elements'][0])) {
                 Log::warning('No distance results from Google Maps API');
+
                 return [
                     'success' => false,
                     'error' => 'Geen resultaten van Google Maps',
@@ -120,6 +124,7 @@ class DistanceCalculatorService
                     'origin' => $origin,
                     'destination' => $destinationAddress,
                 ]);
+
                 return [
                     'success' => false,
                     'error' => 'Kan route niet berekenen. Controleer of de adressen geldig zijn.',
@@ -156,9 +161,10 @@ class DistanceCalculatorService
                 'origin' => $origin,
                 'destination' => $destinationAddress,
             ]);
+
             return [
                 'success' => false,
-                'error' => 'Fout bij berekenen afstand: ' . $e->getMessage(),
+                'error' => 'Fout bij berekenen afstand: '.$e->getMessage(),
                 'distance_km' => null,
                 'distance_text' => null,
                 'duration_text' => null,
@@ -177,7 +183,7 @@ class DistanceCalculatorService
             $this->settings->company_city,
         ]);
 
-        return !empty($parts) ? implode(', ', $parts) : null;
+        return ! empty($parts) ? implode(', ', $parts) : null;
     }
 
     /**
@@ -186,12 +192,12 @@ class DistanceCalculatorService
     public function buildAddressFromCompany($company): ?string
     {
         $parts = array_filter([
-            trim(($company->street ?? '') . ' ' . ($company->house_number ?? '')),
+            trim(($company->street ?? '').' '.($company->house_number ?? '')),
             $company->postal_code,
             $company->city,
         ]);
 
-        return !empty($parts) ? implode(', ', $parts) : null;
+        return ! empty($parts) ? implode(', ', $parts) : null;
     }
 
     /**
@@ -199,9 +205,9 @@ class DistanceCalculatorService
      */
     public function buildAddressFromQuote(Quote $quote): ?string
     {
-        $address = $quote->workFullAddress();
+        $address = str_replace("\n", ', ', $quote->workFullAddress());
 
-        return !empty($address) ? $address : null;
+        return ! empty($address) ? $address : null;
     }
 
     /**
@@ -209,6 +215,6 @@ class DistanceCalculatorService
      */
     public function isAvailable(): bool
     {
-        return !empty($this->settings->google_maps_api_key) && !empty($this->getCompanyAddress());
+        return ! empty($this->settings->google_maps_api_key) && ! empty($this->getCompanyAddress());
     }
 }

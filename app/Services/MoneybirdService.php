@@ -606,7 +606,7 @@ class MoneybirdService
             // Travel costs as description line if applicable
             if ($quote->travel_distance && $quote->travel_total) {
                 $originAddress = trim($this->settings->company_address ?? '');
-                $destAddress = trim($quote->workFullAddress() ?? '');
+                $destAddress = trim(str_replace("\n", ', ', $quote->workFullAddress() ?? ''));
                 $travelDesc = $originAddress && $destAddress
                     ? "Reiskosten: {$originAddress} → {$destAddress} en retour ({$quote->travel_distance} km × 2)"
                     : "Reiskosten ({$quote->travel_distance} km)";

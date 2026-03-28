@@ -312,8 +312,6 @@
             @endif
             @if($quote->company->street)
             <p><span class="label">Adres:</span> {{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</p>
-            @endif
-            @if($quote->company->postal_code || $quote->company->city)
             <p><span class="label"></span> {{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</p>
             @endif
             @if($quote->company->phone)
@@ -333,7 +331,7 @@
             @endphp
             @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{{ $werklocatie }}</p>
+            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{!! nl2br(e($werklocatie)) !!}</p>
             @endif
         </div>
     </div>
@@ -390,7 +388,7 @@
                 @if($quote->travel_distance && $quote->travel_total)
                 @php
                     $originAddr = trim($settings->company_address ?? '');
-                    $destAddr   = trim($quote->workFullAddress() ?? '');
+                    $destAddr   = trim(str_replace("\n", ', ', $quote->workFullAddress() ?? ''));
                     $travelDesc = $originAddr && $destAddr
                         ? "Reiskosten: {$originAddr} → {$destAddr} en retour"
                         : 'Reiskosten';

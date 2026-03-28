@@ -11,6 +11,7 @@ use App\Filament\Resources\Quotes\QuoteResource;
 use App\Models\Quote;
 use App\Models\QuoteAssumption;
 use App\Services\QuoteCalculationService;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -21,11 +22,21 @@ class EditQuote extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            SendToMoneybirdAction::make(),
-            UpdateMoneybirdAction::make(),
-            SyncFromMoneybirdAction::make(),
+            // Hoofdacties
             ApproveQuoteAction::make(),
             ConvertToProjectAction::make(),
+
+            // Moneybird dropdown
+            ActionGroup::make([
+                SendToMoneybirdAction::make(),
+                UpdateMoneybirdAction::make(),
+                SyncFromMoneybirdAction::make(),
+            ])
+                ->label('Moneybird')
+                ->icon('heroicon-o-cloud-arrow-up')
+                ->color('gray')
+                ->button(),
+
             DeleteAction::make(),
         ];
     }
@@ -69,6 +80,7 @@ class EditQuote extends EditRecord
             ->get()
             ->filter(function (QuoteAssumption $assumption) use ($skus) {
                 $trigger = strtoupper(trim($assumption->trigger_sku));
+
                 return $skus->contains(fn ($sku) => str_contains($sku, $trigger));
             })
             ->pluck('id');
