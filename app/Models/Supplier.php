@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
@@ -30,11 +31,23 @@ class Supplier extends Model
     ];
 
     /**
-     * Get all products from this supplier.
+     * Get all products from this supplier (legacy single-supplier relationship).
+     *
+     * @deprecated Use suppliedProducts() BelongsToMany instead.
      */
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Get all products supplied by this supplier (multi-supplier via pivot table).
+     */
+    public function suppliedProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'product_supplier')
+            ->withPivot(['supplier_sku', 'purchase_price', 'is_preferred'])
+            ->withTimestamps();
     }
 
     /**

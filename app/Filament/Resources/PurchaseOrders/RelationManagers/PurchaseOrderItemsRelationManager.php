@@ -39,11 +39,14 @@ class PurchaseOrderItemsRelationManager extends RelationManager
                     ->live()
                     ->afterStateUpdated(function ($state, Set $set) {
                         if ($state) {
-                            $product = Product::find($state);
+                            $product = Product::with('suppliers')->find($state);
                             if ($product) {
                                 $set('description', $product->name);
-                                $set('supplier_article_number', $product->supplier_article_number ?? '');
-                                $set('unit_price', (float) $product->purchase_price);
+
+                                // Use supplier-specific data from pivot based on PO's supplier
+                                $supplierId = $this->getOwnerRecord()->supplier_id;
+                                $set('supplier_article_number', $product->supplierSkuFor($supplierId) ?? '');
+                                $set('unit_price', $product->purchasePriceForSupplier($supplierId));
                             }
                         }
                     })

@@ -6,7 +6,6 @@ use App\Filament\Resources\Quotes\Pages\ViewQuote;
 use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Services\DistanceCalculatorService;
 use App\Services\MoneybirdService;
-use App\Settings\GeneralSettings;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
@@ -84,6 +83,16 @@ class QuoteInfolist
                             'pageClass' => ViewQuote::class,
                         ]),
 
+                        Section::make('Opmerkingen')
+                            ->collapsible()
+                            ->collapsed(fn ($record) => blank($record->notes))
+                            ->schema([
+                                TextEntry::make('notes')
+                                    ->label('')
+                                    ->placeholder('Geen opmerkingen')
+                                    ->prose(),
+                            ]),
+
                         Section::make('Offerte tekst (Moneybird)')
                             ->columns(2)
                             ->collapsible()
@@ -94,6 +103,7 @@ class QuoteInfolist
                                     ->columnSpanFull()
                                     ->state(function ($record) {
                                         $service = app(MoneybirdService::class);
+
                                         return $service->buildPreText($record);
                                     })
                                     ->prose()
@@ -106,6 +116,7 @@ class QuoteInfolist
                                     ->columnSpanFull()
                                     ->state(function ($record) {
                                         $service = app(MoneybirdService::class);
+
                                         return $service->buildPostText($record);
                                     })
                                     ->placeholder('(leeg)')
@@ -249,6 +260,33 @@ class QuoteInfolist
                             ])
                             ->collapsible()
                             ->collapsed(fn ($record) => $record->payment_term_id === null),
+
+                        Section::make('Reiskosten')
+                            ->schema([
+                                TextEntry::make('travel_info')
+                                    ->hiddenLabel()
+                                    ->state(function ($record) {
+                                        if (blank($record->travel_distance) && blank($record->travel_total)) {
+                                            return null;
+                                        }
+
+                                        $parts = [];
+                                        if ($record->travel_distance) {
+                                            $parts[] = $record->travel_distance.' km';
+                                        }
+                                        if ($record->travel_cost_per_km) {
+                                            $parts[] = '€ '.number_format((float) $record->travel_cost_per_km, 2, ',', '.').' per km';
+                                        }
+                                        if ($record->travel_total) {
+                                            $parts[] = '€ '.number_format((float) $record->travel_total, 2, ',', '.').' totaal';
+                                        }
+
+                                        return implode(' | ', $parts);
+                                    })
+                                    ->placeholder('Geen reiskosten ingesteld'),
+                            ])
+                            ->collapsible()
+                            ->collapsed(fn ($record) => blank($record->travel_distance)),
 
                         Section::make('Historie')
                             ->schema([

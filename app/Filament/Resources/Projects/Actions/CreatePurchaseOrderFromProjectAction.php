@@ -82,13 +82,16 @@ class CreatePurchaseOrderFromProjectAction extends Action
                         ->searchable()
                         ->nullable()
                         ->live()
-                        ->afterStateUpdated(function ($state, Set $set) {
+                        ->afterStateUpdated(function ($state, Set $set, Get $get) {
                             if ($state) {
-                                $product = Product::find($state);
+                                $product = Product::with('suppliers')->find($state);
                                 if ($product) {
                                     $set('description', $product->name);
-                                    $set('supplier_article_number', $product->supplier_article_number ?? '');
-                                    $set('unit_price', (float) $product->purchase_price);
+
+                                    // Use supplier-specific data from pivot if PO supplier is set
+                                    $supplierId = $get('../../supplier_id');
+                                    $set('supplier_article_number', $product->supplierSkuFor($supplierId) ?? '');
+                                    $set('unit_price', $product->purchasePriceForSupplier($supplierId));
                                 }
                             }
                         })

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Supplier;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -47,24 +48,68 @@ class ProductForm
                             ->helperText('Alleen intern zichtbaar'),
                     ]),
 
-                Section::make('Leverancier')
+                Section::make('Leveranciers')
+                    ->description('Voeg één of meerdere leveranciers toe met hun artikelnummer en inkoopprijs.')
+                    ->schema([
+                        Repeater::make('product_suppliers')
+                            ->label('')
+                            ->schema([
+                                Select::make('supplier_id')
+                                    ->label('Leverancier')
+                                    ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id')->toArray())
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->placeholder('Selecteer leverancier...')
+                                    ->columnSpan(2),
+
+                                TextInput::make('supplier_sku')
+                                    ->label('Art.nr. leverancier')
+                                    ->maxLength(100)
+                                    ->placeholder('bijv. SFH-001')
+                                    ->columnSpan(1),
+
+                                TextInput::make('purchase_price')
+                                    ->label('Inkoopprijs')
+                                    ->numeric()
+                                    ->prefix('€')
+                                    ->step('0.01')
+                                    ->required()
+                                    ->minValue(0)
+                                    ->columnSpan(1),
+
+                                Toggle::make('is_preferred')
+                                    ->label('Voorkeur')
+                                    ->inline(false)
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(5)
+                            ->addActionLabel('Leverancier toevoegen')
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['supplier_id']
+                                ? Supplier::find($state['supplier_id'])?->name
+                                : 'Nieuwe leverancier'
+                            ),
+                    ]),
+
+                Section::make('Prijzen & Voorraad')
                     ->columns(2)
                     ->schema([
-                        Select::make('supplier_id')
-                            ->label('Leverancier')
-                            ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id')->toArray())
-                            ->searchable()
-                            ->preload()
-                            ->nullable()
-                            ->placeholder('Selecteer leverancier...')
-                            ->columnSpanFull(),
-
-                        TextInput::make('supplier_article_number')
-                            ->label('Artikelnummer leverancier')
-                            ->maxLength(100)
-                            ->placeholder('bijv. SFH-001')
-                            ->helperText('Artikelnummer zoals de leverancier het hanteert'),
-
+                        TextInput::make('purchase_price')
+                            ->label('Standaard inkoopprijs')
+                            ->numeric()
+                            ->prefix('€')
+                            ->step('0.01')
+                            ->required()
+                            ->helperText('Fallback als er geen leverancier-specifieke prijs is'),
+                        TextInput::make('sales_price')
+                            ->label('Verkoopprijs')
+                            ->numeric()
+                            ->prefix('€')
+                            ->step('0.01')
+                            ->required(),
                         TextInput::make('weight')
                             ->label('Gewicht (kg)')
                             ->numeric()
@@ -72,23 +117,6 @@ class ProductForm
                             ->step('0.001')
                             ->minValue(0)
                             ->placeholder('bijv. 1.250'),
-                    ]),
-
-                Section::make('Prijzen & Voorraad')
-                    ->columns(2)
-                    ->schema([
-                        TextInput::make('purchase_price')
-                            ->label('Inkoopprijs')
-                            ->numeric()
-                            ->prefix('€')
-                            ->step('0.01')
-                            ->required(),
-                        TextInput::make('sales_price')
-                            ->label('Verkoopprijs')
-                            ->numeric()
-                            ->prefix('€')
-                            ->step('0.01')
-                            ->required(),
                         TextInput::make('min_stock_level')
                             ->label('Minimum voorraad')
                             ->numeric()

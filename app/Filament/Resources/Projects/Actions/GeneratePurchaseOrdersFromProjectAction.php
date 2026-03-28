@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\PurchaseOrder;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+
 class GeneratePurchaseOrdersFromProjectAction extends Action
 {
     public static function getDefaultName(): ?string
@@ -67,7 +68,7 @@ class GeneratePurchaseOrdersFromProjectAction extends Action
         return $record->items()
             ->where('type', QuoteItemType::Product)
             ->whereNotNull('itemable_id')
-            ->whereHasMorph('itemable', \App\Models\Product::class, fn ($q) => $q->whereNotNull('supplier_id'))
+            ->whereHasMorph('itemable', \App\Models\Product::class, fn ($q) => $q->whereHas('suppliers'))
             ->exists();
     }
 
@@ -87,7 +88,7 @@ class GeneratePurchaseOrdersFromProjectAction extends Action
         $lines = ['<p class="text-sm text-gray-600 mb-3">De volgende inkooporders worden aangemaakt:</p><ul class="space-y-1">'];
 
         foreach ($grouped as $supplierId => $items) {
-            $supplier = $items->first()->itemable->supplier;
+            $supplier = \App\Models\Supplier::find($supplierId);
             $count = $items->count();
             $lines[] = sprintf(
                 '<li class="text-sm"><span class="font-medium">%s</span> — %d regel%s</li>',
@@ -104,22 +105,26 @@ class GeneratePurchaseOrdersFromProjectAction extends Action
     }
 
     /**
-     * Group eligible project items by their product's supplier.
+     * Group eligible project items by their product's preferred supplier.
      *
      * @return \Illuminate\Support\Collection<int, \Illuminate\Support\Collection>
      */
     private function groupItemsBySupplier(Project $record): \Illuminate\Support\Collection
     {
         $items = $record->items()
-            ->with(['itemable.supplier'])
+            ->with(['itemable.suppliers'])
             ->where('type', QuoteItemType::Product)
             ->whereNotNull('itemable_id')
             ->get()
             ->filter(fn ($item) => $item->itemable instanceof \App\Models\Product
-                && $item->itemable->supplier_id !== null
+                && $item->itemable->suppliers->isNotEmpty()
             );
 
-        return $items->groupBy(fn ($item) => $item->itemable->supplier_id);
+        return $items->groupBy(function ($item) {
+            $preferred = $item->itemable->preferredSupplier();
+
+            return $preferred?->id;
+        })->filter(fn ($items, $key) => $key !== null);
     }
 
     /**
@@ -136,30 +141,31 @@ class GeneratePurchaseOrdersFromProjectAction extends Action
         $count = 0;
 
         foreach ($grouped as $supplierId => $items) {
-            $supplier = $items->first()->itemable->supplier;
+            $supplier = \App\Models\Supplier::find($supplierId);
 
             $order = PurchaseOrder::create([
                 'supplier_id' => $supplier->id,
-                'project_id'  => $record->id,
-                'language'    => $supplier->language ?? 'nl',
-                'status'      => 'draft',
-                'order_date'  => now(),
+                'project_id' => $record->id,
+                'language' => $supplier->language ?? 'nl',
+                'status' => 'draft',
+                'order_date' => now(),
             ]);
 
             foreach ($items->values() as $index => $projectItem) {
                 /** @var \App\Models\Product $product */
-                $product  = $projectItem->itemable;
+                $product = $projectItem->itemable;
                 $quantity = (float) $projectItem->quantity;
-                $price    = (float) $product->purchase_price;
+                $price = (float) $product->purchasePriceForSupplier($supplierId);
+                $sku = $product->supplierSkuFor($supplierId);
 
                 $order->items()->create([
-                    'product_id'              => $product->id,
-                    'description'             => $projectItem->description ?: $product->name,
-                    'supplier_article_number' => $product->supplier_article_number,
-                    'quantity'                => $quantity,
-                    'unit_price'              => $price,
-                    'total'                   => round($quantity * $price, 2),
-                    'sort_order'              => $index + 1,
+                    'product_id' => $product->id,
+                    'description' => $projectItem->description ?: $product->name,
+                    'supplier_article_number' => $sku,
+                    'quantity' => $quantity,
+                    'unit_price' => $price,
+                    'total' => round($quantity * $price, 2),
+                    'sort_order' => $index + 1,
                 ]);
             }
 

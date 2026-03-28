@@ -49,11 +49,72 @@ class Product extends Model
     }
 
     /**
-     * Get the supplier this product belongs to.
+     * Get the supplier this product belongs to (legacy single-supplier relationship).
+     *
+     * @deprecated Use suppliers() BelongsToMany instead.
      */
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * Get all suppliers for this product (multi-supplier via pivot table).
+     */
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class, 'product_supplier')
+            ->withPivot(['supplier_sku', 'purchase_price', 'is_preferred'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the preferred supplier for this product.
+     */
+    public function preferredSupplier(): ?Supplier
+    {
+        return $this->suppliers()
+            ->wherePivot('is_preferred', true)
+            ->first()
+            ?? $this->suppliers()->first();
+    }
+
+    /**
+     * Get the purchase price for a specific supplier (from pivot).
+     * Falls back to the product's own purchase_price if no pivot record found.
+     */
+    public function purchasePriceForSupplier(?int $supplierId): float
+    {
+        if ($supplierId) {
+            $supplier = $this->suppliers()->where('supplier_id', $supplierId)->first();
+            if ($supplier) {
+                return (float) $supplier->pivot->purchase_price;
+            }
+        }
+
+        // Fall back to preferred supplier or product-level purchase_price
+        $preferred = $this->preferredSupplier();
+
+        return $preferred ? (float) $preferred->pivot->purchase_price : (float) $this->purchase_price;
+    }
+
+    /**
+     * Get the supplier SKU for a specific supplier (from pivot).
+     * Falls back to the legacy supplier_article_number if no pivot record found.
+     */
+    public function supplierSkuFor(?int $supplierId): ?string
+    {
+        if ($supplierId) {
+            $supplier = $this->suppliers()->where('supplier_id', $supplierId)->first();
+            if ($supplier) {
+                return $supplier->pivot->supplier_sku;
+            }
+        }
+
+        // Fall back to preferred supplier or legacy field
+        $preferred = $this->preferredSupplier();
+
+        return $preferred ? $preferred->pivot->supplier_sku : $this->supplier_article_number;
     }
 
     /**

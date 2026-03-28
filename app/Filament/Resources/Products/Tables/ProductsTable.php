@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
-use App\Models\Supplier;
 use App\Filament\Resources\Products\Actions\CreatePurchaseOrderAction;
+use App\Models\Supplier;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -28,20 +28,29 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->description(fn ($record) => $record->short_description),
-                TextColumn::make('supplier.name')
-                    ->label('Leverancier')
+                TextColumn::make('suppliers.name')
+                    ->label('Leverancier(s)')
                     ->searchable()
                     ->sortable()
                     ->toggleable()
+                    ->badge()
+                    ->separator(', ')
                     ->placeholder('—'),
-                TextColumn::make('supplier_article_number')
+                TextColumn::make('preferred_supplier_sku')
                     ->label('Art.nr. leverancier')
-                    ->searchable()
+                    ->getStateUsing(function ($record) {
+                        $preferred = $record->suppliers()
+                            ->wherePivot('is_preferred', true)
+                            ->first();
+
+                        return $preferred?->pivot->supplier_sku
+                            ?? $record->suppliers()->first()?->pivot->supplier_sku;
+                    })
                     ->toggleable()
                     ->placeholder('—'),
                 TextColumn::make('weight')
                     ->label('Gewicht')
-                    ->formatStateUsing(fn ($state) => $state ? number_format((float) $state, 3, ',', '') . ' kg' : '—')
+                    ->formatStateUsing(fn ($state) => $state ? number_format((float) $state, 3, ',', '').' kg' : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('purchase_price')
                     ->label('Inkoopprijs')
@@ -85,6 +94,10 @@ class ProductsTable
                 SelectFilter::make('supplier_id')
                     ->label('Leverancier')
                     ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id')->toArray())
+                    ->query(fn ($query, array $data) => $data['value']
+                        ? $query->whereHas('suppliers', fn ($q) => $q->where('supplier_id', $data['value']))
+                        : $query
+                    )
                     ->placeholder('Alle leveranciers'),
                 TernaryFilter::make('is_active')
                     ->label('Actief')
