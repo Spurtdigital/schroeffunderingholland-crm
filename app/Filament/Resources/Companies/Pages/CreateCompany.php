@@ -57,12 +57,15 @@ class CreateCompany extends CreateRecord
 
                                     $contact = $moneybird->contact()->find($state);
 
+                                    // Parse street and house number from Moneybird address1
+                                    [$street, $houseNumber] = \App\Services\MoneybirdService::parseAddress($contact->address1);
+
                                     // Fill form with Moneybird data
                                     $set('name', $contact->company_name ?: 'Onbekend');
                                     $set('email', $contact->email);
                                     $set('phone', $contact->phone);
-                                    $set('street', $contact->address1);
-                                    $set('house_number', $contact->address2 ?: '');
+                                    $set('street', $street);
+                                    $set('house_number', $houseNumber ?: '');
                                     $set('postal_code', $contact->zipcode);
                                     $set('city', $contact->city);
                                     $set('moneybird_contact_id', $contact->id);

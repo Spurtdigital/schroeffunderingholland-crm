@@ -54,7 +54,7 @@ class ItemsRelationManager extends RelationManager
                     ->required()
                     ->minValue(0.01)
                     ->step(0.01)
-                    ->live()
+                    ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
                     ->columnSpan(1),
 
@@ -65,7 +65,7 @@ class ItemsRelationManager extends RelationManager
                     ->required()
                     ->minValue(0)
                     ->step(0.01)
-                    ->live()
+                    ->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                     ->columnSpan(1),
 
@@ -146,7 +146,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0.01)
                             ->step(0.01)
-                            ->live()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
                             ->columnSpan(1),
 
@@ -157,7 +157,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0)
                             ->step(0.01)
-                            ->live()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                             ->columnSpan(1),
 
@@ -202,7 +202,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0.01)
                             ->step(0.01)
-                            ->live()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('unit_price') ?? 0), 2)))
                             ->columnSpan(1),
 
@@ -213,7 +213,7 @@ class ItemsRelationManager extends RelationManager
                             ->required()
                             ->minValue(0)
                             ->step(0.01)
-                            ->live()
+                            ->live(onBlur: true)
                             ->afterStateUpdated(fn ($state, Get $get, Set $set) => $set('total', round($state * ($get('quantity') ?? 1), 2)))
                             ->columnSpan(1),
 

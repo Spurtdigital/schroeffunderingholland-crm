@@ -358,11 +358,16 @@
                 @php
                     $orderRef = ($quote?->displayNumber()) ?? $invoice->project->project_number;
                     if ($isDeposit) {
-                        $lineDesc = "Aanbetaling op order {$orderRef}";
+                        $lineDesc = "Aanbetaling offerte {$orderRef}";
                     } elseif ($isFinal) {
-                        $lineDesc = "Restbetaling op order {$orderRef}";
+                        $lineDesc = "Eindfactuur order {$orderRef}";
                     } else {
                         $lineDesc = "Opdracht {$orderRef}";
+                    }
+
+                    // Percentage toevoegen bij aanbetaling
+                    if ($isDeposit && $invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
+                        $lineDesc .= " ({$invoice->deposit_percentage}%)";
                     }
                 @endphp
                 <tr>
@@ -401,7 +406,16 @@
         @if($settings->company_bank_account)
         <p><strong>IBAN:</strong> {{ $settings->company_bank_account }}</p>
         @endif
-        <p><strong>Kenmerk:</strong> {{ $invoice->invoice_number }}</p>
+        @php
+            $kenmerkRef = ($quote?->displayNumber()) ?? $invoice->project->project_number;
+            $kenmerk = match ($invoice->invoice_type) {
+                \App\Enums\InvoiceType::Deposit => "Aanbetaling order {$kenmerkRef}",
+                \App\Enums\InvoiceType::Final => "Order {$kenmerkRef} | eindfactuur",
+                \App\Enums\InvoiceType::Single => "Order {$kenmerkRef}",
+            };
+        @endphp
+        <p><strong>Kenmerk:</strong> {{ $kenmerk }}</p>
+        <p><strong>Factuurnummer:</strong> {{ $invoice->invoice_number }}</p>
         <p><strong>Betaaltermijn:</strong>
             @if($invoice->due_date)
                 {{ $invoice->due_date->diffInDays($invoice->invoice_date) }} dagen (voor {{ $invoice->due_date->format('d-m-Y') }})
@@ -409,7 +423,7 @@
                 Direct
             @endif
         </p>
-        <p style="margin-top: 6px;">Gelieve &euro;&nbsp;{{ number_format($total, 2, ',', '.') }} over te maken o.v.v. factuurnummer <strong>{{ $invoice->invoice_number }}</strong>.</p>
+        <p style="margin-top: 6px;">Gelieve &euro;&nbsp;{{ number_format($total, 2, ',', '.') }} over te maken o.v.v. kenmerk <strong>{{ $kenmerk }}</strong>.</p>
     </div>
 
 </div><!-- /content -->
