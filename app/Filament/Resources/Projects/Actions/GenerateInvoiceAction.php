@@ -26,29 +26,37 @@ class GenerateInvoiceAction extends Action
         $this->label('Nieuwe factuur');
         $this->icon('heroicon-o-document-plus');
         $this->color('success');
-        
+
         $this->form(function (Project $record) {
             $options = [];
-            
+
             // Check which invoice types are available
             $hasFirstInvoice = $record->invoices()->whereIn('invoice_type', [InvoiceType::Deposit, InvoiceType::Single])->exists();
             $hasSecondInvoice = $record->invoices()->where('invoice_type', InvoiceType::Final)->exists();
-            
-            if (!$hasFirstInvoice) {
+
+            if (! $hasFirstInvoice) {
                 if ($record->usesSplitInvoicing()) {
-                    $options['first'] = "Eerste factuur ({$record->getFirstInvoicePercentage()}%)";
+                    $pct = $record->getFirstInvoicePercentage();
+                    $firstAmount = round(($record->quote?->total ?? 0) * $pct / 100, 2);
+                    $options['first'] = "Eerste factuur ({$pct}% van offerte = €".number_format($firstAmount, 2, ',', '.').')';
                 } else {
-                    $options['single'] = "Volledige factuur (100%)";
+                    $options['single'] = 'Volledige factuur (100%)';
                 }
             }
-            
-            if ($hasFirstInvoice && !$hasSecondInvoice && $record->usesSplitInvoicing()) {
-                $options['second'] = "Tweede factuur ({$record->getSecondInvoicePercentage()}%)";
+
+            if ($hasFirstInvoice && ! $hasSecondInvoice && $record->usesSplitInvoicing()) {
+                // Calculate actual remaining amount (project items - already invoiced)
+                $projectSubtotal = $record->items()->sum('total');
+                $projectTotal = round($projectSubtotal * 1.21, 2);
+                $alreadyInvoicedTotal = $record->invoices()->sum('total');
+                $remaining = max(0, round($projectTotal - $alreadyInvoicedTotal, 2));
+
+                $options['second'] = 'Eindfactuur (resterend bedrag: €'.number_format($remaining, 2, ',', '.').' incl. BTW)';
             }
-            
+
             // Always allow custom invoice
-            $options['custom'] = "Aangepaste factuur (vrije invoer)";
-            
+            $options['custom'] = 'Aangepaste factuur (vrije invoer)';
+
             return [
                 Forms\Components\Select::make('invoice_type_choice')
                     ->label('Type factuur')
@@ -56,8 +64,12 @@ class GenerateInvoiceAction extends Action
                     ->required()
                     ->live()
                     ->default(array_key_first($options))
-                    ->helperText('Selecteer welk type factuur je wilt aanmaken'),
-                    
+                    ->helperText(fn (Get $get) => match ($get('invoice_type_choice')) {
+                        'second' => 'Bedrag = totaal project items (incl. meerwerk) minus al gefactureerd',
+                        'first' => 'Bedrag berekend op basis van het offertebedrag',
+                        default => 'Selecteer welk type factuur je wilt aanmaken',
+                    }),
+
                 Forms\Components\TextInput::make('custom_percentage')
                     ->label('Percentage')
                     ->numeric()
@@ -67,12 +79,12 @@ class GenerateInvoiceAction extends Action
                     ->required()
                     ->visible(fn (Get $get) => $get('invoice_type_choice') === 'custom')
                     ->helperText('Voer het percentage van het totaalbedrag in'),
-                    
+
                 Forms\Components\Textarea::make('notes')
                     ->label('Notities (optioneel)')
                     ->rows(3)
                     ->placeholder('Eventuele opmerkingen voor deze factuur...'),
-                    
+
                 Forms\Components\Toggle::make('send_to_moneybird')
                     ->label('Direct naar Moneybird sturen')
                     ->default(true)
@@ -82,19 +94,20 @@ class GenerateInvoiceAction extends Action
 
         $this->action(function (array $data, Project $record, MoneybirdService $moneybirdService) {
             $quote = $record->quote;
-            if (!$quote) {
+            if (! $quote) {
                 Notification::make()
                     ->danger()
                     ->title('Geen offerte gevonden')
                     ->body('Dit project heeft geen gekoppelde offerte.')
                     ->send();
+
                 return;
             }
-            
+
             // Determine invoice type and percentage
             $invoiceType = InvoiceType::Single;
             $percentage = 100;
-            
+
             switch ($data['invoice_type_choice']) {
                 case 'first':
                     $invoiceType = InvoiceType::Deposit;
@@ -113,7 +126,7 @@ class GenerateInvoiceAction extends Action
                     $percentage = $data['custom_percentage'];
                     break;
             }
-            
+
             // Calculate amounts
             if ($data['invoice_type_choice'] === 'second') {
                 // Final invoice: project total (from project items) minus already invoiced
@@ -138,21 +151,21 @@ class GenerateInvoiceAction extends Action
                 $vatAmount = ($quote->vat_amount * $percentage) / 100;
                 $total = ($quote->total * $percentage) / 100;
             }
-            
+
             // Generate notes
             $notes = $data['notes'] ?? '';
             if ($data['invoice_type_choice'] === 'custom') {
-                $notes = "Aangepaste factuur ({$percentage}%) voor project {$record->project_number}" 
-                    . ($notes ? "\n\n{$notes}" : '');
-            } elseif (!$notes) {
-                $notes = match($data['invoice_type_choice']) {
+                $notes = "Aangepaste factuur ({$percentage}%) voor project {$record->project_number}"
+                    .($notes ? "\n\n{$notes}" : '');
+            } elseif (! $notes) {
+                $notes = match ($data['invoice_type_choice']) {
                     'first' => "Eerste factuur ({$percentage}%) voor project {$record->project_number}",
-                    'second' => "Tweede factuur ({$percentage}%) voor project {$record->project_number}",
+                    'second' => "Eindfactuur voor project {$record->project_number} (resterend bedrag incl. meerwerk)",
                     'single' => "Volledige factuur voor project {$record->project_number}",
                     default => ''
                 };
             }
-            
+
             // Create invoice
             $invoice = Invoice::create([
                 'project_id' => $record->id,
@@ -166,13 +179,13 @@ class GenerateInvoiceAction extends Action
                 'total' => round($total, 2),
                 'status' => InvoiceStatus::Draft,
                 'notes' => $notes,
-                'deposit_percentage' => $percentage,
+                'deposit_percentage' => $data['invoice_type_choice'] === 'second' ? null : $percentage,
             ]);
-            
+
             // Send to Moneybird if requested
             if ($data['send_to_moneybird']) {
                 try {
-                    if (!$moneybirdService->isConfigured()) {
+                    if (! $moneybirdService->isConfigured()) {
                         Notification::make()
                             ->warning()
                             ->title('Factuur aangemaakt zonder Moneybird')
@@ -180,11 +193,11 @@ class GenerateInvoiceAction extends Action
                             ->send();
                     } else {
                         $moneybirdService->sendInvoice($invoice);
-                        
+
                         Notification::make()
                             ->success()
                             ->title('Factuur aangemaakt en verstuurd')
-                            ->body("Factuur {$invoice->invoice_number} is aangemaakt (€" . number_format($total, 2, ',', '.') . ") en verstuurd naar Moneybird.")
+                            ->body("Factuur {$invoice->invoice_number} is aangemaakt (€".number_format($total, 2, ',', '.').') en verstuurd naar Moneybird.')
                             ->send();
                     }
                 } catch (\Exception $e) {
@@ -198,10 +211,10 @@ class GenerateInvoiceAction extends Action
                 Notification::make()
                     ->success()
                     ->title('Factuur aangemaakt')
-                    ->body("Factuur {$invoice->invoice_number} is aangemaakt voor €" . number_format($total, 2, ',', '.'))
+                    ->body("Factuur {$invoice->invoice_number} is aangemaakt voor €".number_format($total, 2, ',', '.'))
                     ->send();
             }
-            
+
             // Redirect to invoice
             return redirect()->route('filament.admin.resources.invoices.edit', ['record' => $invoice]);
         });
