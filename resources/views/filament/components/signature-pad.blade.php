@@ -7,9 +7,14 @@
         lastX: 0,
         lastY: 0,
         hasStrokes: false,
+        _observer: null,
+        _timers: [],
+        _destroyed: false,
 
         setup() {
+            if (this._destroyed) return;
             this.canvas = this.$refs.canvas;
+            if (!this.canvas) return;
             const dpr = window.devicePixelRatio || 1;
             this.canvas.width  = this.canvas.offsetWidth  * dpr;
             this.canvas.height = this.canvas.offsetHeight * dpr;
@@ -24,24 +29,45 @@
             this.hasStrokes = false;
         },
 
+        _setTimeout(fn, delay) {
+            const id = setTimeout(() => {
+                if (!this._destroyed) fn();
+            }, delay);
+            this._timers.push(id);
+            return id;
+        },
+
         init() {
             const trySetup = () => {
+                if (this._destroyed) return;
                 if (this.$refs.canvas && this.$refs.canvas.offsetWidth > 0) {
                     this.setup();
                 } else {
-                    setTimeout(trySetup, 50);
+                    this._setTimeout(trySetup, 50);
                 }
             };
-            this.$nextTick(() => setTimeout(trySetup, 80));
+            this.$nextTick(() => this._setTimeout(trySetup, 80));
 
             // Herinitialiseer wanneer wizard-stap actief wordt
             const stepEl = this.$el.closest('.fi-sc-wizard-step');
             if (stepEl) {
-                new MutationObserver(() => {
+                this._observer = new MutationObserver(() => {
+                    if (this._destroyed) return;
                     if (stepEl.classList.contains('fi-active') && (!this.canvas || this.canvas.width === 0)) {
-                        this.$nextTick(() => setTimeout(() => this.setup(), 80));
+                        this.$nextTick(() => this._setTimeout(() => this.setup(), 80));
                     }
-                }).observe(stepEl, { attributes: true, attributeFilter: ['class'] });
+                });
+                this._observer.observe(stepEl, { attributes: true, attributeFilter: ['class'] });
+            }
+        },
+
+        destroy() {
+            this._destroyed = true;
+            this._timers.forEach(id => clearTimeout(id));
+            this._timers = [];
+            if (this._observer) {
+                this._observer.disconnect();
+                this._observer = null;
             }
         },
 
@@ -88,8 +114,12 @@
         stopDraw(e) {
             if (!this.drawing) return;
             this.drawing = false;
-            if (this.hasStrokes) {
-                this.$wire.set(this.statePath, this.canvas.toDataURL('image/png'));
+            if (this.hasStrokes && !this._destroyed && this.$wire) {
+                try {
+                    this.$wire.set(this.statePath, this.canvas.toDataURL('image/png'));
+                } catch (err) {
+                    // Livewire component may already be unmounted
+                }
             }
         },
 
@@ -98,7 +128,13 @@
             this.ctx.fillStyle = '#ffffff';
             this.ctx.fillRect(0, 0, this.canvas.offsetWidth, this.canvas.offsetHeight);
             this.hasStrokes = false;
-            this.$wire.set(this.statePath, '');
+            if (!this._destroyed && this.$wire) {
+                try {
+                    this.$wire.set(this.statePath, '');
+                } catch (err) {
+                    // Livewire component may already be unmounted
+                }
+            }
         }
     }"
     class="space-y-2"

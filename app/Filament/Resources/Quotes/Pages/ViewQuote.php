@@ -12,19 +12,22 @@ use App\Filament\Resources\Quotes\Actions\UpdateMoneybirdAction;
 use App\Filament\Resources\Quotes\QuoteResource;
 use App\Filament\Resources\Quotes\Schemas\QuoteForm;
 use App\Models\Machine;
+use App\Models\PaymentTerm;
 use App\Models\Quote;
 use App\Models\QuoteAssumption;
-use Filament\Forms\Components\Select;
-use Filament\Schemas\Components\Section as FormSection;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use App\Services\QuoteCalculationService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Section as FormSection;
+use Filament\Schemas\Components\Utilities\Get;
 use Livewire\Attributes\On;
 
 class ViewQuote extends ViewRecord
@@ -75,6 +78,112 @@ class ViewQuote extends ViewRecord
                 ->color('info')
                 ->button(),
 
+            // Snel bewerken dropdown
+            ActionGroup::make([
+                Action::make('editTexts')
+                    ->label('Teksten bewerken')
+                    ->icon('heroicon-o-document-text')
+                    ->fillForm(fn (Quote $record) => [
+                        'notes' => $record->notes,
+                        'pre_text' => $record->pre_text,
+                        'post_text' => $record->post_text,
+                    ])
+                    ->form([
+                        Textarea::make('notes')
+                            ->label('Opmerkingen')
+                            ->rows(4),
+                        Textarea::make('pre_text')
+                            ->label('Voorwoord (Moneybird)')
+                            ->helperText('Tekst die boven de regelitems verschijnt in de Moneybird-offerte.')
+                            ->rows(4),
+                        Textarea::make('post_text')
+                            ->label('Nawoord vrije tekst (Moneybird)')
+                            ->helperText('Extra tekst die na de betalingsvoorwaarden verschijnt.')
+                            ->rows(4),
+                    ])
+                    ->action(function (Quote $record, array $data) {
+                        $record->update([
+                            'notes' => $data['notes'],
+                            'pre_text' => $data['pre_text'],
+                            'post_text' => $data['post_text'],
+                        ]);
+                        $this->refreshFormData(['notes', 'pre_text', 'post_text']);
+                        Notification::make()->success()->title('Teksten opgeslagen')->send();
+                    }),
+
+                Action::make('editAssumptions')
+                    ->label('Aannames bewerken')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->fillForm(fn (Quote $record) => [
+                        'assumption_ids' => $record->assumptions()->pluck('quote_assumptions.id')->toArray(),
+                    ])
+                    ->form([
+                        CheckboxList::make('assumption_ids')
+                            ->label('Offerte-aannames')
+                            ->options(fn () => QuoteAssumption::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->columns(2),
+                    ])
+                    ->action(function (Quote $record, array $data) {
+                        $record->assumptions()->sync($data['assumption_ids'] ?? []);
+                        $this->autoSyncSkuAssumptions($record);
+                        $this->refreshFormData(['assumptions']);
+                        Notification::make()->success()->title('Aannames opgeslagen')->send();
+                    }),
+
+                Action::make('editPaymentTerm')
+                    ->label('Betalingsvoorwaarde')
+                    ->icon('heroicon-o-banknotes')
+                    ->fillForm(fn (Quote $record) => [
+                        'payment_term_id' => $record->payment_term_id,
+                    ])
+                    ->form([
+                        Select::make('payment_term_id')
+                            ->label('Betalingsvoorwaarde')
+                            ->options(fn () => PaymentTerm::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
+                            ->placeholder('Geen betalingsvoorwaarde')
+                            ->searchable()
+                            ->nullable(),
+                    ])
+                    ->action(function (Quote $record, array $data) {
+                        $record->update(['payment_term_id' => $data['payment_term_id']]);
+                        $this->refreshFormData(['payment_term_id']);
+                        Notification::make()->success()->title('Betalingsvoorwaarde opgeslagen')->send();
+                    }),
+
+                Action::make('editTravel')
+                    ->label('Reiskosten bewerken')
+                    ->icon('heroicon-o-truck')
+                    ->fillForm(fn (Quote $record) => [
+                        'travel_distance' => $record->travel_distance,
+                        'travel_cost_per_km' => $record->travel_cost_per_km,
+                    ])
+                    ->form([
+                        TextInput::make('travel_distance')
+                            ->label('Reisafstand (km)')
+                            ->numeric()
+                            ->suffix('km')
+                            ->minValue(0),
+                        TextInput::make('travel_cost_per_km')
+                            ->label('Kosten per km')
+                            ->numeric()
+                            ->prefix('€')
+                            ->minValue(0),
+                    ])
+                    ->action(function (Quote $record, array $data) {
+                        $record->update([
+                            'travel_distance' => $data['travel_distance'],
+                            'travel_cost_per_km' => $data['travel_cost_per_km'],
+                        ]);
+                        app(QuoteCalculationService::class)->calculateTotals($record);
+                        $this->refreshFormData(['travel_distance', 'travel_cost_per_km', 'travel_total', 'subtotal', 'vat_amount', 'total']);
+                        Notification::make()->success()->title('Reiskosten opgeslagen')->send();
+                    }),
+            ])
+                ->label('Snel bewerken')
+                ->icon('heroicon-o-pencil-square')
+                ->color('warning')
+                ->button(),
+
             // Instellingen dropdown
             ActionGroup::make([
                 Action::make('editWorkAddress')
@@ -82,11 +191,11 @@ class ViewQuote extends ViewRecord
                     ->icon('heroicon-o-map-pin')
                     ->fillForm(fn (Quote $record) => [
                         'work_address_different' => $record->work_address_different,
-                        'work_street'            => $record->work_street,
-                        'work_house_number'      => $record->work_house_number,
-                        'work_postal_code'       => $record->work_postal_code,
-                        'work_city'              => $record->work_city,
-                        'machine_id'             => $record->machine_id,
+                        'work_street' => $record->work_street,
+                        'work_house_number' => $record->work_house_number,
+                        'work_postal_code' => $record->work_postal_code,
+                        'work_city' => $record->work_city,
+                        'machine_id' => $record->machine_id,
                     ])
                     ->form([
                         Select::make('machine_id')
@@ -128,12 +237,12 @@ class ViewQuote extends ViewRecord
                     ])
                     ->action(function (Quote $record, array $data) {
                         $record->update([
-                            'machine_id'            => $data['machine_id'],
+                            'machine_id' => $data['machine_id'],
                             'work_address_different' => $data['work_address_different'],
-                            'work_street'           => $data['work_street'] ?? null,
-                            'work_house_number'     => $data['work_house_number'] ?? null,
-                            'work_postal_code'      => $data['work_postal_code'] ?? null,
-                            'work_city'             => $data['work_city'] ?? null,
+                            'work_street' => $data['work_street'] ?? null,
+                            'work_house_number' => $data['work_house_number'] ?? null,
+                            'work_postal_code' => $data['work_postal_code'] ?? null,
+                            'work_city' => $data['work_city'] ?? null,
                         ]);
 
                         Notification::make()
@@ -196,6 +305,7 @@ class ViewQuote extends ViewRecord
             ->get()
             ->filter(function (QuoteAssumption $assumption) use ($skus) {
                 $trigger = strtoupper(trim($assumption->trigger_sku));
+
                 return $skus->contains(fn ($sku) => str_contains($sku, $trigger));
             })
             ->pluck('id');

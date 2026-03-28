@@ -9,7 +9,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 
@@ -24,12 +23,37 @@ class CreatePurchaseOrderAction extends Action
             ->form([
                 Select::make('supplier_id')
                     ->label('Leverancier')
-                    ->options(fn (Product $record) => Supplier::where('is_active', true)
-                        ->orderBy('name')
-                        ->pluck('name', 'id'))
-                    ->default(fn (Product $record) => $record->supplier_id)
+                    ->options(function (Product $record) {
+                        // Show product's suppliers first, then all active suppliers
+                        $productSuppliers = $record->suppliers()->pluck('suppliers.name', 'suppliers.id');
+
+                        if ($productSuppliers->isEmpty()) {
+                            return Supplier::where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id');
+                        }
+
+                        $otherSuppliers = Supplier::where('is_active', true)
+                            ->whereNotIn('id', $productSuppliers->keys())
+                            ->orderBy('name')
+                            ->pluck('name', 'id');
+
+                        return $productSuppliers->union($otherSuppliers);
+                    })
+                    ->default(fn (Product $record) => $record->preferredSupplier()?->id)
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Set $set, Product $record) {
+                        if ($state) {
+                            $supplier = Supplier::find($state);
+                            if ($supplier?->language) {
+                                $set('language', $supplier->language);
+                            }
+                            // Update price and SKU from pivot data
+                            $set('unit_price', $record->purchasePriceForSupplier((int) $state));
+                        }
+                    }),
 
                 Select::make('language')
                     ->label('Taal PDF')
@@ -38,7 +62,7 @@ class CreatePurchaseOrderAction extends Action
                         'en' => 'Engels',
                         'de' => 'Duits',
                     ])
-                    ->default(fn (Product $record) => $record->supplier?->language ?? 'nl')
+                    ->default(fn (Product $record) => $record->preferredSupplier()?->language ?? 'nl')
                     ->required(),
 
                 DatePicker::make('order_date')
@@ -65,28 +89,36 @@ class CreatePurchaseOrderAction extends Action
                     ->label('Inkoopprijs p/st')
                     ->numeric()
                     ->prefix('€')
-                    ->default(fn (Product $record) => (float) $record->purchase_price)
+                    ->default(function (Product $record) {
+                        $preferred = $record->preferredSupplier();
+
+                        return $preferred
+                            ? (float) $preferred->pivot->purchase_price
+                            : (float) $record->purchase_price;
+                    })
                     ->required()
                     ->minValue(0)
                     ->step(0.01),
             ])
             ->action(function (Product $record, array $data) {
+                $supplierId = (int) $data['supplier_id'];
+
                 $order = PurchaseOrder::create([
-                    'supplier_id'             => $data['supplier_id'],
-                    'language'                => $data['language'],
-                    'status'                  => 'draft',
-                    'order_date'              => $data['order_date'],
-                    'expected_delivery_date'  => $data['expected_delivery_date'] ?? null,
-                    'product_id'              => $record->id,
+                    'supplier_id' => $supplierId,
+                    'language' => $data['language'],
+                    'status' => 'draft',
+                    'order_date' => $data['order_date'],
+                    'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
+                    'product_id' => $record->id,
                 ]);
 
                 $order->items()->create([
-                    'product_id'              => $record->id,
-                    'description'             => $record->name,
-                    'supplier_article_number' => $record->supplier_article_number,
-                    'quantity'                => $data['quantity'],
-                    'unit_price'              => $data['unit_price'],
-                    'sort_order'              => 1,
+                    'product_id' => $record->id,
+                    'description' => $record->name,
+                    'supplier_article_number' => $record->supplierSkuFor($supplierId),
+                    'quantity' => $data['quantity'],
+                    'unit_price' => $data['unit_price'],
+                    'sort_order' => 1,
                 ]);
 
                 $order->recalculateTotals();

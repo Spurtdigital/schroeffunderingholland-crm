@@ -168,7 +168,7 @@ class MoneybirdService
                 $contact->company_name = $company->name;
                 $contact->email = $company->email;
                 $contact->phone = $company->phone;
-                $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                $contact->address1 = trim(($company->street ?? '').' '.($company->house_number ?? ''));
                 $contact->address2 = null;
                 $contact->zipcode = $company->postal_code;
                 $contact->city = $company->city;
@@ -186,7 +186,7 @@ class MoneybirdService
                     $contact->company_name = $company->name;
                     $contact->email = $company->email;
                     $contact->phone = $company->phone;
-                    $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                    $contact->address1 = trim(($company->street ?? '').' '.($company->house_number ?? ''));
                     $contact->address2 = null;
                     $contact->zipcode = $company->postal_code;
                     $contact->city = $company->city;
@@ -219,7 +219,7 @@ class MoneybirdService
 
                 foreach ($results as $contact) {
                     $mbName = $contact->company_name
-                        ?? trim(($contact->firstname ?? '') . ' ' . ($contact->lastname ?? ''));
+                        ?? trim(($contact->firstname ?? '').' '.($contact->lastname ?? ''));
 
                     if (strcasecmp(trim($mbName), trim($company->name)) === 0) {
                         return (string) $contact->id;
@@ -363,7 +363,20 @@ class MoneybirdService
             // Use that as the canonical quote number so both systems stay in sync.
             $moneybirdEstimateNumber = $mbEstimate->estimate_id ?? null;
 
+            if (! $moneybirdEstimateNumber) {
+                \Illuminate\Support\Facades\Log::warning('Moneybird did not return an estimate_id after saving estimate', [
+                    'quote_id' => $quote->id,
+                    'moneybird_id' => $mbEstimate->id,
+                    'quote_number' => $quote->quote_number,
+                ]);
+            }
+
             // Persist the Moneybird estimate ID, the new quote number and the sent timestamp.
+            // Always require a valid Moneybird estimate number to replace the CONCEPT number.
+            if (! $mbEstimate->id) {
+                throw new \Exception('Moneybird heeft geen ID teruggegeven na het opslaan van de offerte. Probeer het opnieuw.');
+            }
+
             $updateData = [
                 'moneybird_quote_id' => $mbEstimate->id,
                 'sent_at' => now(),
@@ -502,10 +515,10 @@ class MoneybirdService
             foreach ($grouped as $category => $items) {
                 if ($category !== '' && $grouped->count() > 1) {
                     $parts[] = '';
-                    $parts[] = $category . ':';
+                    $parts[] = $category.':';
                 }
                 foreach ($items as $assumption) {
-                    $parts[] = '* ' . $assumption->resolveContent($assumption->pivot->pivot_value);
+                    $parts[] = '* '.$assumption->resolveContent($assumption->pivot->pivot_value);
                 }
             }
         }
@@ -593,8 +606,8 @@ class MoneybirdService
             // Travel costs as description line if applicable
             if ($quote->travel_distance && $quote->travel_total) {
                 $originAddress = trim($this->settings->company_address ?? '');
-                $destAddress   = trim($quote->workFullAddress() ?? '');
-                $travelDesc    = $originAddress && $destAddress
+                $destAddress = trim($quote->workFullAddress() ?? '');
+                $travelDesc = $originAddress && $destAddress
                     ? "Reiskosten: {$originAddress} → {$destAddress} en retour ({$quote->travel_distance} km × 2)"
                     : "Reiskosten ({$quote->travel_distance} km)";
 
