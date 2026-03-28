@@ -12,6 +12,7 @@ class QuoteAssumption extends Model
 
     protected $fillable = [
         'title',
+        'category',
         'content',
         'trigger_sku',
         'has_variable_input',

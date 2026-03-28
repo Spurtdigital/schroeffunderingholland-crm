@@ -5,11 +5,13 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\QuoteAssumptionResource\Pages;
 use App\Models\QuoteAssumption;
 use Filament\Actions;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -43,6 +45,18 @@ class QuoteAssumptionResource extends Resource
                             ->helperText('Interne naam voor in de checkboxlijst, bijv. "Verlengbaar fundament 3.5m"')
                             ->columnSpan(3),
 
+                        Select::make('category')
+                            ->label('Categorie')
+                            ->options([
+                                'Grondopbouw' => 'Grondopbouw',
+                                'Bouwwerk' => 'Bouwwerk',
+                                'Machines' => 'Machines',
+                            ])
+                            ->nullable()
+                            ->placeholder('Geen categorie')
+                            ->helperText('Aannames worden per categorie gegroepeerd in Moneybird.')
+                            ->columnSpan(2),
+
                         TextInput::make('sort_order')
                             ->label('Volgorde')
                             ->numeric()
@@ -61,16 +75,42 @@ class QuoteAssumptionResource extends Resource
                             ->nullable()
                             ->helperText('Als een offerteregel een product heeft waarvan de SKU dit woord/fragment bevat, wordt deze aanname automatisch aangevinkt. Leeg = nooit auto-aangevinkt.')
                             ->placeholder('bijv. VERLENGBAAR')
-                            ->columnSpanFull(),
+                            ->columnSpan(4),
 
                         Textarea::make('content')
                             ->label('Bullet-tekst (in offerte)')
                             ->required()
                             ->rows(3)
-                            ->helperText('Tekst die als bullet verschijnt onder "In deze offerte gaan wij uit van het onderstaande:"')
+                            ->helperText('Tekst die als bullet verschijnt. Gebruik {value} als placeholder voor variabele invoer.')
                             ->columnSpanFull(),
                     ])
                     ->columns(6),
+
+                Section::make('Variabele invoer')
+                    ->description('Stel in als deze aanname een variabele waarde heeft die per offerte ingevuld wordt.')
+                    ->schema([
+                        Toggle::make('has_variable_input')
+                            ->label('Heeft variabele invoer')
+                            ->live()
+                            ->columnSpanFull(),
+
+                        TextInput::make('variable_input_label')
+                            ->label('Label invoerveld')
+                            ->placeholder('bijv. Diepte')
+                            ->maxLength(255)
+                            ->visible(fn (Get $get) => $get('has_variable_input'))
+                            ->columnSpan(1),
+
+                        TextInput::make('variable_input_suffix')
+                            ->label('Suffix / eenheid')
+                            ->placeholder('bijv. meter')
+                            ->maxLength(50)
+                            ->visible(fn (Get $get) => $get('has_variable_input'))
+                            ->columnSpan(1),
+                    ])
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed(fn ($record) => ! $record?->has_variable_input),
             ]);
     }
 
@@ -88,6 +128,17 @@ class QuoteAssumptionResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('category')
+                    ->label('Categorie')
+                    ->badge()
+                    ->color(fn (?string $state) => match ($state) {
+                        'Grondopbouw' => 'success',
+                        'Bouwwerk' => 'info',
+                        'Machines' => 'warning',
+                        default => 'gray',
+                    })
+                    ->placeholder('-'),
+
                 Tables\Columns\TextColumn::make('content')
                     ->label('Tekst')
                     ->limit(80)
@@ -101,6 +152,11 @@ class QuoteAssumptionResource extends Resource
 
                 Tables\Columns\IconColumn::make('active')
                     ->label('Actief')
+                    ->boolean()
+                    ->sortable(),
+
+                Tables\Columns\IconColumn::make('has_variable_input')
+                    ->label('Variabel')
                     ->boolean()
                     ->sortable(),
             ])

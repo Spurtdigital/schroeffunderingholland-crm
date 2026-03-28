@@ -41,7 +41,10 @@ class ConvertToQuoteAction extends Action
                 $notes .= "\n\nProjectomschrijving:\n{$record->notes}";
             }
 
-            $quote = Quote::create([
+            // Determine if lead has a work address that differs from company address
+            $hasLeadAddress = $record->street || $record->house_number || $record->postal_code || $record->city;
+
+            $quoteData = [
                 'company_id' => $record->company_id,
                 'lead_id' => $record->id,
                 'quote_number' => Quote::generateQuoteNumber(),
@@ -51,7 +54,17 @@ class ConvertToQuoteAction extends Action
                 'vat_amount' => 0,
                 'total' => 0,
                 'notes' => $notes,
-            ]);
+            ];
+
+            if ($hasLeadAddress) {
+                $quoteData['work_address_different'] = true;
+                $quoteData['work_street'] = $record->street;
+                $quoteData['work_house_number'] = $record->house_number;
+                $quoteData['work_postal_code'] = $record->postal_code;
+                $quoteData['work_city'] = $record->city;
+            }
+
+            $quote = Quote::create($quoteData);
 
             // Update lead status
             $record->update([
