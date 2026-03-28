@@ -338,9 +338,12 @@
             @if($project->quote?->machine)
             <p><span class="label">Machine:</span> {{ $project->quote->machine->name }}</p>
             @endif
-            @if($project->quote?->lead?->address)
+            @php
+                $werklocatie = $project->quote?->workFullAddress();
+            @endphp
+            @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px;">{{ $project->quote->lead->full_address }}</p>
+            <p style="padding-left: 105px;">{{ $werklocatie }}</p>
             @endif
         </div>
     </div>
