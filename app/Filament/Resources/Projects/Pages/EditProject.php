@@ -10,6 +10,7 @@ use App\Filament\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
 use App\Filament\Resources\Projects\Actions\ResendCompletionMailAction;
 use App\Filament\Resources\Projects\ProjectResource;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -20,13 +21,33 @@ class EditProject extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Hoofdactie: project afronden
             CompleteProjectAction::make(),
-            ResendCompletionMailAction::make(),
-            GenerateCompletionReportAction::make(),
-            GeneratePackingSlipAction::make(),
+
+            // Facturatie
             GenerateInvoiceAction::make(),
-            GeneratePurchaseOrdersFromProjectAction::make(),
-            CreatePurchaseOrderFromProjectAction::make(),
+
+            // Documenten dropdown
+            ActionGroup::make([
+                GenerateCompletionReportAction::make(),
+                GeneratePackingSlipAction::make(),
+                ResendCompletionMailAction::make(),
+            ])
+                ->label('Documenten')
+                ->icon('heroicon-o-document-text')
+                ->color('info')
+                ->button(),
+
+            // Inkoop dropdown
+            ActionGroup::make([
+                GeneratePurchaseOrdersFromProjectAction::make(),
+                CreatePurchaseOrderFromProjectAction::make(),
+            ])
+                ->label('Inkoop')
+                ->icon('heroicon-o-shopping-cart')
+                ->color('warning')
+                ->button(),
+
             DeleteAction::make(),
         ];
     }
