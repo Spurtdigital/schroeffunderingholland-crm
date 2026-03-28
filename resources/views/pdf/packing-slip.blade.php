@@ -317,8 +317,10 @@
             @if($project->company->contact_person)
             <p><span class="label">T.a.v.:</span> {{ $project->company->contact_person }}</p>
             @endif
-            <p><span class="label">Adres:</span> {{ $project->company->street ?? '' }} {{ $project->company->house_number ?? '' }}</p>
-            <p><span class="label"></span> {{ $project->company->postal_code ?? '' }} {{ $project->company->city ?? '' }}</p>
+            @if($project->company->street)
+            <p><span class="label">Adres:</span> {{ trim(($project->company->street ?? '') . ' ' . ($project->company->house_number ?? '')) }}</p>
+            <p><span class="label"></span> {{ trim(($project->company->postal_code ?? '') . ' ' . ($project->company->city ?? '')) }}</p>
+            @endif
             @if($project->company->phone)
             <p><span class="label">Telefoon:</span> {{ $project->company->phone }}</p>
             @endif
@@ -343,7 +345,7 @@
             @endphp
             @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{{ $werklocatie }}</p>
+            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{!! nl2br(e($werklocatie)) !!}</p>
             @endif
         </div>
     </div>

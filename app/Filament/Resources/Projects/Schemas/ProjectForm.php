@@ -118,7 +118,13 @@ class ProjectForm
 
                         Placeholder::make('work_address')
                             ->label('Werklocatie')
-                            ->content(fn ($record) => $record?->quote?->workFullAddress() ?: '-'),
+                            ->content(function ($record) {
+                                $address = $record?->quote?->workFullAddress();
+
+                                return $address
+                                    ? new \Illuminate\Support\HtmlString(nl2br(e($address)))
+                                    : '-';
+                            }),
                     ]),
 
                 // ── Planning & Facturatie ──

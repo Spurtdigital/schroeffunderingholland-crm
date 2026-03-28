@@ -322,10 +322,8 @@
             @if($invoice->project->company->contact_person)
             <p><span class="label">T.a.v.:</span> {{ $invoice->project->company->contact_person }}</p>
             @endif
-            @if($invoice->project->company->address)
-            <p><span class="label">Adres:</span> {{ $invoice->project->company->address }}</p>
-            @endif
-            @if($invoice->project->company->postal_code || $invoice->project->company->city)
+            @if($invoice->project->company->street)
+            <p><span class="label">Adres:</span> {{ trim(($invoice->project->company->street ?? '') . ' ' . ($invoice->project->company->house_number ?? '')) }}</p>
             <p><span class="label"></span> {{ trim(($invoice->project->company->postal_code ?? '') . ' ' . ($invoice->project->company->city ?? '')) }}</p>
             @endif
             @if($invoice->project->company->email)

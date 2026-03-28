@@ -134,6 +134,8 @@ class ProjectInfolist
                                 TextEntry::make('work_address_display')
                                     ->label('Werklocatie')
                                     ->state(fn ($record) => $record->quote?->workFullAddress() ?: null)
+                                    ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '-')
+                                    ->html()
                                     ->placeholder('-'),
                             ]),
 
