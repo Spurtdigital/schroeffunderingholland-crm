@@ -97,7 +97,7 @@ class ConvertToProjectAction extends Action
                 'invoicing_type' => $data['invoicing_type'],
                 'start_date' => $data['start_date'] ?? null,
                 'completion_date' => $data['expected_completion_date'] ?? null,
-                'notes' => $data['notes'] ?? "Project aangemaakt vanuit offerte {$record->quote_number}",
+                'notes' => $data['notes'] ?? null,
             ]);
 
             // Copy quote items to project items

@@ -288,7 +288,9 @@
     <div class="doc-title-bar clearfix">
         <div class="doc-title">OPDRACHTBEVESTIGING</div>
         <div class="doc-meta">
+            @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
             <div class="doc-number">{{ $quote->quote_number }}</div>
+            @endif
             <div>{{ ($quote->created_at ?? now())->format('d-m-Y') }}</div>
             @if($project->start_date)
             <div>Montagedatum: {{ $project->start_date->format('d-m-Y') }}</div>
@@ -319,7 +321,9 @@
 
         <div class="info-box">
             <p><span class="label">Projectnummer:</span> {{ $project->project_number }}</p>
+            @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
             <p><span class="label">Offertenummer:</span> {{ $quote->quote_number }}</p>
+            @endif
             @if($project->start_date)
             <p><span class="label">Montagedatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
             @endif
@@ -328,7 +332,7 @@
             @endphp
             @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px;">{{ $werklocatie }}</p>
+            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{{ $werklocatie }}</p>
             @elseif($quote->lead?->project_description)
             <p><span class="label">Project:</span> {{ $quote->lead->project_description }}</p>
             @endif
@@ -361,7 +365,7 @@
                 @foreach($quote->items as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
                 <tr @if($isDiscount) style="color: #c0392b;" @endif>
-                    <td>{{ $item->description }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
+                    <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
                     <td class="text-center">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
                     <td class="text-right">
                         @if($isDiscount)

@@ -393,7 +393,7 @@
         </div>
         <div class="info-box">
             <p><span class="label">Projectnummer:</span> {{ $project->project_number }}</p>
-            @if($project->quote)
+            @if($project->quote && !str_starts_with($project->quote->quote_number ?? '', 'CONCEPT-'))
             <p><span class="label">Offertenummer:</span> {{ $project->quote->quote_number }}</p>
             @endif
             @if($project->start_date)
@@ -405,7 +405,7 @@
             @endphp
             @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px;">{{ $werklocatie }}</p>
+            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{{ $werklocatie }}</p>
             @endif
         </div>
     </div>
@@ -425,7 +425,7 @@
                 @forelse($items as $item)
                 <tr>
                     <td>{{ $item->type instanceof \App\Enums\QuoteItemType ? $item->type->getLabel() : $item->type }}</td>
-                    <td>{{ $item->description ?? '—' }}</td>
+                    <td>{{ str_replace('⌀', 'Ø', $item->description ?? '—') }}</td>
                     <td class="text-right">{{ rtrim(rtrim(number_format((float)$item->quantity, 2, ',', '.'), '0'), ',') }}</td>
                 </tr>
                 @empty
