@@ -329,7 +329,7 @@
 
         <div class="info-box">
             <p><span class="label">Projectnummer:</span> {{ $project->project_number }}</p>
-            @if($project->quote)
+            @if($project->quote && !str_starts_with($project->quote->quote_number ?? '', 'CONCEPT-'))
             <p><span class="label">Offertenummer:</span> {{ $project->quote->quote_number }}</p>
             @endif
             @if($project->start_date)
@@ -343,7 +343,7 @@
             @endphp
             @if($werklocatie)
             <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px;">{{ $werklocatie }}</p>
+            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{{ $werklocatie }}</p>
             @endif
         </div>
     </div>
@@ -384,7 +384,7 @@
                         <tr>
                             <td class="text-center text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                             <td>{{ $item->itemable->sku ?? '-' }}</td>
-                            <td>{{ $item->itemable->name ?? $item->description }}</td>
+                            <td>{{ str_replace('⌀', 'Ø', $item->itemable->name ?? $item->description) }}</td>
                             @if($hasWeight)
                             <td class="text-center">{{ $lineWeight ? number_format($lineWeight, 1, ',', '.') . ' kg' : '-' }}</td>
                             @endif
