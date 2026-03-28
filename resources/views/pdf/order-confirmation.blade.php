@@ -27,7 +27,7 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Opdrachtbevestiging {{ $quote->quote_number }}</title>
+    <title>Opdrachtbevestiging {{ $quote->displayNumber() ?? $project->project_number }}</title>
     <style>
         @font-face {
             font-family: 'Montserrat';

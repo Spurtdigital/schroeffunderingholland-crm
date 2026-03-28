@@ -34,6 +34,8 @@ class StockReservationsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('quote.quote_number')
                     ->label('Offerte')
+                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'Concept' : $state)
+                    ->color(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'gray' : null)
                     ->searchable()
                     ->url(fn ($record) => $record->quote
                         ? route('filament.admin.resources.quotes.edit', $record->quote)

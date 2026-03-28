@@ -140,7 +140,7 @@ class SendToMoneybirdAction extends Action
 
                     Notification::make()->success()
                         ->title('Offerte verstuurd')
-                        ->body("Offerte {$record->quote_number} is succesvol verstuurd naar Moneybird.")
+                        ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is succesvol verstuurd naar Moneybird.")
                         ->send();
                 } catch (\Exception $e) {
                     Notification::make()->danger()

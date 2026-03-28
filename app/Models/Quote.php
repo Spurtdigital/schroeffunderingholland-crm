@@ -231,6 +231,28 @@ class Quote extends Model
     }
 
     /**
+     * Return a display-safe quote number.
+     * Hides the raw CONCEPT-... placeholder and returns null instead,
+     * so it is never shown to end-users or sent externally.
+     */
+    public function displayNumber(): ?string
+    {
+        if (str_starts_with($this->quote_number ?? '', 'CONCEPT-')) {
+            return null;
+        }
+
+        return $this->quote_number;
+    }
+
+    /**
+     * Check whether this quote still has a temporary CONCEPT number.
+     */
+    public function isConcept(): bool
+    {
+        return str_starts_with($this->quote_number ?? '', 'CONCEPT-');
+    }
+
+    /**
      * Get the effective work address for this quote.
      * Returns the work address if different, otherwise falls back to the company address.
      */

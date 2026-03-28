@@ -61,7 +61,7 @@ class OrderConfirmationNotification extends Notification implements ShouldQueue
             'klant_naam' => $company->contact_name ?? 'relatie',
             'bedrijf_naam' => $company->name,
             'project_nummer' => $this->project->project_number,
-            'offerte_nummer' => $quote?->quote_number ?? 'N/A',
+            'offerte_nummer' => $quote?->displayNumber() ?? 'N/A',
             'totaal' => $quote ? '€' . number_format($quote->total, 2, ',', '.') : 'N/A',
             'montagedatum' => $this->project->start_date?->format('d-m-Y') ?? 'Nader te bepalen',
             'verwachte_oplevering' => $this->project->completion_date?->format('d-m-Y') ?? 'Nader te bepalen',
@@ -105,8 +105,8 @@ class OrderConfirmationNotification extends Notification implements ShouldQueue
         $mail->line('**Projectnummer:** ' . $this->project->project_number)
             ->line('**Bedrijf:** ' . $company->name);
             
-        if ($quote) {
-            $mail->line('**Offerte:** ' . $quote->quote_number)
+        if ($quote && $quote->displayNumber()) {
+            $mail->line('**Offerte:** ' . $quote->displayNumber())
                 ->line('**Totaalbedrag:** €' . number_format($quote->total, 2, ',', '.'));
         }
         

@@ -125,7 +125,7 @@ class UpdateMoneybirdAction extends Action
 
                     Notification::make()->success()
                         ->title('Offerte bijgewerkt in Moneybird')
-                        ->body("Offerte {$record->quote_number} is succesvol bijgewerkt in Moneybird.")
+                        ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is succesvol bijgewerkt in Moneybird.")
                         ->send();
                 } catch (\Exception $e) {
                     Notification::make()->danger()

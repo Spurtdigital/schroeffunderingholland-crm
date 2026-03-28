@@ -29,7 +29,7 @@ class PdfService
             'settings' => $this->settings,
         ]);
 
-        $filename = "offerte-{$quote->quote_number}.pdf";
+        $filename = "offerte-" . ($quote->displayNumber() ?? $quote->id) . ".pdf";
 
         if ($download) {
             return $pdf->download($filename);
@@ -67,7 +67,7 @@ class PdfService
             'settings' => $this->settings,
         ]);
 
-        $filename = "quotes/offerte-{$quote->quote_number}.pdf";
+        $filename = "quotes/offerte-" . ($quote->displayNumber() ?? $quote->id) . ".pdf";
         Storage::put($filename, $pdf->output());
 
         return $filename;
@@ -107,7 +107,7 @@ class PdfService
      */
     public function getQuotePdfFilename(Quote $quote): string
     {
-        return "offerte-{$quote->quote_number}.pdf";
+        return "offerte-" . ($quote->displayNumber() ?? $quote->id) . ".pdf";
     }
 
     /**

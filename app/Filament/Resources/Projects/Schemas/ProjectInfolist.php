@@ -117,6 +117,8 @@ class ProjectInfolist
                             ->schema([
                                 TextEntry::make('quote.quote_number')
                                     ->label('Offertenummer')
+                                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'Concept' : $state)
+                                    ->color(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'warning' : null)
                                     ->url(fn ($record) => $record->quote
                                         ? route('filament.admin.resources.quotes.view', ['record' => $record->quote_id])
                                         : null

@@ -53,7 +53,7 @@ class ApproveQuoteAction extends Action
                 Notification::make()
                     ->success()
                     ->title('Offerte goedgekeurd')
-                    ->body("Offerte {$record->quote_number} is goedgekeurd en kan nu omgezet worden naar een project.")
+                    ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is goedgekeurd en kan nu omgezet worden naar een project.")
                     ->send();
 
                 // Send email notification to all users

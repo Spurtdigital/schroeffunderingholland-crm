@@ -170,6 +170,8 @@ class LeadInfolist
                             ->schema([
                                 TextEntry::make('convertedToQuote.quote_number')
                                     ->label('Offertenummer')
+                                    ->formatStateUsing(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'Concept' : $state)
+                                    ->color(fn ($state) => str_starts_with($state ?? '', 'CONCEPT-') ? 'warning' : null)
                                     ->url(fn ($record) => $record->convertedToQuote
                                         ? route('filament.admin.resources.quotes.view', ['record' => $record->converted_to_quote_id])
                                         : null

@@ -165,7 +165,7 @@ class SendQuoteAction extends Action
             Notification::make()
                 ->success()
                 ->title('Offerte verstuurd')
-                ->body("Offerte {$record->quote_number} is verstuurd en voorraad is gereserveerd.")
+                ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is verstuurd en voorraad is gereserveerd.")
                 ->send();
 
             // Send internal notification to all users

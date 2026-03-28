@@ -39,7 +39,7 @@ class QuoteApprovedNotification extends Notification implements ShouldQueue
 
         $rendered = $template->renderToHtml([
             'team_naam' => $notifiable->name ?? 'team',
-            'offerte_nummer' => $this->quote->quote_number,
+            'offerte_nummer' => $this->quote->displayNumber() ?? 'Concept',
             'klant_naam' => $this->quote->company->name,
             'contactpersoon' => $this->quote->company->contact_name ?? 'Onbekend',
             'email' => $this->quote->company->email ?? '',
@@ -61,12 +61,12 @@ class QuoteApprovedNotification extends Notification implements ShouldQueue
     private function fallbackEmail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('🎉 Offerte goedgekeurd - '.$this->quote->quote_number)
+            ->subject('🎉 Offerte goedgekeurd - '.($this->quote->displayNumber() ?? 'Concept'))
             ->greeting('Fantastisch nieuws, '.($notifiable->name ?? 'team').'!')
             ->line('Een offerte is zojuist goedgekeurd door de klant!')
             ->line('')
             ->line('**📋 Offerte details**')
-            ->line('**Nummer:** '.$this->quote->quote_number)
+            ->line('**Nummer:** '.($this->quote->displayNumber() ?? 'Concept'))
             ->line('**Klant:** '.$this->quote->company->name)
             ->line('**Contactpersoon:** '.($this->quote->company->contact_name ?? 'Onbekend'))
             ->lineIf($this->quote->company->email, '**Email:** '.$this->quote->company->email)
