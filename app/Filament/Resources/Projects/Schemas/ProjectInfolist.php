@@ -129,8 +129,9 @@ class ProjectInfolist
                                     ->money('EUR')
                                     ->placeholder('-'),
 
-                                TextEntry::make('quote.lead.full_address')
+                                TextEntry::make('work_address_display')
                                     ->label('Werklocatie')
+                                    ->state(fn ($record) => $record->quote?->workFullAddress() ?: null)
                                     ->placeholder('-'),
                             ]),
 

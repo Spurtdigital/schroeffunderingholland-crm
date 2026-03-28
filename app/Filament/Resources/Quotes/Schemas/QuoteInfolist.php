@@ -169,10 +169,10 @@ class QuoteInfolist
                                     ->openUrlInNewTab()
                                     ->placeholder('-'),
 
-                                TextEntry::make('lead.full_address')
+                                TextEntry::make('work_address_display')
                                     ->label('Werklocatie')
                                     ->state(function ($record) {
-                                        $address = $record->lead?->full_address ?? null;
+                                        $address = $record->workFullAddress() ?: null;
 
                                         if (! $address) {
                                             return null;
