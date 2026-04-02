@@ -62,8 +62,14 @@ test('product can check if low stock', function () {
 });
 
 test('product can check if out of stock', function () {
-    $outOfStockProduct = Product::factory()->outOfStock()->create();
-    $inStockProduct = Product::factory()->create(['stock_quantity' => 10]);
+    $outOfStockProduct = Product::factory()->create([
+        'sku'            => 'TEST-OUT-OF-STOCK-' . uniqid(),
+        'stock_quantity' => 0,
+    ]);
+    $inStockProduct = Product::factory()->create([
+        'sku'            => 'TEST-IN-STOCK-' . uniqid(),
+        'stock_quantity' => 10,
+    ]);
 
     expect($outOfStockProduct->isOutOfStock())->toBeTrue()
         ->and($inStockProduct->isOutOfStock())->toBeFalse();
