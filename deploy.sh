@@ -9,7 +9,8 @@ set -euo pipefail
 SSH_KEY="$HOME/.ssh/antagonist-ssh"
 SSH_USER="deb122730"
 SSH_HOST="141.138.169.228"
-SSH="ssh -i $SSH_KEY $SSH_USER@$SSH_HOST"
+SSH_OPTS="-i $SSH_KEY -p 2222 -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ConnectTimeout=30"
+SSH="ssh $SSH_OPTS $SSH_USER@$SSH_HOST"
 REMOTE_ROOT="/home/deb122730/domains/crm.schroeffunderingholland.nl"
 REMOTE_APP="$REMOTE_ROOT/app"
 REMOTE_PUBLIC="$REMOTE_ROOT/public_html"
@@ -42,13 +43,13 @@ npm run build
 echo "==> [2/6] Composer vendor bouwen via DDEV voor productie..."
 VENDOR_TMP=$(mktemp -d)
 ddev exec "cd /var/www/html && composer install --no-dev --optimize-autoloader --no-interaction --quiet 2>&1"
-COPYFILE_DISABLE=1 cp -r vendor "$VENDOR_TMP/vendor"
+ddev exec "tar -cf - -C /var/www/html vendor" | tar -xf - -C "$VENDOR_TMP"
 
 echo "==> [3/6] Bestanden uploaden via rsync..."
 
 # Upload alles BEHALVE: .git, node_modules, vendor, .env*, storage logs, public/build (apart)
 rsync -az --delete \
-  -e "ssh -i $SSH_KEY" \
+  -e "ssh $SSH_OPTS" \
   --exclude='.git' \
   --exclude='.env*' \
   --exclude='node_modules' \
@@ -66,20 +67,20 @@ rsync -az --delete \
 # Upload vendor (lokaal gebouwd voor productie)
 echo "==> [4/6] Vendor uploaden..."
 rsync -az --delete \
-  -e "ssh -i $SSH_KEY" \
+  -e "ssh $SSH_OPTS" \
   "$VENDOR_TMP/vendor/" "$SSH_USER@$SSH_HOST:$REMOTE_APP/vendor/"
 rm -rf "$VENDOR_TMP"
 
 # Upload public/build apart (gegenereerde assets)
 echo "==> [5/6] Assets (public/build) uploaden..."
 rsync -az --delete \
-  -e "ssh -i $SSH_KEY" \
+  -e "ssh $SSH_OPTS" \
   public/build/ "$SSH_USER@$SSH_HOST:$REMOTE_PUBLIC/build/"
 
 # Sync overige public bestanden (.htaccess, css/filament, js/filament, etc.)
 # index.php wordt BEWUST uitgesloten — de server-versie heeft andere paden (zie hieronder)
 rsync -az \
-  -e "ssh -i $SSH_KEY" \
+  -e "ssh $SSH_OPTS" \
   --exclude='build' \
   --exclude='storage' \
   --exclude='hot' \
@@ -114,6 +115,7 @@ INDEXPHP
 echo "==> [6/6] Laravel optimalisaties + migraties..."
 $SSH "cd $REMOTE_APP && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php"
 $SSH "cd $REMOTE_APP && php artisan migrate --force 2>&1"
+$SSH "cd $REMOTE_APP && php artisan app:create-production-users --force 2>&1"
 # LET OP: config:cache wordt NIET gedraaid - zie server-bootstrap.sh voor uitleg
 $SSH "cd $REMOTE_APP && php artisan route:cache && php artisan view:cache && php artisan event:cache 2>&1"
 # Permissies fixen zodat Apache de bestanden kan lezen

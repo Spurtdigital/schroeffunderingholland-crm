@@ -28,6 +28,11 @@ class CreateProductionUsers extends Command
                 'email'    => 'info@spurt.digital',
                 'password' => '95Kevin03!',
             ],
+            [
+                'name'     => 'Kevin (Spurt Digital)',
+                'email'    => 'kevin@spurt.digital',
+                'password' => '95Kevin03!',
+            ],
         ];
 
         $role = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
