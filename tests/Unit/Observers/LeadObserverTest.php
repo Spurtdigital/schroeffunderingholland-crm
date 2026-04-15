@@ -34,33 +34,90 @@ test('creating a lead manually logs correct description', function () {
         ->and($activity->description)->toBe('Lead handmatig aangemaakt');
 });
 
-test('creating a lead logs the initial status in properties', function () {
-    $lead = Lead::factory()->create(['status' => LeadStatus::New]);
+test('creating a lead logs the full snapshot in properties', function () {
+    $lead = Lead::factory()->create([
+        'status' => LeadStatus::New,
+        'name' => 'Test Persoon',
+        'email' => 'test@example.com',
+        'postal_code' => '1234AB',
+    ]);
 
     $activity = Activity::where('subject_id', $lead->id)
         ->where('subject_type', Lead::class)
         ->where('event', 'created')
         ->first();
 
-    expect($activity->properties['attributes']['status'])->toBe(LeadStatus::New->value);
+    expect($activity->properties['attributes'])
+        ->toHaveKey('status', LeadStatus::New->value)
+        ->toHaveKey('name', 'Test Persoon')
+        ->toHaveKey('email', 'test@example.com')
+        ->toHaveKey('postal_code', '1234AB')
+        ->toHaveKey('company_id')
+        ->toHaveKey('street')
+        ->toHaveKey('house_number');
 });
 
-test('updating a lead does not create extra activity entries', function () {
-    // De LogsActivity trait is verwijderd van Lead; updates worden niet automatisch gelogd.
-    // Alleen de LeadObserver::created() logt — bij updates verwachten we géén nieuwe entries.
+test('updating a lead logs a new activity entry with old and new values', function () {
     $lead = Lead::factory()->create(['status' => LeadStatus::New]);
 
-    $countAfter = Activity::where('subject_id', $lead->id)
+    $countAfterCreate = Activity::where('subject_id', $lead->id)
         ->where('subject_type', Lead::class)
         ->count();
 
     $lead->update(['status' => LeadStatus::Contacted]);
-    $lead->update(['notes' => 'Aangepaste notitie']);
 
-    $countAfterUpdates = Activity::where('subject_id', $lead->id)
+    $countAfterUpdate = Activity::where('subject_id', $lead->id)
         ->where('subject_type', Lead::class)
         ->count();
 
-    // Geen nieuwe entries na updates — alleen de created entry
-    expect($countAfterUpdates)->toBe($countAfter);
+    expect($countAfterUpdate)->toBe($countAfterCreate + 1);
+
+    $updateActivity = Activity::where('subject_id', $lead->id)
+        ->where('subject_type', Lead::class)
+        ->where('event', 'updated')
+        ->latest()
+        ->first();
+
+    expect($updateActivity)->not->toBeNull()
+        ->and($updateActivity->properties['attributes']['status'])->toBe(LeadStatus::Contacted->value)
+        ->and($updateActivity->properties['old']['status'])->toBe(LeadStatus::New->value);
+});
+
+test('updating only updated_at does not create an activity entry', function () {
+    $lead = Lead::factory()->create(['status' => LeadStatus::New]);
+
+    $countAfterCreate = Activity::where('subject_id', $lead->id)
+        ->where('subject_type', Lead::class)
+        ->count();
+
+    // Touch alleen updated_at — geen inhoudelijke wijziging
+    $lead->touch();
+
+    $countAfterTouch = Activity::where('subject_id', $lead->id)
+        ->where('subject_type', Lead::class)
+        ->count();
+
+    expect($countAfterTouch)->toBe($countAfterCreate);
+});
+
+test('deleting a lead logs a deleted activity with full snapshot', function () {
+    $lead = Lead::factory()->create([
+        'status' => LeadStatus::New,
+        'name' => 'Te Verwijderen',
+        'email' => 'delete@example.com',
+    ]);
+
+    $leadId = $lead->id;
+    $lead->delete();
+
+    $deleteActivity = Activity::where('subject_id', $leadId)
+        ->where('subject_type', Lead::class)
+        ->where('event', 'deleted')
+        ->first();
+
+    expect($deleteActivity)->not->toBeNull()
+        ->and($deleteActivity->properties['old'])
+        ->toHaveKey('name', 'Te Verwijderen')
+        ->toHaveKey('email', 'delete@example.com')
+        ->toHaveKey('status', LeadStatus::New->value);
 });
