@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Company;
 use App\Models\Lead;
 use App\Models\Project;
 use App\Models\ProjectItem;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Observers\CompanyObserver;
 use App\Observers\LeadObserver;
 use App\Observers\ProjectItemObserver;
 use App\Observers\ProjectObserver;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Register observers
+        Company::observe(CompanyObserver::class);
         Lead::observe(LeadObserver::class);
         Quote::observe(QuoteObserver::class);
         QuoteItem::observe(QuoteItemObserver::class);
