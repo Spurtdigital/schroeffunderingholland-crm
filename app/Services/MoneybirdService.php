@@ -512,11 +512,12 @@ class MoneybirdService
 
             $grouped = $assumptions->groupBy(fn ($a) => $a->category ?? '');
 
+            $isFirst = true;
             foreach ($grouped as $category => $items) {
-                if ($category !== '' && $grouped->count() > 1) {
+                if (! $isFirst) {
                     $parts[] = '';
-                    $parts[] = $category.':';
                 }
+                $isFirst = false;
                 foreach ($items as $assumption) {
                     $parts[] = '* '.$assumption->resolveContent($assumption->pivot->pivot_value);
                 }
