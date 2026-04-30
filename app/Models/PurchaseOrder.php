@@ -50,8 +50,12 @@ class PurchaseOrder extends Model
         static::creating(function (self $order) {
             if (empty($order->order_number)) {
                 $year = now()->year;
-                $count = self::whereYear('created_at', $year)->count() + 1;
-                $order->order_number = 'INK'.$year.'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
+                $prefix = 'INK' . $year . '-';
+                $latest = self::where('order_number', 'like', $prefix . '%')
+                    ->orderByRaw('CAST(SUBSTRING(order_number, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
+                    ->value('order_number');
+                $next = $latest ? ((int) substr($latest, strlen($prefix)) + 1) : 1;
+                $order->order_number = $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
             }
         });
     }

@@ -118,8 +118,15 @@ class PurchaseOrderItemsRelationManager extends RelationManager
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('quantity')
-                    ->label('Aantal')
+                    ->label('Besteld')
                     ->numeric(decimalPlaces: 2),
+
+                Tables\Columns\TextColumn::make('received_quantity')
+                    ->label('Ontvangen')
+                    ->numeric(decimalPlaces: 2)
+                    ->color(fn ($record) => (float) $record->received_quantity >= (float) $record->quantity
+                        ? 'success'
+                        : ((float) $record->received_quantity > 0 ? 'warning' : 'gray')),
 
                 Tables\Columns\TextColumn::make('unit_price')
                     ->label('Eenheidsprijs')
