@@ -4,15 +4,12 @@ namespace App\Notifications;
 
 use App\Models\EmailTemplate;
 use App\Models\Lead;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\HtmlString;
 
-class InfoRequiredNotification extends Notification implements ShouldQueue
+class InfoRequiredNotification extends Notification
 {
-    use Queueable;
 
     public function __construct(
         public Lead $lead,

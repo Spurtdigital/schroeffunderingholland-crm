@@ -23,16 +23,16 @@ beforeEach(function () {
 function makeProductWithSupplier(Supplier $supplier, array $overrides = []): Product
 {
     $product = Product::factory()->create(array_merge([
-        'sku'            => 'TST-' . uniqid(),
-        'supplier_id'    => $supplier->id,
+        'sku' => 'TST-'.uniqid(),
+        'supplier_id' => $supplier->id,
         'purchase_price' => 50.00,
     ], $overrides));
 
     // Also create pivot record for the multi-supplier system
     $product->suppliers()->attach($supplier->id, [
-        'supplier_sku'   => $overrides['supplier_article_number'] ?? null,
+        'supplier_sku' => $overrides['supplier_article_number'] ?? null,
         'purchase_price' => $overrides['purchase_price'] ?? 50.00,
-        'is_preferred'   => true,
+        'is_preferred' => true,
     ]);
 
     return $product;
@@ -44,14 +44,14 @@ function makeProductWithSupplier(Supplier $supplier, array $overrides = []): Pro
 function makeProductItem(Project $project, Product $product, array $overrides = []): ProjectItem
 {
     return ProjectItem::factory()->create(array_merge([
-        'project_id'    => $project->id,
+        'project_id' => $project->id,
         'itemable_type' => Product::class,
-        'itemable_id'   => $product->id,
-        'type'          => QuoteItemType::Product,
-        'description'   => $product->name,
-        'quantity'      => 2,
-        'unit_price'    => $product->sales_price,
-        'total'         => round(2 * $product->sales_price, 2),
+        'itemable_id' => $product->id,
+        'type' => QuoteItemType::Product,
+        'description' => $product->name,
+        'quantity' => 2,
+        'unit_price' => $product->sales_price,
+        'total' => round(2 * $product->sales_price, 2),
     ], $overrides));
 }
 
@@ -60,9 +60,9 @@ function makeProductItem(Project $project, Product $product, array $overrides = 
 // ──────────────────────────────────────────────────────────────────────────────
 
 test('generate purchase orders action: is visible when project has eligible product items', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create();
-    $product  = makeProductWithSupplier($supplier);
+    $product = makeProductWithSupplier($supplier);
 
     makeProductItem($project, $product);
 
@@ -77,7 +77,7 @@ test('generate purchase orders action: is hidden when project has no eligible it
     // Only a free-line item (no product / supplier)
     ProjectItem::factory()->create([
         'project_id' => $project->id,
-        'type'       => QuoteItemType::FreeLine,
+        'type' => QuoteItemType::FreeLine,
     ]);
 
     Livewire::actingAs(User::first())
@@ -88,7 +88,7 @@ test('generate purchase orders action: is hidden when project has no eligible it
 test('generate purchase orders action: is hidden when product items have no supplier', function () {
     $project = Project::factory()->create();
     $product = Product::factory()->create([
-        'sku'         => 'TST-' . uniqid(),
+        'sku' => 'TST-'.uniqid(),
         'supplier_id' => null,
     ]);
 
@@ -104,9 +104,9 @@ test('generate purchase orders action: is hidden when product items have no supp
 // ──────────────────────────────────────────────────────────────────────────────
 
 test('generate purchase orders action: creates one order for one supplier', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'nl']);
-    $product  = makeProductWithSupplier($supplier);
+    $product = makeProductWithSupplier($supplier);
 
     makeProductItem($project, $product);
 
@@ -119,11 +119,11 @@ test('generate purchase orders action: creates one order for one supplier', func
 });
 
 test('generate purchase orders action: creates separate orders for two suppliers', function () {
-    $project   = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplierA = Supplier::factory()->create(['language' => 'nl']);
     $supplierB = Supplier::factory()->create(['language' => 'de']);
-    $productA  = makeProductWithSupplier($supplierA);
-    $productB  = makeProductWithSupplier($supplierB);
+    $productA = makeProductWithSupplier($supplierA);
+    $productB = makeProductWithSupplier($supplierB);
 
     makeProductItem($project, $productA);
     makeProductItem($project, $productB);
@@ -153,9 +153,9 @@ test('generate purchase orders action: creates separate orders for two suppliers
 // ──────────────────────────────────────────────────────────────────────────────
 
 test('generate purchase orders action: sets correct project_id, supplier_id and language on order', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'nl']);
-    $product  = makeProductWithSupplier($supplier);
+    $product = makeProductWithSupplier($supplier);
 
     makeProductItem($project, $product);
 
@@ -172,9 +172,9 @@ test('generate purchase orders action: sets correct project_id, supplier_id and 
 });
 
 test('generate purchase orders action: copies language from supplier', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'de']);
-    $product  = makeProductWithSupplier($supplier);
+    $product = makeProductWithSupplier($supplier);
 
     makeProductItem($project, $product);
 
@@ -192,16 +192,16 @@ test('generate purchase orders action: copies language from supplier', function 
 // ──────────────────────────────────────────────────────────────────────────────
 
 test('generate purchase orders action: creates order items with correct fields', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'nl']);
-    $product  = makeProductWithSupplier($supplier, [
-        'purchase_price'          => 40.00,
+    $product = makeProductWithSupplier($supplier, [
+        'purchase_price' => 40.00,
         'supplier_article_number' => 'ART-XYZ',
     ]);
 
     makeProductItem($project, $product, [
         'description' => 'Mijn omschrijving',
-        'quantity'    => 3,
+        'quantity' => 3,
     ]);
 
     Livewire::actingAs(User::first())
@@ -223,11 +223,11 @@ test('generate purchase orders action: creates order items with correct fields',
 });
 
 test('generate purchase orders action: uses product purchase_price (not sales_price) for unit_price', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'nl']);
-    $product  = makeProductWithSupplier($supplier, [
+    $product = makeProductWithSupplier($supplier, [
         'purchase_price' => 30.00,
-        'sales_price'    => 99.00,
+        'sales_price' => 99.00,
     ]);
 
     makeProductItem($project, $product, ['quantity' => 1]);
@@ -246,18 +246,18 @@ test('generate purchase orders action: uses product purchase_price (not sales_pr
 // ──────────────────────────────────────────────────────────────────────────────
 
 test('generate purchase orders action: skips free-line items', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'nl']);
-    $product  = makeProductWithSupplier($supplier, ['purchase_price' => 10.00]);
+    $product = makeProductWithSupplier($supplier, ['purchase_price' => 10.00]);
 
     makeProductItem($project, $product, ['quantity' => 1]);
 
     // Also add a free-line item — should be skipped
     ProjectItem::factory()->create([
-        'project_id'  => $project->id,
-        'type'        => QuoteItemType::FreeLine,
+        'project_id' => $project->id,
+        'type' => QuoteItemType::FreeLine,
         'description' => 'Vrije regel',
-        'quantity'    => 5,
+        'quantity' => 5,
     ]);
 
     Livewire::actingAs(User::first())
@@ -271,11 +271,11 @@ test('generate purchase orders action: skips free-line items', function () {
 });
 
 test('generate purchase orders action: skips product items without supplier', function () {
-    $project        = Project::factory()->create();
-    $supplier       = Supplier::factory()->create(['language' => 'nl']);
-    $productWith    = makeProductWithSupplier($supplier, ['purchase_price' => 10.00]);
+    $project = Project::factory()->create();
+    $supplier = Supplier::factory()->create(['language' => 'nl']);
+    $productWith = makeProductWithSupplier($supplier, ['purchase_price' => 10.00]);
     $productWithout = Product::factory()->create([
-        'sku'         => 'TST-' . uniqid(),
+        'sku' => 'TST-'.uniqid(),
         'supplier_id' => null,
     ]);
 
@@ -298,9 +298,9 @@ test('generate purchase orders action: skips product items without supplier', fu
 // ──────────────────────────────────────────────────────────────────────────────
 
 test('generate purchase orders action: recalculates totals with 21% VAT for NL supplier', function () {
-    $project  = Project::factory()->create();
-    $supplier = Supplier::factory()->create(['language' => 'nl']);
-    $product  = makeProductWithSupplier($supplier, ['purchase_price' => 100.00]);
+    $project = Project::factory()->create();
+    $supplier = Supplier::factory()->create(['language' => 'nl', 'btw' => true]);
+    $product = makeProductWithSupplier($supplier, ['purchase_price' => 100.00]);
 
     makeProductItem($project, $product, ['quantity' => 1]);
 
@@ -317,9 +317,9 @@ test('generate purchase orders action: recalculates totals with 21% VAT for NL s
 });
 
 test('generate purchase orders action: recalculates totals with 0% VAT for foreign supplier', function () {
-    $project  = Project::factory()->create();
+    $project = Project::factory()->create();
     $supplier = Supplier::factory()->create(['language' => 'de']);
-    $product  = makeProductWithSupplier($supplier, ['purchase_price' => 200.00]);
+    $product = makeProductWithSupplier($supplier, ['purchase_price' => 200.00]);
 
     makeProductItem($project, $product, ['quantity' => 1]);
 

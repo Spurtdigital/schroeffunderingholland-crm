@@ -6,14 +6,12 @@ use App\Models\EmailTemplate;
 use App\Models\Project;
 use App\Services\PdfService;
 use App\Settings\GeneralSettings;
-use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\HtmlString;
 
 class ProjectCompletedNotification extends Notification
 {
-    use Queueable;
 
     public function __construct(
         public Project $project,

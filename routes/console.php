@@ -11,5 +11,9 @@ Artisan::command('inspire', function () {
 // Sync Moneybird quote statuses every 15 minutes
 Schedule::command('sync:moneybird-quotes')
     ->everyFifteenMinutes()
-    ->withoutOverlapping()
+    ->runInBackground();
+
+// Sync Moneybird contacts cache every hour
+Schedule::command('sync:moneybird-contacts-cache')
+    ->hourly()
     ->runInBackground();

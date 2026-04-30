@@ -121,7 +121,7 @@ test('create purchase order action: creates items with correct totals', function
 
 test('create purchase order action: recalculates totals (NL supplier = 21% BTW)', function () {
     $project = Project::factory()->create();
-    $supplier = Supplier::factory()->create(['language' => 'nl']);
+    $supplier = Supplier::factory()->create(['language' => 'nl', 'btw' => true]);
 
     Livewire::actingAs(User::first())
         ->test(ViewProject::class, ['record' => $project->getRouteKey()])

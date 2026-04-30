@@ -84,11 +84,17 @@ class ViewQuote extends ViewRecord
                     ->label('Teksten bewerken')
                     ->icon('heroicon-o-document-text')
                     ->fillForm(fn (Quote $record) => [
+                        'reference' => $record->reference,
                         'notes' => $record->notes,
                         'pre_text' => $record->pre_text,
                         'post_text' => $record->post_text,
                     ])
                     ->form([
+                        TextInput::make('reference')
+                            ->label('Kenmerk (Moneybird)')
+                            ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
+                            ->maxLength(255)
+                            ->nullable(),
                         Textarea::make('notes')
                             ->label('Opmerkingen')
                             ->rows(4),
@@ -103,11 +109,12 @@ class ViewQuote extends ViewRecord
                     ])
                     ->action(function (Quote $record, array $data) {
                         $record->update([
+                            'reference' => $data['reference'],
                             'notes' => $data['notes'],
                             'pre_text' => $data['pre_text'],
                             'post_text' => $data['post_text'],
                         ]);
-                        $this->refreshFormData(['notes', 'pre_text', 'post_text']);
+                        $this->refreshFormData(['reference', 'notes', 'pre_text', 'post_text']);
                         Notification::make()->success()->title('Teksten opgeslagen')->send();
                     }),
 

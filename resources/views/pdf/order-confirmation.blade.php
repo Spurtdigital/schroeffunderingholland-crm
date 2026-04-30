@@ -146,11 +146,20 @@
             margin: 3px 0;
             font-size: 8.5pt;
         }
-        .info-box .label {
-            display: inline-block;
-            width: 105px;
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+        }
+        .info-table td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+        .info-table td.lbl {
             font-weight: bold;
-            color: #000;
+            white-space: nowrap;
+            width: 110px;
+            padding-right: 6px;
         }
 
         /* Aanhef */
@@ -302,38 +311,42 @@
     <div class="info-container clearfix">
         <div class="info-box">
             <p><strong>{{ $quote->company->name }}</strong></p>
-            @if($quote->company->contact_person)
-            <p><span class="label">T.a.v.:</span> {{ $quote->company->contact_person }}</p>
-            @endif
-            @if($quote->company->street)
-            <p><span class="label">Adres:</span> {{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</p>
-            <p><span class="label"></span> {{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</p>
-            @endif
-            @if($quote->company->phone)
-            <p><span class="label">Telefoon:</span> {{ $quote->company->phone }}</p>
-            @endif
-            @if($quote->company->email)
-            <p><span class="label">E-mail:</span> {{ $quote->company->email }}</p>
-            @endif
+            <table class="info-table">
+                @if($quote->company->contact_person)
+                <tr><td class="lbl">T.a.v.:</td><td>{{ $quote->company->contact_person }}</td></tr>
+                @endif
+                @if($quote->company->street)
+                <tr><td class="lbl">Adres:</td><td>{{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</td></tr>
+                <tr><td class="lbl"></td><td>{{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</td></tr>
+                @endif
+                @if($quote->company->phone)
+                <tr><td class="lbl">Telefoon:</td><td>{{ $quote->company->phone }}</td></tr>
+                @endif
+                @if($quote->company->email)
+                <tr><td class="lbl">E-mail:</td><td>{{ $quote->company->email }}</td></tr>
+                @endif
+            </table>
         </div>
 
         <div class="info-box">
-            <p><span class="label">Projectnummer:</span> {{ $project->project_number }}</p>
-            @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
-            <p><span class="label">Offertenummer:</span> {{ $quote->quote_number }}</p>
-            @endif
-            @if($project->start_date)
-            <p><span class="label">Montagedatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
-            @endif
-            @php
-                $werklocatie = $quote->workFullAddress();
-            @endphp
-            @if($werklocatie)
-            <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{!! nl2br(e($werklocatie)) !!}</p>
-            @elseif($quote->lead?->project_description)
-            <p><span class="label">Project:</span> {{ $quote->lead->project_description }}</p>
-            @endif
+            <table class="info-table">
+                <tr><td class="lbl">Projectnummer:</td><td>{{ $project->project_number }}</td></tr>
+                @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
+                <tr><td class="lbl">Offertenummer:</td><td>{{ $quote->quote_number }}</td></tr>
+                @endif
+                @if($project->start_date)
+                <tr><td class="lbl">Montagedatum:</td><td>{{ $project->start_date->format('d-m-Y') }}</td></tr>
+                @endif
+                @if($quote->machine)
+                <tr><td class="lbl">Machine:</td><td>{{ $quote->machine->name }}</td></tr>
+                @endif
+                @php $werklocatie = $quote->workFullAddress(); @endphp
+                @if($werklocatie)
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                @elseif($quote->lead?->project_description)
+                <tr><td class="lbl">Project:</td><td>{{ $quote->lead->project_description }}</td></tr>
+                @endif
+            </table>
         </div>
     </div>
 
