@@ -14,37 +14,41 @@ enum QuoteItemType: string implements HasLabel, HasIcon, HasColor
     case Mileage = 'mileage';
     case Discount = 'discount';
     case Machine = 'machine';
+    case Adjustment = 'adjustment';
 
     public function getLabel(): ?string
     {
         return match($this) {
-            self::Product  => 'Product',
-            self::FreeLine => 'Vrije regel',
-            self::Labor    => 'Arbeid',
-            self::Mileage  => 'Reiskosten',
-            self::Discount => 'Korting',
-            self::Machine  => 'Machine',
+            self::Product    => 'Product',
+            self::FreeLine   => 'Vrije regel',
+            self::Labor      => 'Arbeid',
+            self::Mileage    => 'Reiskosten',
+            self::Discount   => 'Korting',
+            self::Machine    => 'Machine',
+            self::Adjustment => 'Prijsaanpassing',
         };
     }
 
     public function getIcon(): ?string
     {
         return match($this) {
-            self::Product  => 'heroicon-o-cube',
-            self::FreeLine => 'heroicon-o-pencil',
-            self::Labor    => 'heroicon-o-wrench-screwdriver',
-            self::Mileage  => 'heroicon-o-truck',
-            self::Discount => 'heroicon-o-tag',
-            self::Machine  => 'heroicon-o-cog-6-tooth',
+            self::Product    => 'heroicon-o-cube',
+            self::FreeLine   => 'heroicon-o-pencil',
+            self::Labor      => 'heroicon-o-wrench-screwdriver',
+            self::Mileage    => 'heroicon-o-truck',
+            self::Discount   => 'heroicon-o-tag',
+            self::Machine    => 'heroicon-o-cog-6-tooth',
+            self::Adjustment => 'heroicon-o-arrows-up-down',
         };
     }
 
     public function getColor(): string|array|null
     {
         return match($this) {
-            self::Discount => 'danger',
-            self::Machine  => 'warning',
-            default        => null,
+            self::Discount   => 'danger',
+            self::Machine    => 'warning',
+            self::Adjustment => 'gray',
+            default          => null,
         };
     }
 }

@@ -92,6 +92,13 @@ class QuoteForm
                             ->helperText('Uitgeschakeld: PDF toont alleen het totaalbedrag, zonder losse regels en subbedragen.')
                             ->default(true)
                             ->columnSpan(1),
+
+                        TextInput::make('reference')
+                            ->label('Kenmerk (Moneybird)')
+                            ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
+                            ->maxLength(255)
+                            ->nullable()
+                            ->columnSpanFull(),
                     ]),
 
                 // ── Rechter kolom (1/3): bedragen (read-only) ──

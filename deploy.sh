@@ -9,7 +9,7 @@ set -euo pipefail
 SSH_KEY="$HOME/.ssh/antagonist-ssh"
 SSH_USER="deb122730"
 SSH_HOST="141.138.169.228"
-SSH_OPTS="-i $SSH_KEY -p 2222 -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ConnectTimeout=30"
+SSH_OPTS="-i $SSH_KEY -p 22 -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ConnectTimeout=30"
 SSH="ssh $SSH_OPTS $SSH_USER@$SSH_HOST"
 REMOTE_ROOT="/home/deb122730/domains/crm.schroeffunderingholland.nl"
 REMOTE_APP="$REMOTE_ROOT/app"
