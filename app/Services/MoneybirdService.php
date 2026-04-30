@@ -310,23 +310,36 @@ class MoneybirdService
                 $detail->tax_rate_id = $taxRateId;
                 $details[] = $detail;
             } else {
-                // Opleverings- of enkelvoudige factuur: omschrijvingsregels zonder prijs, dan één totaalregel
+                // Opleverings- of enkelvoudige factuur: items met unit_price als priced rows,
+                // de rest als omschrijvingsregels. Één totaalregel voor het resterende bedrag.
                 $items = $invoice->project->items()->orderBy('sort_order')->get();
+
+                $pricedSubtotal = 0.0;
 
                 foreach ($items as $item) {
                     $detail = $moneybird->salesInvoiceDetail();
                     $detail->description = $this->projectItemDescription($item);
-                    $detail->amount = $this->formatQuantity($item->quantity);
+                    $detail->amount = $this->formatQuantity($item->quantity) . ' x';
+
+                    if ((float) $item->unit_price > 0) {
+                        $detail->price = (string) round((float) $item->unit_price, 2);
+                        $detail->tax_rate_id = $taxRateId;
+                        $pricedSubtotal += round((float) $item->unit_price * (float) $item->quantity, 2);
+                    }
+
                     $details[] = $detail;
                 }
 
-                // Één totaalregel met de prijs
-                $totalDetail = $moneybird->salesInvoiceDetail();
-                $totalDetail->description = $subject;
-                $totalDetail->price = (string) round($invoice->subtotal, 2);
-                $totalDetail->amount = '1';
-                $totalDetail->tax_rate_id = $taxRateId;
-                $details[] = $totalDetail;
+                // Totaalregel voor het resterende bedrag (alles zonder stuksprijs)
+                $remainingSubtotal = round((float) $invoice->subtotal - $pricedSubtotal, 2);
+                if ($remainingSubtotal > 0) {
+                    $totalDetail = $moneybird->salesInvoiceDetail();
+                    $totalDetail->description = $subject;
+                    $totalDetail->price = (string) $remainingSubtotal;
+                    $totalDetail->amount = '1';
+                    $totalDetail->tax_rate_id = $taxRateId;
+                    $details[] = $totalDetail;
+                }
             }
 
             // Assign all details at once

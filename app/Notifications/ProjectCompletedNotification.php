@@ -40,10 +40,13 @@ class ProjectCompletedNotification extends Notification
         $photos = $this->project->getMedia('project-photos');
         $reviewUrl = app(GeneralSettings::class)->review_url;
 
+        $quote = $this->project->quote;
+
         $rendered = $template->renderToHtml([
             'klant_naam' => $company->contact_name ?? 'relatie',
             'bedrijf_naam' => $company->name,
             'project_nummer' => $this->project->project_number,
+            'offerte_nummer' => $quote?->displayNumber() ?? $this->project->project_number,
             'opleverdatum' => $this->project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y'),
             'aantal_fotos' => $photos->count(),
             'review_url' => $reviewUrl ?? '',
