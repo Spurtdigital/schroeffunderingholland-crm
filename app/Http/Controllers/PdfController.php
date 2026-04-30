@@ -30,6 +30,14 @@ class PdfController extends Controller
     }
 
     /**
+     * Generate and download order confirmation PDF for a project
+     */
+    public function orderConfirmationPdf(Project $project)
+    {
+        return $this->pdfService->generateOrderConfirmationPdf($project, download: true);
+    }
+
+    /**
      * Generate and download completion report PDF for a project
      */
     public function completionReport(Project $project)

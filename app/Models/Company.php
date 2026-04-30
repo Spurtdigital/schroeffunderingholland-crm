@@ -27,7 +27,7 @@ class Company extends Model
     /**
      * Route notifications for the mail channel.
      */
-    public function routeNotificationForMail(): string
+    public function routeNotificationForMail(): ?string
     {
         return $this->email;
     }

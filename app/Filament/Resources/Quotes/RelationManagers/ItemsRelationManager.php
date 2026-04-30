@@ -559,6 +559,72 @@ class ItemsRelationManager extends RelationManager
                                 ->body('€ '.number_format($amount, 2, ',', '.').' korting is toegevoegd.')
                                 ->send();
                         }),
+
+                    // Adjust total price
+                    Action::make('adjustTotal')
+                        ->label('Totaalprijs aanpassen')
+                        ->icon('heroicon-o-currency-euro')
+                        ->color('warning')
+                        ->form(function (RelationManager $livewire) {
+                            $quote = $livewire->getOwnerRecord();
+                            $itemsSubtotal = $quote->items->sum(fn ($i) => $i->quantity * $i->unit_price);
+                            $currentSubtotal = number_format((float) $itemsSubtotal, 2, ',', '.');
+
+                            return [
+                                Forms\Components\Placeholder::make('current_subtotal_display')
+                                    ->label('Subtotaal op basis van regels (excl. BTW)')
+                                    ->content('€ '.$currentSubtotal)
+                                    ->columnSpanFull(),
+
+                                Forms\Components\TextInput::make('desired_subtotal')
+                                    ->label('Gewenst subtotaal (excl. BTW)')
+                                    ->numeric()
+                                    ->prefix('€')
+                                    ->required()
+                                    ->step(0.01)
+                                    ->helperText('Vul het gewenste totaalbedrag in. Het verschil wordt verwerkt in het totaal zonder aparte regel.')
+                                    ->columnSpanFull(),
+                            ];
+                        })
+                        ->action(function (array $data, RelationManager $livewire): void {
+                            $quote = $livewire->getOwnerRecord();
+                            $itemsSubtotal = $quote->items->sum(fn ($i) => $i->quantity * $i->unit_price);
+                            $desiredSubtotal = (float) $data['desired_subtotal'];
+                            $adjustment = round($desiredSubtotal - $itemsSubtotal, 2);
+
+                            if ($adjustment == 0) {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Geen wijziging')
+                                    ->body('Het gewenste bedrag is gelijk aan het huidige subtotaal.')
+                                    ->send();
+
+                                return;
+                            }
+
+                            // Remove any existing adjustment lines first
+                            $quote->items()->where('type', QuoteItemType::Adjustment->value)->delete();
+
+                            $label = $adjustment > 0 ? 'Toeslag' : 'Korting';
+                            $quote->items()->create([
+                                'type'         => QuoteItemType::Adjustment->value,
+                                'description'  => $label,
+                                'quantity'     => 1,
+                                'unit_price'   => $adjustment,
+                                'total'        => $adjustment,
+                                'itemable_type' => null,
+                                'itemable_id'  => null,
+                            ]);
+
+                            $livewire->recalculateAndRefresh();
+
+                            $formattedDiff = '€ '.number_format(abs($adjustment), 2, ',', '.');
+                            Notification::make()
+                                ->success()
+                                ->title('Totaal aangepast')
+                                ->body("{$label} van {$formattedDiff} verwerkt in het totaal.")
+                                ->send();
+                        }),
                 ])
                     ->label('Regel toevoegen')
                     ->icon('heroicon-o-plus')

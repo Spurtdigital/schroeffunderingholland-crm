@@ -72,6 +72,11 @@ class QuoteInfolist
                             ->falseIcon('heroicon-o-eye-slash')
                             ->trueColor('success')
                             ->falseColor('gray'),
+
+                        TextEntry::make('reference')
+                            ->label('Kenmerk (Moneybird)')
+                            ->placeholder('-')
+                            ->columnSpan(2),
                     ]),
 
                 // ── Kolom links 3/4: Regels + Offerte tekst ──────────────────

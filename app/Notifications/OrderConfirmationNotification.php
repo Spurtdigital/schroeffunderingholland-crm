@@ -5,15 +5,12 @@ namespace App\Notifications;
 use App\Models\EmailTemplate;
 use App\Models\Project;
 use App\Services\PdfService;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\HtmlString;
 
-class OrderConfirmationNotification extends Notification implements ShouldQueue
+class OrderConfirmationNotification extends Notification
 {
-    use Queueable;
 
     public function __construct(
         public Project $project,

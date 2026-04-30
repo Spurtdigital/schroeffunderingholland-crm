@@ -6,6 +6,7 @@ use App\Filament\Resources\Projects\Actions\CompleteProjectAction;
 use App\Filament\Resources\Projects\Actions\CreatePurchaseOrderFromProjectAction;
 use App\Filament\Resources\Projects\Actions\GenerateCompletionReportAction;
 use App\Filament\Resources\Projects\Actions\GenerateInvoiceAction;
+use App\Filament\Resources\Projects\Actions\GenerateOrderConfirmationAction;
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
 use App\Filament\Resources\Projects\Actions\GeneratePurchaseOrdersFromProjectAction;
 use App\Filament\Resources\Projects\Actions\ResendCompletionMailAction;
@@ -40,6 +41,7 @@ class ViewProject extends ViewRecord
 
             // Documenten dropdown
             ActionGroup::make([
+                GenerateOrderConfirmationAction::make(),
                 GenerateCompletionReportAction::make(),
                 GeneratePackingSlipAction::make(),
                 ResendCompletionMailAction::make(),

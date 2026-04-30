@@ -20,6 +20,7 @@ class Supplier extends Model
         'notes',
         'is_active',
         'language',
+        'btw',
         'address',
         'postal_code',
         'city',
@@ -28,6 +29,7 @@ class Supplier extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'btw' => 'boolean',
     ];
 
     /**
