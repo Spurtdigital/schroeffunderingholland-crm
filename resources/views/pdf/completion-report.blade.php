@@ -114,9 +114,10 @@
         .doc-title-bar {
             background: none;
             color: #000;
-            padding: 10px 14px;
+            padding: 10px 0;
             margin-bottom: 14px;
             overflow: hidden;
+            border-bottom: 2px solid #000;
         }
         .doc-title-bar .doc-title {
             float: left;
@@ -153,10 +154,20 @@
             margin: 3px 0;
             font-size: 8.5pt;
         }
-        .info-box .label {
-            display: inline-block;
-            width: 105px;
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+        }
+        .info-table td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+        .info-table td.lbl {
             font-weight: bold;
+            white-space: nowrap;
+            width: 110px;
+            padding-right: 6px;
         }
 
         /* Sectie headers */
@@ -379,36 +390,37 @@
     <div class="info-container clearfix">
         <div class="info-box">
             <p><strong>{{ $project->company->name }}</strong></p>
-            @if(!empty($project->company->contact_person))
-            <p><span class="label">T.a.v.:</span> {{ $project->company->contact_person }}</p>
-            @endif
-            @if(!empty($clientName))
-            <p><span class="label">Naam klant:</span> {{ $clientName }}</p>
-            @endif
-            @if($project->company->street)
-            <p><span class="label">Adres:</span> {{ trim(($project->company->street ?? '') . ' ' . ($project->company->house_number ?? '')) }}</p>
-            <p><span class="label"></span> {{ trim(($project->company->postal_code ?? '') . ' ' . ($project->company->city ?? '')) }}</p>
-            @endif
-            @if($project->company->phone)
-            <p><span class="label">Telefoon:</span> {{ $project->company->phone }}</p>
-            @endif
+            <table class="info-table">
+                @if(!empty($project->company->contact_person))
+                <tr><td class="lbl">T.a.v.:</td><td>{{ $project->company->contact_person }}</td></tr>
+                @endif
+                @if(!empty($clientName))
+                <tr><td class="lbl">Naam klant:</td><td>{{ $clientName }}</td></tr>
+                @endif
+                @if($project->company->street)
+                <tr><td class="lbl">Adres:</td><td>{{ trim(($project->company->street ?? '') . ' ' . ($project->company->house_number ?? '')) }}</td></tr>
+                <tr><td class="lbl"></td><td>{{ trim(($project->company->postal_code ?? '') . ' ' . ($project->company->city ?? '')) }}</td></tr>
+                @endif
+                @if($project->company->phone)
+                <tr><td class="lbl">Telefoon:</td><td>{{ $project->company->phone }}</td></tr>
+                @endif
+            </table>
         </div>
         <div class="info-box">
-            <p><span class="label">Projectnummer:</span> {{ $project->project_number }}</p>
-            @if($project->quote && !str_starts_with($project->quote->quote_number ?? '', 'CONCEPT-'))
-            <p><span class="label">Offertenummer:</span> {{ $project->quote->quote_number }}</p>
-            @endif
-            @if($project->start_date)
-            <p><span class="label">Montagedatum:</span> {{ $project->start_date->format('d-m-Y') }}</p>
-            @endif
-            <p><span class="label">Opleverdatum:</span> {{ $project->completion_date?->format('d-m-Y') ?? '—' }}</p>
-            @php
-                $werklocatie = $project->quote?->workFullAddress();
-            @endphp
-            @if($werklocatie)
-            <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{!! nl2br(e($werklocatie)) !!}</p>
-            @endif
+            <table class="info-table">
+                <tr><td class="lbl">Projectnummer:</td><td>{{ $project->project_number }}</td></tr>
+                @if($project->quote && !str_starts_with($project->quote->quote_number ?? '', 'CONCEPT-'))
+                <tr><td class="lbl">Offertenummer:</td><td>{{ $project->quote->quote_number }}</td></tr>
+                @endif
+                @if($project->start_date)
+                <tr><td class="lbl">Montagedatum:</td><td>{{ $project->start_date->format('d-m-Y') }}</td></tr>
+                @endif
+                <tr><td class="lbl">Opleverdatum:</td><td>{{ $project->completion_date?->format('d-m-Y') ?? '—' }}</td></tr>
+                @php $werklocatie = $project->quote?->workFullAddress(); @endphp
+                @if($werklocatie)
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                @endif
+            </table>
         </div>
     </div>
 
