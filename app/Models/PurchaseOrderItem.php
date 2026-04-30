@@ -16,15 +16,17 @@ class PurchaseOrderItem extends Model
         'description',
         'supplier_article_number',
         'quantity',
+        'received_quantity',
         'unit_price',
         'total',
         'sort_order',
     ];
 
     protected $casts = [
-        'quantity'   => 'decimal:2',
-        'unit_price' => 'decimal:2',
-        'total'      => 'decimal:2',
+        'quantity'          => 'decimal:2',
+        'received_quantity' => 'decimal:2',
+        'unit_price'        => 'decimal:2',
+        'total'             => 'decimal:2',
     ];
 
     /**
