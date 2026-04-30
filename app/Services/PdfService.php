@@ -279,6 +279,28 @@ class PdfService
     }
 
     /**
+     * Generate order confirmation PDF (stream or download)
+     */
+    public function generateOrderConfirmationPdf(Project $project, bool $download = false): \Illuminate\Http\Response
+    {
+        $quote = $project->quote;
+
+        $pdf = Pdf::loadView('pdf.order-confirmation', [
+            'quote'    => $quote->load(['company', 'lead', 'items.machine']),
+            'project'  => $project,
+            'settings' => $this->settings,
+        ]);
+
+        $filename = $this->getOrderConfirmationPdfFilename($project);
+
+        if ($download) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
+    }
+
+    /**
      * Generate PDF for a purchase order (stream or download)
      */
     public function generatePurchaseOrderPdf(PurchaseOrder $order, bool $download = false): \Illuminate\Http\Response

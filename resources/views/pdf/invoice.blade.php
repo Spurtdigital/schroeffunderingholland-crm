@@ -382,6 +382,17 @@
     <div class="totals-container clearfix">
         <div class="totals-table">
             <table>
+                @if($isDeposit && $quote && $quote->total)
+                <tr>
+                    <td>Totaal orderbedrag incl. BTW:</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->total, 2, ',', '.') }}</td>
+                </tr>
+                @if($invoice->deposit_percentage && $invoice->deposit_percentage != 100)
+                <tr>
+                    <td>Aanbetaling ({{ number_format($invoice->deposit_percentage, 0) }}%):</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($total, 2, ',', '.') }}</td>
+                </tr>
+                @else
                 <tr>
                     <td>Subtotaal excl. BTW:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($subtotal, 2, ',', '.') }}</td>
@@ -390,8 +401,19 @@
                     <td>BTW (21%):</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($vatAmount, 2, ',', '.') }}</td>
                 </tr>
+                @endif
+                @else
+                <tr>
+                    <td>Subtotaal excl. BTW:</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($subtotal, 2, ',', '.') }}</td>
+                </tr>
+                <tr>
+                    <td>BTW (21%):</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($vatAmount, 2, ',', '.') }}</td>
+                </tr>
+                @endif
                 <tr class="total-final">
-                    <td>Totaal incl. BTW:</td>
+                    <td>{{ $isDeposit ? 'Aanbetalingsbedrag incl. BTW:' : 'Totaal incl. BTW:' }}</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($total, 2, ',', '.') }}</td>
                 </tr>
             </table>

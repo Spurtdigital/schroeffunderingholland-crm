@@ -79,16 +79,13 @@ class PurchaseOrder extends Model
     /**
      * Recalculate subtotal, VAT and total from items.
      *
-     * BTW (VAT) is only applied for domestic (NL) orders. Foreign suppliers
-     * (language 'en' or 'de') use 0% VAT — the price is shown excl. VAT and
-     * no VAT is charged.
+     * BTW (VAT) is only applied when the linked supplier has btw = true.
      */
     public function recalculateTotals(): void
     {
         $subtotal = $this->items()->sum('total');
 
-        // Only charge VAT for Dutch orders; foreign orders are 0% BTW.
-        $vatPercentage = $this->language === 'nl' ? 21 : 0;
+        $vatPercentage = $this->supplier?->btw ? 21 : 0;
         $vat = round($subtotal * ($vatPercentage / 100), 2);
 
         $this->update([

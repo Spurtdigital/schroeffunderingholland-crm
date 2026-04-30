@@ -297,16 +297,37 @@ class MoneybirdService
 
             $mbInvoice->subject = $subject;
 
-            // Build details array — always a single line per invoice
+            // Build details array
             $details = [];
             $taxRateId = $this->getTaxRateId(21.0);
 
-            $detail = $moneybird->salesInvoiceDetail();
-            $detail->description = $subject;
-            $detail->price = (string) round($invoice->subtotal, 2);
-            $detail->amount = '1';
-            $detail->tax_rate_id = $taxRateId;
-            $details[] = $detail;
+            if ($invoice->invoice_type === \App\Enums\InvoiceType::Deposit) {
+                // Aanbetaling: één samenvattingsregel
+                $detail = $moneybird->salesInvoiceDetail();
+                $detail->description = $subject;
+                $detail->price = (string) round($invoice->subtotal, 2);
+                $detail->amount = '1';
+                $detail->tax_rate_id = $taxRateId;
+                $details[] = $detail;
+            } else {
+                // Opleverings- of enkelvoudige factuur: omschrijvingsregels zonder prijs, dan één totaalregel
+                $items = $invoice->project->items()->orderBy('sort_order')->get();
+
+                foreach ($items as $item) {
+                    $detail = $moneybird->salesInvoiceDetail();
+                    $detail->description = $this->projectItemDescription($item);
+                    $detail->amount = $this->formatQuantity($item->quantity);
+                    $details[] = $detail;
+                }
+
+                // Één totaalregel met de prijs
+                $totalDetail = $moneybird->salesInvoiceDetail();
+                $totalDetail->description = $subject;
+                $totalDetail->price = (string) round($invoice->subtotal, 2);
+                $totalDetail->amount = '1';
+                $totalDetail->tax_rate_id = $taxRateId;
+                $details[] = $totalDetail;
+            }
 
             // Assign all details at once
             $mbInvoice->details = $details;
@@ -353,6 +374,11 @@ class MoneybirdService
             $mbEstimate->estimate_date = $quote->created_at->format('Y-m-d');
             $mbEstimate->pre_text = $this->buildPreText($quote);
             $mbEstimate->post_text = $this->buildPostText($quote);
+
+            // Kenmerk (reference)
+            if (! empty($quote->reference)) {
+                $mbEstimate->reference = $quote->reference;
+            }
 
             // Build details and assign
             $mbEstimate->details = $this->buildEstimateDetails($moneybird, $quote);
@@ -466,6 +492,9 @@ class MoneybirdService
             $mbEstimate->details = array_merge($destroyDetails, $newDetails);
             $mbEstimate->pre_text = $this->buildPreText($quote);
             $mbEstimate->post_text = $this->buildPostText($quote);
+            if (! empty($quote->reference)) {
+                $mbEstimate->reference = $quote->reference;
+            }
             $mbEstimate->save();
 
             return true;
@@ -489,12 +518,6 @@ class MoneybirdService
         if ($company) {
             $name = $company->contact_person ?: $company->name;
             $parts[] = 'Beste '.$name.',';
-            $parts[] = '';
-        }
-
-        // 2. Machine (indien gekoppeld)
-        if ($quote->machine) {
-            $parts[] = 'Montage machine: '.$quote->machine->name;
             $parts[] = '';
         }
 
@@ -596,11 +619,14 @@ class MoneybirdService
                 $subtotal += $quote->travel_total;
             }
 
-            // Description-only lines (aantal wel, bedrag niet naar Moneybird)
+            // Description-only lines — skip Adjustment items (included in subtotal, not shown separately)
             foreach ($items as $item) {
+                if ($item->type === \App\Enums\QuoteItemType::Adjustment) {
+                    continue;
+                }
                 $detail = $moneybird->salesInvoiceDetail();
                 $detail->description = $this->itemDescription($item);
-                $detail->amount = (string) $this->formatQuantity($item->quantity);
+                $detail->amount = $this->formatQuantity($item->quantity).' x';
                 $details[] = $detail;
             }
 
@@ -619,11 +645,9 @@ class MoneybirdService
             }
 
             // Single total line
-            $displayNumber = $quote->project?->project_number ?? $quote->displayNumber() ?? 'Offerte';
             $totalDetail = $moneybird->salesInvoiceDetail();
-            $totalDetail->description = $displayNumber;
+            $totalDetail->description = 'Totaalprijs';
             $totalDetail->price = (string) round($subtotal, 2);
-            $totalDetail->amount = '1';
             $totalDetail->tax_rate_id = $taxRateId;
             $details[] = $totalDetail;
 
@@ -631,16 +655,37 @@ class MoneybirdService
         }
 
         foreach ($items as $item) {
+            // Skip adjustment items — they are included in the total, not as separate lines
+            if ($item->type === \App\Enums\QuoteItemType::Adjustment) {
+                continue;
+            }
             $detail = $moneybird->salesInvoiceDetail();
             $detail->description = $this->itemDescription($item);
             $detail->price = (string) $item->unit_price;
-            $detail->amount = (string) $this->formatQuantity($item->quantity);
+            $detail->amount = $this->formatQuantity($item->quantity).' x';
             $detail->tax_rate_id = $taxRateId;
 
             $details[] = $detail;
         }
 
         return $details;
+    }
+
+    /**
+     * Build the display description for a project item.
+     */
+    protected function projectItemDescription(\App\Models\ProjectItem $item): string
+    {
+        $parts = [];
+
+        // Prepend SKU for product items
+        if ($item->itemable instanceof \App\Models\Product && $item->itemable->sku) {
+            $parts[] = $item->itemable->sku;
+        }
+
+        $parts[] = $item->description;
+
+        return implode("\n", $parts);
     }
 
     /**
@@ -654,12 +699,12 @@ class MoneybirdService
 
         // Prepend SKU for product items
         if ($item->isProduct() && $item->itemable?->sku) {
-            $parts[] = 'Artikelnummer: '.$item->itemable->sku;
+            $parts[] = $item->itemable->sku;
         }
 
         $parts[] = $item->description;
 
-        $desc = implode(' ', $parts);
+        $desc = implode("\n", $parts);
 
         if ($item->pile_length) {
             $length = rtrim(rtrim(number_format((float) $item->pile_length, 2, ',', ''), '0'), ',');
@@ -671,7 +716,7 @@ class MoneybirdService
 
     /**
      * Format a quantity value: show whole numbers without decimals (12.00 → 12),
-     * keep decimals when meaningful (3.50 → 3,5).
+     * keep decimals when meaningful (3.50 → 3.5).
      */
     protected function formatQuantity(float|string $quantity): string
     {
@@ -681,7 +726,7 @@ class MoneybirdService
             return (string) (int) $qty;
         }
 
-        return rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.');
+        return rtrim(rtrim(number_format($qty, 4, '.', ''), '0'), '.');
     }
 
     /**

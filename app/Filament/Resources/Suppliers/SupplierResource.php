@@ -77,8 +77,12 @@ class SupplierResource extends Resource
 
                         Toggle::make('is_active')
                             ->label('Actief')
-                            ->default(true)
-                            ->columnSpanFull(),
+                            ->default(true),
+
+                        Toggle::make('btw')
+                            ->label('BTW')
+                            ->helperText('Wordt BTW berekend op inkooporders van deze leverancier?')
+                            ->default(false),
 
                         Textarea::make('notes')
                             ->label('Notities')
