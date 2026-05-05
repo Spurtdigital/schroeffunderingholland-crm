@@ -362,7 +362,7 @@
     @endif
 
     <!-- Items Tabel -->
-    @if($quote && $quote->items->count())
+    @if($quote && $quote->show_item_breakdown && $quote->items->count())
     <div class="items-section">
         <table class="items-table">
             <thead>
@@ -413,6 +413,7 @@
     <div class="totals-container clearfix">
         <div class="totals-table">
             <table>
+                @if($quote->show_item_breakdown)
                 <tr>
                     <td>Subtotaal producten:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->items->sum('total'), 2, ',', '.') }}</td>
@@ -431,6 +432,7 @@
                     <td>BTW (21%):</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->vat_amount, 2, ',', '.') }}</td>
                 </tr>
+                @endif
                 <tr class="total-final">
                     <td>Totaal incl. BTW:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->total, 2, ',', '.') }}</td>
