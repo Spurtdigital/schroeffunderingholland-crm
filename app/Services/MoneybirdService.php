@@ -302,7 +302,10 @@ class MoneybirdService
 
             // Add percentage to subject if applicable
             if ($invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
-                $subject .= " — {$invoice->deposit_percentage}% van totaalbedrag excl. BTW";
+                $pct = rtrim(rtrim(number_format((float) $invoice->deposit_percentage, 2, '.', ''), '0'), '.');
+                $quote = $invoice->project->quote;
+                $quoteSubtotalStr = $quote ? ' € ' . number_format($quote->subtotal, 2, ',', '.') : '';
+                $subject .= " — {$pct}% van totaalbedrag{$quoteSubtotalStr} excl. BTW";
             }
 
             $mbInvoice->subject = $subject;
