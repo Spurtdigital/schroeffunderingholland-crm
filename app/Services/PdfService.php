@@ -259,11 +259,16 @@ class PdfService
      */
     public function getOrderConfirmationPdfOutput(Project $project): string
     {
-        $quote = $project->quote;
+        $quote = $project->quote
+            ? $project->quote->load(['company', 'lead', 'items.machine'])
+            : null;
+
+        $company = $quote?->company ?? $project->load('company')->company;
 
         $pdf = Pdf::loadView('pdf.order-confirmation', [
-            'quote' => $quote->load(['company', 'lead', 'items.machine']),
-            'project' => $project,
+            'quote'    => $quote,
+            'company'  => $company,
+            'project'  => $project,
             'settings' => $this->settings,
         ]);
 
