@@ -201,7 +201,17 @@ class MoneybirdService
 
             return true;
         } catch (ApiException $e) {
-            throw new \Exception('Moneybird API fout: '.$e->getMessage());
+            $message = $e->getMessage();
+
+            // Detect email domain validation error and give a clear actionable message
+            if (str_contains($message, 'email_domain_unreachable') || str_contains($message, 'send_invoices_to_email')) {
+                throw new \Exception(
+                    "Moneybird weigert het e-mailadres van \"{$company->name}\" ({$company->email}): het domein kan geen e-mail ontvangen. "
+                    . "Pas het e-mailadres van dit bedrijf aan in de CRM en probeer opnieuw."
+                );
+            }
+
+            throw new \Exception('Moneybird API fout: '.$message);
         }
     }
 
