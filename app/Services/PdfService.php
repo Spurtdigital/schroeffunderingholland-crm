@@ -29,7 +29,7 @@ class PdfService
             'settings' => $this->settings,
         ]);
 
-        $filename = "offerte-" . ($quote->displayNumber() ?? $quote->id) . ".pdf";
+        $filename = 'offerte-'.($quote->displayNumber() ?? $quote->id).'.pdf';
 
         if ($download) {
             return $pdf->download($filename);
@@ -67,7 +67,7 @@ class PdfService
             'settings' => $this->settings,
         ]);
 
-        $filename = "quotes/offerte-" . ($quote->displayNumber() ?? $quote->id) . ".pdf";
+        $filename = 'quotes/offerte-'.($quote->displayNumber() ?? $quote->id).'.pdf';
         Storage::put($filename, $pdf->output());
 
         return $filename;
@@ -107,7 +107,7 @@ class PdfService
      */
     public function getQuotePdfFilename(Quote $quote): string
     {
-        return "offerte-" . ($quote->displayNumber() ?? $quote->id) . ".pdf";
+        return 'offerte-'.($quote->displayNumber() ?? $quote->id).'.pdf';
     }
 
     /**
@@ -262,8 +262,8 @@ class PdfService
         $quote = $project->quote;
 
         $pdf = Pdf::loadView('pdf.order-confirmation', [
-            'quote'    => $quote->load(['company', 'lead', 'items.machine']),
-            'project'  => $project,
+            'quote' => $quote->load(['company', 'lead', 'items.machine']),
+            'project' => $project,
             'settings' => $this->settings,
         ]);
 
@@ -283,11 +283,16 @@ class PdfService
      */
     public function generateOrderConfirmationPdf(Project $project, bool $download = false): \Illuminate\Http\Response
     {
-        $quote = $project->quote;
+        $quote = $project->quote
+            ? $project->quote->load(['company', 'lead', 'items.machine'])
+            : null;
+
+        $company = $quote?->company ?? $project->load('company')->company;
 
         $pdf = Pdf::loadView('pdf.order-confirmation', [
-            'quote'    => $quote->load(['company', 'lead', 'items.machine']),
-            'project'  => $project,
+            'quote' => $quote,
+            'company' => $company,
+            'project' => $project,
             'settings' => $this->settings,
         ]);
 
@@ -306,7 +311,7 @@ class PdfService
     public function generatePurchaseOrderPdf(PurchaseOrder $order, bool $download = false): \Illuminate\Http\Response
     {
         $pdf = Pdf::loadView('pdf.purchase-order', [
-            'order'    => $order->load(['supplier', 'items.product']),
+            'order' => $order->load(['supplier', 'items.product']),
             'settings' => $this->settings,
         ]);
 
@@ -325,7 +330,7 @@ class PdfService
     public function getPurchaseOrderPdfOutput(PurchaseOrder $order): string
     {
         $pdf = Pdf::loadView('pdf.purchase-order', [
-            'order'    => $order->load(['supplier', 'items.product']),
+            'order' => $order->load(['supplier', 'items.product']),
             'settings' => $this->settings,
         ]);
 
@@ -337,9 +342,9 @@ class PdfService
      */
     public function getPurchaseOrderPdfFilename(PurchaseOrder $order): string
     {
-        $prefix = match($order->language) {
-            'de'    => 'bestellung',
-            'en'    => 'purchase-order',
+        $prefix = match ($order->language) {
+            'de' => 'bestellung',
+            'en' => 'purchase-order',
             default => 'inkooporder',
         };
 

@@ -9,8 +9,8 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Set;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Utilities\Set;
 
 class CreatePurchaseOrderAction extends Action
 {
@@ -106,7 +106,7 @@ class CreatePurchaseOrderAction extends Action
                 $order = PurchaseOrder::create([
                     'supplier_id' => $supplierId,
                     'language' => $data['language'],
-                    'status' => 'draft',
+                    'status' => PurchaseOrderStatus::Draft,
                     'order_date' => $data['order_date'],
                     'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
                     'product_id' => $record->id,

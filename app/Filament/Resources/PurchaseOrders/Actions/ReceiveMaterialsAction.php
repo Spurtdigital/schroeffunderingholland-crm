@@ -5,9 +5,9 @@ namespace App\Filament\Resources\PurchaseOrders\Actions;
 use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Placeholder;
 use Filament\Notifications\Notification;
 use Illuminate\Support\HtmlString;
 
@@ -37,9 +37,9 @@ class ReceiveMaterialsAction extends Action
         $this->fillForm(function (PurchaseOrder $record): array {
             return [
                 'items' => $record->items->map(fn ($item) => [
-                    'id'                => $item->id,
-                    'description'       => $item->description,
-                    'quantity'          => (float) $item->quantity,
+                    'id' => $item->id,
+                    'description' => $item->description,
+                    'quantity' => (float) $item->quantity,
                     'received_quantity' => (float) $item->received_quantity,
                 ])->toArray(),
             ];
@@ -51,7 +51,7 @@ class ReceiveMaterialsAction extends Action
                 ->schema([
                     Placeholder::make('description')
                         ->label('Artikel')
-                        ->content(fn ($state) => new HtmlString('<strong>' . e($state) . '</strong>'))
+                        ->content(fn ($state) => new HtmlString('<strong>'.e($state).'</strong>'))
                         ->columnSpan(3),
 
                     TextInput::make('quantity')
@@ -81,27 +81,51 @@ class ReceiveMaterialsAction extends Action
         ]);
 
         $this->action(function (array $data, PurchaseOrder $record): void {
+            // Laad huidige received_quantity per item vóór de update (voor delta-berekening)
+            $oldQuantities = $record->items->keyBy('id')->map(fn ($i) => (float) $i->received_quantity);
+
             foreach ($data['items'] as $row) {
                 $record->items()->where('id', $row['id'])->update([
                     'received_quantity' => (float) $row['received_quantity'],
                 ]);
             }
 
-            $record->refresh();
+            // Laad items inclusief product in één query (N+1 preventie)
+            $record->load('items.product');
 
-            $totalOrdered  = $record->items->sum('quantity');
+            // Pas de voorraad aan met de delta (positief = toevoegen, negatief = verlagen)
+            foreach ($record->items as $item) {
+                if (! $item->product_id || ! $item->product) {
+                    continue;
+                }
+
+                $delta = (float) $item->received_quantity - ($oldQuantities[$item->id] ?? 0.0);
+
+                if ($delta !== 0.0) {
+                    $item->product->addStock(
+                        (int) round($delta),
+                        "Inkoop: {$record->order_number}",
+                        null,
+                        $record
+                    );
+                }
+            }
+
+            $totalOrdered = $record->items->sum('quantity');
             $totalReceived = $record->items->sum('received_quantity');
 
-            if ($totalReceived >= $totalOrdered) {
+            if ($totalReceived <= 0) {
+                $record->update(['status' => PurchaseOrderStatus::Draft]);
+            } elseif ($totalReceived >= $totalOrdered) {
                 $record->update(['status' => PurchaseOrderStatus::Delivered]);
-            } elseif ($totalReceived > 0) {
+            } else {
                 $record->update(['status' => PurchaseOrderStatus::PartiallyReceived]);
             }
 
             Notification::make()
                 ->success()
                 ->title('Ontvangst ingeboekt')
-                ->body('De ontvangen aantallen zijn bijgewerkt.')
+                ->body('De ontvangen aantallen zijn bijgewerkt en de voorraad is aangepast.')
                 ->send();
         });
     }

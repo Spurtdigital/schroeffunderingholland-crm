@@ -114,7 +114,7 @@ class ViewQuote extends ViewRecord
                             'pre_text' => $data['pre_text'],
                             'post_text' => $data['post_text'],
                         ]);
-                        $this->refreshFormData(['reference', 'notes', 'pre_text', 'post_text']);
+                        $this->record = $record->fresh();
                         Notification::make()->success()->title('Teksten opgeslagen')->send();
                     }),
 

@@ -4,8 +4,12 @@ namespace App\Filament\Resources\Quotes\Schemas;
 
 use App\Filament\Resources\Quotes\Pages\ViewQuote;
 use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
+use App\Models\Machine;
 use App\Services\DistanceCalculatorService;
 use App\Services\MoneybirdService;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select as FormSelect;
+use Filament\Forms\Components\TextInput as FormTextInput;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
@@ -63,7 +67,25 @@ class QuoteInfolist
 
                         TextEntry::make('machine.name')
                             ->label('Montage machine')
-                            ->placeholder('-'),
+                            ->placeholder('-')
+                            ->hintAction(
+                                Action::make('editMachine')
+                                    ->icon('heroicon-m-pencil-square')
+                                    ->label('Bewerken')
+                                    ->fillForm(fn ($record) => ['machine_id' => $record->machine_id])
+                                    ->form([
+                                        FormSelect::make('machine_id')
+                                            ->label('Montage machine')
+                                            ->options(fn () => Machine::where('active', true)->orderBy('name')->pluck('name', 'id'))
+                                            ->searchable()
+                                            ->nullable()
+                                            ->placeholder('Geen machine geselecteerd'),
+                                    ])
+                                    ->action(function ($record, array $data, $livewire) {
+                                        $record->update(['machine_id' => $data['machine_id']]);
+                                        $livewire->record = $record->fresh();
+                                    })
+                            ),
 
                         IconEntry::make('show_item_breakdown')
                             ->label('Regels op PDF')
@@ -76,7 +98,24 @@ class QuoteInfolist
                         TextEntry::make('reference')
                             ->label('Kenmerk (Moneybird)')
                             ->placeholder('-')
-                            ->columnSpan(2),
+                            ->columnSpan(2)
+                            ->hintAction(
+                                Action::make('editReference')
+                                    ->icon('heroicon-m-pencil-square')
+                                    ->label('Bewerken')
+                                    ->fillForm(fn ($record) => ['reference' => $record->reference])
+                                    ->form([
+                                        FormTextInput::make('reference')
+                                            ->label('Kenmerk (Moneybird)')
+                                            ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
+                                            ->maxLength(255)
+                                            ->nullable(),
+                                    ])
+                                    ->action(function ($record, array $data, $livewire) {
+                                        $record->update(['reference' => $data['reference']]);
+                                        $livewire->record = $record->fresh();
+                                    })
+                            ),
                     ]),
 
                 // ── Kolom links 3/4: Regels + Offerte tekst ──────────────────

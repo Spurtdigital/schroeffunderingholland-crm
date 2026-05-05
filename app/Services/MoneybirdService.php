@@ -319,7 +319,7 @@ class MoneybirdService
                 foreach ($items as $item) {
                     $detail = $moneybird->salesInvoiceDetail();
                     $detail->description = $this->projectItemDescription($item);
-                    $detail->amount = $this->formatQuantity($item->quantity) . ' x';
+                    $detail->amount = $this->formatQuantity($item->quantity).' x';
 
                     if ((float) $item->unit_price > 0) {
                         $detail->price = (string) round((float) $item->unit_price, 2);
@@ -659,7 +659,7 @@ class MoneybirdService
 
             // Single total line
             $totalDetail = $moneybird->salesInvoiceDetail();
-            $totalDetail->description = 'Totaalprijs';
+            $totalDetail->description = 'Totaalprijs excl. BTW';
             $totalDetail->price = (string) round($subtotal, 2);
             $totalDetail->tax_rate_id = $taxRateId;
             $details[] = $totalDetail;

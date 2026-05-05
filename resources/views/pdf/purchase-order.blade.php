@@ -183,10 +183,10 @@
 
         /* Titel balk */
         .doc-title-bar {
-            padding: 10px 0;
+            color: #000;
+            padding: 10px 14px;
             margin-bottom: 14px;
             overflow: hidden;
-            border-bottom: 2px solid #000;
         }
         .doc-title-bar .doc-title {
             float: left;
@@ -233,13 +233,28 @@
             margin: 2px 0;
             font-size: 8.5pt;
         }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+        }
+        .info-table td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+        .info-table td.lbl {
+            font-weight: bold;
+            white-space: nowrap;
+            width: 110px;
+            padding-right: 6px;
+        }
 
         /* Meta rij: datum, leverdatum, referentie */
         .meta-row {
             margin-bottom: 14px;
             overflow: hidden;
-            border-top: 1px solid #ddd;
-            border-bottom: 1px solid #ddd;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
             padding: 8px 0;
         }
         .meta-item {
@@ -265,7 +280,6 @@
             color: #000;
             margin-bottom: 6px;
             padding-bottom: 3px;
-            border-bottom: 1px solid #000;
         }
 
         /* Items tabel */
@@ -276,17 +290,16 @@
         }
         .items-table th {
             color: #000;
-            padding: 6px 7px;
+            padding: 7px 8px;
             text-align: left;
             font-weight: bold;
-            background-color: #f0f0f0;
             border-top: 2px solid #000;
             border-bottom: 1px solid #000;
-            font-size: 7.5pt;
+            font-size: 8pt;
         }
         .items-table td {
-            padding: 7px 7px;
-            border-bottom: 1px solid #ddd;
+            padding: 9px 8px;
+            border-bottom: 1px solid #ccc;
             font-size: 8pt;
             vertical-align: top;
         }
@@ -318,8 +331,8 @@
             font-size: 8.5pt;
         }
         .totals-table .total-final {
-            background-color: #2563a8;
-            color: #fff;
+            background: linear-gradient(to right, #2563a8 0%, #4a8fd9 100%);
+            color: white;
             font-weight: bold;
             font-size: 10pt;
         }
@@ -421,30 +434,34 @@
         <div class="info-box">
             <div class="info-box-label">{{ $t['supplier'] }}</div>
             <p><strong>{{ $order->supplier->name }}</strong></p>
-            @if($order->supplier->contact_name)
-            <p>{{ $order->supplier->contact_name }}</p>
-            @endif
-            @if($order->supplier->address)
-            <p>{{ $order->supplier->address }}</p>
-            @endif
-            @if($order->supplier->postal_code || $order->supplier->city)
-            <p>{{ trim(($order->supplier->postal_code ?? '') . ' ' . ($order->supplier->city ?? '')) }}</p>
-            @endif
-            @if($order->supplier->country)
-            <p>{{ $order->supplier->country }}</p>
-            @endif
+            <table class="info-table">
+                @if($order->supplier->contact_name)
+                <tr><td class="lbl">T.a.v.:</td><td>{{ $order->supplier->contact_name }}</td></tr>
+                @endif
+                @if($order->supplier->address)
+                <tr><td class="lbl">Adres:</td><td>{{ $order->supplier->address }}</td></tr>
+                @endif
+                @if($order->supplier->postal_code || $order->supplier->city)
+                <tr><td class="lbl"></td><td>{{ trim(($order->supplier->postal_code ?? '') . ' ' . ($order->supplier->city ?? '')) }}</td></tr>
+                @endif
+                @if($order->supplier->country)
+                <tr><td class="lbl">Land:</td><td>{{ $order->supplier->country }}</td></tr>
+                @endif
+            </table>
         </div>
 
         <div class="info-box">
             <div class="info-box-label">{{ $t['buyer'] }}</div>
             <p><strong>{{ $settings->company_name }}</strong></p>
-            @if($settings->company_address)
-            <p>{{ $settings->company_address }}</p>
-            @endif
-            @if($settings->company_postal_code || $settings->company_city)
-            <p>{{ trim(($settings->company_postal_code ?? '') . ' ' . ($settings->company_city ?? '')) }}</p>
-            @endif
-            <p>Nederland</p>
+            <table class="info-table">
+                @if($settings->company_address)
+                <tr><td class="lbl">Adres:</td><td>{{ $settings->company_address }}</td></tr>
+                @endif
+                @if($settings->company_postal_code || $settings->company_city)
+                <tr><td class="lbl"></td><td>{{ trim(($settings->company_postal_code ?? '') . ' ' . ($settings->company_city ?? '')) }}</td></tr>
+                @endif
+                <tr><td class="lbl">Land:</td><td>Nederland</td></tr>
+            </table>
         </div>
     </div>
 

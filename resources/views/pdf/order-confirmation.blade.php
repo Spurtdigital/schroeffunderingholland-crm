@@ -63,16 +63,15 @@
 
         /* ===================== HEADER ===================== */
         .header {
-            padding-top: 8.5mm;
-            padding-bottom: 8mm;
-            padding-left: 0;
-            padding-right: 0;
-            overflow: hidden;
+            padding: 8.5mm 15mm 8mm 20mm;
         }
-        .header-logo {
-            float: left;
-            width: 120mm;
-            padding-left: 20mm;
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: middle;
+            padding: 0;
         }
         .header-logo img {
             max-width: 180px;
@@ -84,19 +83,14 @@
             color: #2563a8;
         }
         .header-naw {
-            float: left;
-            width: 66mm;
-            text-align: left;
+            text-align: right;
         }
         .header-naw p {
             font-size: 7.5pt;
             color: #444;
             line-height: 1.5;
-        }
-        .clearfix:after {
-            content: "";
-            display: table;
-            clear: both;
+            margin: 0;
+            padding: 0;
         }
 
         /* ===================== CONTENT ===================== */
@@ -107,7 +101,7 @@
         /* Titel balk */
         .doc-title-bar {
             color: #000;
-            padding: 10px 14px;
+            padding: 0 0 14px 0;
             margin-bottom: 14px;
             overflow: hidden;
         }
@@ -263,44 +257,48 @@
 <body>
 
 <!-- Header: logo links, bedrijfs-NAW rechts boven -->
-<div class="header clearfix">
-    <div class="header-logo">
-        @if($logoBase64)
-            <img src="{{ $logoBase64 }}" alt="{{ $settings->company_name ?? 'Logo' }}">
-        @else
-            <span class="logo-text">{{ $settings->company_name ?? 'Schroeffundering Holland' }}</span>
-        @endif
-    </div>
-    <div class="header-naw">
-        @if($settings->company_address)
-        <p>{{ $settings->company_address }}</p>
-        @endif
-        @if($settings->company_postal_code || $settings->company_city)
-        <p>{{ trim(($settings->company_postal_code ?? '') . ' ' . ($settings->company_city ?? '')) }}</p>
-        @endif
-        @if($settings->company_phone)
-        <p>T: {{ $settings->company_phone }}</p>
-        @endif
-        @if($settings->company_email)
-        <p>E: {{ $settings->company_email }}</p>
-        @endif
-        @if($settings->company_kvk_number)
-        <p>KvK: {{ $settings->company_kvk_number }}</p>
-        @endif
-    </div>
+<div class="header">
+    <table class="header-table">
+        <tr>
+            <td class="header-logo">
+                @if($logoBase64)
+                    <img src="{{ $logoBase64 }}" alt="{{ $settings->company_name ?? 'Logo' }}">
+                @else
+                    <span class="logo-text">{{ $settings->company_name ?? 'Schroeffundering Holland' }}</span>
+                @endif
+            </td>
+            <td class="header-naw">
+                @if($settings->company_address)
+                <p>{{ $settings->company_address }}</p>
+                @endif
+                @if($settings->company_postal_code || $settings->company_city)
+                <p>{{ trim(($settings->company_postal_code ?? '') . ' ' . ($settings->company_city ?? '')) }}</p>
+                @endif
+                @if($settings->company_phone)
+                <p>T: {{ $settings->company_phone }}</p>
+                @endif
+                @if($settings->company_email)
+                <p>E: {{ $settings->company_email }}</p>
+                @endif
+                @if($settings->company_kvk_number)
+                <p>KvK: {{ $settings->company_kvk_number }}</p>
+                @endif
+            </td>
+        </tr>
+    </table>
 </div>
 
 <!-- Content wrapper -->
 <div class="content">
 
     <!-- Opdrachtbevestiging titel balk -->
-    <div class="doc-title-bar clearfix">
+    <div class="doc-title-bar">
         <div class="doc-title">OPDRACHTBEVESTIGING</div>
         <div class="doc-meta">
-            @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
+            @if($quote && !str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
             <div class="doc-number">{{ $quote->quote_number }}</div>
             @endif
-            <div>{{ ($quote->created_at ?? now())->format('d-m-Y') }}</div>
+            <div>{{ ($quote?->created_at ?? now())->format('d-m-Y') }}</div>
             @if($project->start_date)
             <div>Montagedatum: {{ $project->start_date->format('d-m-Y') }}</div>
             @endif
@@ -310,20 +308,20 @@
     <!-- Info Boxen: klantgegevens + projectdetails -->
     <div class="info-container clearfix">
         <div class="info-box">
-            <p><strong>{{ $quote->company->name }}</strong></p>
+            <p><strong>{{ $company->name }}</strong></p>
             <table class="info-table">
-                @if($quote->company->contact_person)
-                <tr><td class="lbl">T.a.v.:</td><td>{{ $quote->company->contact_person }}</td></tr>
+                @if($company->contact_person)
+                <tr><td class="lbl">T.a.v.:</td><td>{{ $company->contact_person }}</td></tr>
                 @endif
-                @if($quote->company->street)
-                <tr><td class="lbl">Adres:</td><td>{{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</td></tr>
-                <tr><td class="lbl"></td><td>{{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</td></tr>
+                @if($company->street)
+                <tr><td class="lbl">Adres:</td><td>{{ trim(($company->street ?? '') . ' ' . ($company->house_number ?? '')) }}</td></tr>
+                <tr><td class="lbl"></td><td>{{ trim(($company->postal_code ?? '') . ' ' . ($company->city ?? '')) }}</td></tr>
                 @endif
-                @if($quote->company->phone)
-                <tr><td class="lbl">Telefoon:</td><td>{{ $quote->company->phone }}</td></tr>
+                @if($company->phone)
+                <tr><td class="lbl">Telefoon:</td><td>{{ $company->phone }}</td></tr>
                 @endif
-                @if($quote->company->email)
-                <tr><td class="lbl">E-mail:</td><td>{{ $quote->company->email }}</td></tr>
+                @if($company->email)
+                <tr><td class="lbl">E-mail:</td><td>{{ $company->email }}</td></tr>
                 @endif
             </table>
         </div>
@@ -331,19 +329,19 @@
         <div class="info-box">
             <table class="info-table">
                 <tr><td class="lbl">Projectnummer:</td><td>{{ $project->project_number }}</td></tr>
-                @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
+                @if($quote && !str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
                 <tr><td class="lbl">Offertenummer:</td><td>{{ $quote->quote_number }}</td></tr>
                 @endif
                 @if($project->start_date)
                 <tr><td class="lbl">Montagedatum:</td><td>{{ $project->start_date->format('d-m-Y') }}</td></tr>
                 @endif
-                @if($quote->machine)
+                @if($quote?->machine)
                 <tr><td class="lbl">Machine:</td><td>{{ $quote->machine->name }}</td></tr>
                 @endif
-                @php $werklocatie = $quote->workFullAddress(); @endphp
+                @php $werklocatie = $quote?->workFullAddress(); @endphp
                 @if($werklocatie)
                 <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
-                @elseif($quote->lead?->project_description)
+                @elseif($quote?->lead?->project_description)
                 <tr><td class="lbl">Project:</td><td>{{ $quote->lead->project_description }}</td></tr>
                 @endif
             </table>
@@ -351,9 +349,7 @@
     </div>
 
     <!-- Aanhef -->
-    @php
-        $contactPersoon = $quote->company->contact_person ?? null;
-    @endphp
+    @php $contactPersoon = $company->contact_person ?? null; @endphp
     @if($contactPersoon)
     <div class="salutation">
         <p>Beste {{ $contactPersoon }},</p>
@@ -361,7 +357,7 @@
     @endif
 
     <!-- Items Tabel -->
-    @if($quote->show_item_breakdown)
+    @if($quote?->show_item_breakdown)
     <div class="items-section">
         <table class="items-table">
             <thead>
@@ -408,6 +404,7 @@
     @endif
 
     <!-- Totalen -->
+    @if($quote)
     <div class="totals-container clearfix">
         <div class="totals-table">
             <table>
@@ -438,8 +435,9 @@
             </table>
         </div>
     </div>
+    @endif
 
-    @if($quote->notes)
+    @if($quote?->notes)
     <!-- Opmerkingen -->
     <div class="notes-section">
         <h4>Opmerkingen</h4>
