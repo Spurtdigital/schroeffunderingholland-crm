@@ -68,13 +68,18 @@ class ProductsTable
                     ->color(fn ($record) => $record->isOutOfStock() ? 'danger' : ($record->isLowStock() ? 'warning' : 'success')),
                 TextColumn::make('reserved_quantity')
                     ->label('Gereserveerd')
+                    ->getStateUsing(fn ($record) => $record->stockReservations()->where('status', 'active')->sum('quantity'))
                     ->numeric()
                     ->toggleable(),
                 TextColumn::make('available_stock')
                     ->label('Beschikbaar')
                     ->numeric()
                     ->sortable()
-                    ->color(fn ($record) => $record->available_stock <= 0 ? 'danger' : ($record->available_stock <= $record->min_stock_level ? 'warning' : 'success')),
+                    ->color(fn ($record) => match (true) {
+                        ($stock = $record->available_stock) <= 0 => 'danger',
+                        $stock <= $record->min_stock_level => 'warning',
+                        default => 'success',
+                    }),
                 IconColumn::make('is_active')
                     ->label('Actief')
                     ->boolean()
@@ -108,8 +113,8 @@ class ProductsTable
                     ->label('Lage voorraad')
                     ->placeholder('Alle producten')
                     ->queries(
-                        true: fn ($query) => $query->whereRaw('(stock_quantity - COALESCE((SELECT SUM(quantity) FROM stock_reservations WHERE product_id = products.id AND status = "active"), 0)) <= min_stock_level'),
-                        false: fn ($query) => $query->whereRaw('(stock_quantity - COALESCE((SELECT SUM(quantity) FROM stock_reservations WHERE product_id = products.id AND status = "active"), 0)) > min_stock_level'),
+                        true: fn ($query) => $query->whereRaw("(stock_quantity - COALESCE((SELECT SUM(quantity) FROM stock_reservations WHERE product_id = products.id AND status = 'active'), 0)) <= min_stock_level"),
+                        false: fn ($query) => $query->whereRaw("(stock_quantity - COALESCE((SELECT SUM(quantity) FROM stock_reservations WHERE product_id = products.id AND status = 'active'), 0)) > min_stock_level"),
                     ),
             ])
             ->recordActions([

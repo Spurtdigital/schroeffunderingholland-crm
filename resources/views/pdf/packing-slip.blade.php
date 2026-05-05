@@ -63,16 +63,15 @@
 
         /* ===================== HEADER ===================== */
         .header {
-            padding-top: 8.5mm;
-            padding-bottom: 8mm;
-            padding-left: 0;
-            padding-right: 0;
-            overflow: hidden;
+            padding: 8.5mm 15mm 8mm 20mm;
         }
-        .header-logo {
-            float: left;
-            width: 120mm;
-            padding-left: 20mm;
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: middle;
+            padding: 0;
         }
         .header-logo img {
             max-width: 180px;
@@ -84,14 +83,14 @@
             color: #2563a8;
         }
         .header-naw {
-            float: left;
-            width: 66mm;
-            text-align: left;
+            text-align: right;
         }
         .header-naw p {
             font-size: 7.5pt;
             color: #444;
             line-height: 1.5;
+            margin: 0;
+            padding: 0;
         }
         .clearfix:after {
             content: "";
@@ -108,7 +107,7 @@
         .doc-title-bar {
             background: none;
             color: #000;
-            padding: 10px 14px;
+            padding: 0 0 14px 0;
             margin-bottom: 14px;
             overflow: hidden;
         }
@@ -195,6 +194,7 @@
         .materials-table tbody tr:last-child td {
             border-bottom: none;
         }
+        .text-right  { text-align: right; }
         .text-center { text-align: center; }
         .text-bold { font-weight: bold; }
         .materials-table tbody tr:last-child td {
@@ -280,31 +280,35 @@
 
 
 <!-- Header: logo links, bedrijfs-NAW rechts boven -->
-<div class="header clearfix">
-    <div class="header-logo">
-        @if($logoBase64)
-            <img src="{{ $logoBase64 }}" alt="{{ $settings->company_name ?? 'Logo' }}">
-        @else
-            <span class="logo-text">{{ $settings->company_name ?? 'Schroeffundering Holland' }}</span>
-        @endif
-    </div>
-    <div class="header-naw">
-        @if($settings->company_address)
-        <p>{{ $settings->company_address }}</p>
-        @endif
-        @if($settings->company_postal_code || $settings->company_city)
-        <p>{{ trim(($settings->company_postal_code ?? '') . ' ' . ($settings->company_city ?? '')) }}</p>
-        @endif
-        @if($settings->company_phone)
-        <p>T: {{ $settings->company_phone }}</p>
-        @endif
-        @if($settings->company_email)
-        <p>E: {{ $settings->company_email }}</p>
-        @endif
-        @if($settings->company_kvk_number)
-        <p>KvK: {{ $settings->company_kvk_number }}</p>
-        @endif
-    </div>
+<div class="header">
+    <table class="header-table">
+        <tr>
+            <td class="header-logo">
+                @if($logoBase64)
+                    <img src="{{ $logoBase64 }}" alt="{{ $settings->company_name ?? 'Logo' }}">
+                @else
+                    <span class="logo-text">{{ $settings->company_name ?? 'Schroeffundering Holland' }}</span>
+                @endif
+            </td>
+            <td class="header-naw">
+                @if($settings->company_address)
+                <p>{{ $settings->company_address }}</p>
+                @endif
+                @if($settings->company_postal_code || $settings->company_city)
+                <p>{{ trim(($settings->company_postal_code ?? '') . ' ' . ($settings->company_city ?? '')) }}</p>
+                @endif
+                @if($settings->company_phone)
+                <p>T: {{ $settings->company_phone }}</p>
+                @endif
+                @if($settings->company_email)
+                <p>E: {{ $settings->company_email }}</p>
+                @endif
+                @if($settings->company_kvk_number)
+                <p>KvK: {{ $settings->company_kvk_number }}</p>
+                @endif
+            </td>
+        </tr>
+    </table>
 </div>
 
 <!-- Content wrapper -->
@@ -377,15 +381,15 @@
                 }
             }
         @endphp
-        @php $descWidth = $hasWeight ? '42%' : '53%'; @endphp
+        @php $descWidth = $hasWeight ? '47%' : '58%'; @endphp
         <table class="materials-table">
             <thead>
                 <tr>
-                    <th style="width: 12%;" class="text-center">Aantal</th>
-                    <th style="width: 23%;">Artikelnummer</th>
+                    <th style="width: 9%;">Aantal</th>
+                    <th style="width: 16%;">Artikelnummer</th>
                     <th style="width: {{ $descWidth }};">Omschrijving</th>
                     @if($hasWeight)
-                    <th style="width: 15%;" class="text-center">Gewicht</th>
+                    <th style="width: 13%; text-align: right; padding-right: 10px;">Gewicht</th>
                     @endif
                 </tr>
             </thead>
@@ -394,11 +398,11 @@
                     @if($item->itemable_type === 'App\\Models\\Product' && $item->itemable)
                         @php $lineWeight = $item->itemable->weight ? $item->quantity * $item->itemable->weight : null; @endphp
                         <tr>
-                            <td class="text-center text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                            <td class="text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                             <td>{{ $item->itemable->sku ?? '-' }}</td>
                             <td>{{ str_replace('⌀', 'Ø', $item->itemable->name ?? $item->description) }}</td>
                             @if($hasWeight)
-                            <td class="text-center">{{ $lineWeight ? number_format($lineWeight, 1, ',', '.') . ' kg' : '-' }}</td>
+                            <td class="text-right" style="padding-right: 10px;">{{ $lineWeight ? number_format($lineWeight, 1, ',', '.') . ' kg' : '-' }}</td>
                             @endif
                         </tr>
                     @endif
@@ -413,7 +417,7 @@
             <tfoot>
                 <tr>
                     <td colspan="3" style="text-align: right;">Totaalgewicht:</td>
-                    <td class="text-center">{{ number_format($totalWeight, 1, ',', '.') }} kg</td>
+                    <td class="text-right" style="padding-right: 10px;">{{ number_format($totalWeight, 1, ',', '.') }} kg</td>
                 </tr>
             </tfoot>
             @endif

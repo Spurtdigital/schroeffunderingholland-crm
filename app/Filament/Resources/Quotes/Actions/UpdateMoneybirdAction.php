@@ -36,10 +36,11 @@ class UpdateMoneybirdAction extends Action
                     ->toArray();
 
                 return array_merge([
-                    'pre_text'        => $record->pre_text,
-                    'assumption_ids'  => $record->assumptions()->pluck('quote_assumptions.id')->toArray(),
+                    'reference' => $record->reference,
+                    'pre_text' => $record->pre_text,
+                    'assumption_ids' => $record->assumptions()->pluck('quote_assumptions.id')->toArray(),
                     'payment_term_id' => $record->payment_term_id,
-                    'post_text'       => $record->post_text,
+                    'post_text' => $record->post_text,
                 ], $pivotValues);
             })
             ->form(function () {
@@ -68,6 +69,13 @@ class UpdateMoneybirdAction extends Action
                 }
 
                 return [
+                    TextInput::make('reference')
+                        ->label('Kenmerk (Moneybird)')
+                        ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
+                        ->maxLength(255)
+                        ->nullable()
+                        ->columnSpanFull(),
+
                     Textarea::make('pre_text')
                         ->label('Opening zin')
                         ->helperText('Verschijnt na de aanhef en vóór de aannames in Moneybird.')
@@ -101,13 +109,15 @@ class UpdateMoneybirdAction extends Action
                             ->title('Moneybird niet geconfigureerd')
                             ->body('Configureer eerst de Moneybird API instellingen.')
                             ->send();
+
                         return;
                     }
 
                     // Persist form changes to the quote first
                     $record->update([
-                        'pre_text'        => $data['pre_text'],
-                        'post_text'       => $data['post_text'],
+                        'reference' => $data['reference'] ?? null,
+                        'pre_text' => $data['pre_text'],
+                        'post_text' => $data['post_text'],
                         'payment_term_id' => $data['payment_term_id'],
                     ]);
 
@@ -125,7 +135,7 @@ class UpdateMoneybirdAction extends Action
 
                     Notification::make()->success()
                         ->title('Offerte bijgewerkt in Moneybird')
-                        ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is succesvol bijgewerkt in Moneybird.")
+                        ->body('Offerte '.($record->displayNumber() ?? 'Concept').' is succesvol bijgewerkt in Moneybird.')
                         ->send();
                 } catch (\Exception $e) {
                     Notification::make()->danger()

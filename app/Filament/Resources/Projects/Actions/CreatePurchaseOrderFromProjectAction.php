@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Actions;
 
+use App\Enums\QuoteItemType;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\PurchaseOrder;
@@ -32,6 +33,48 @@ class CreatePurchaseOrderFromProjectAction extends Action
         $this->modalHeading('Nieuwe inkooporder aanmaken');
         $this->modalWidth('2xl');
 
+        $this->fillForm(function (Project $record): array {
+            $items = $record->items()
+                ->with(['itemable.suppliers'])
+                ->where('type', QuoteItemType::Product)
+                ->whereNotNull('itemable_id')
+                ->get()
+                ->filter(fn ($item) => $item->itemable instanceof Product)
+                ->values();
+
+            // Determine the most common preferred supplier to pre-select
+            $supplierCounts = [];
+            foreach ($items as $item) {
+                $preferred = $item->itemable->preferredSupplier();
+                if ($preferred) {
+                    $supplierCounts[$preferred->id] = ($supplierCounts[$preferred->id] ?? 0) + 1;
+                }
+            }
+            arsort($supplierCounts);
+            $dominantSupplierId = array_key_first($supplierCounts);
+            $dominantSupplier = $dominantSupplierId ? Supplier::find($dominantSupplierId) : null;
+
+            $formItems = $items->map(function ($projectItem) use ($dominantSupplierId) {
+                /** @var Product $product */
+                $product = $projectItem->itemable;
+
+                return [
+                    'product_id'              => $product->id,
+                    'description'             => $projectItem->description ?: $product->name,
+                    'supplier_article_number' => $product->supplierSkuFor($dominantSupplierId) ?? '',
+                    'quantity'                => (float) $projectItem->quantity,
+                    'unit_price'              => (float) $product->purchasePriceForSupplier($dominantSupplierId),
+                ];
+            })->toArray();
+
+            return [
+                'supplier_id' => $dominantSupplierId,
+                'language'    => $dominantSupplier?->language ?? 'nl',
+                'order_date'  => now()->toDateString(),
+                'items'       => $formItems,
+            ];
+        });
+
         $this->form([
             Select::make('supplier_id')
                 ->label('Leverancier')
@@ -41,11 +84,24 @@ class CreatePurchaseOrderFromProjectAction extends Action
                 ->searchable()
                 ->required()
                 ->live()
-                ->afterStateUpdated(function ($state, Set $set) {
+                ->afterStateUpdated(function ($state, Set $set, Get $get) {
                     if ($state) {
                         $supplier = Supplier::find($state);
                         if ($supplier?->language) {
                             $set('language', $supplier->language);
+                        }
+
+                        // Re-fill supplier-specific data for all items that have a product linked
+                        $items = $get('items') ?? [];
+                        foreach ($items as $key => $item) {
+                            $productId = $item['product_id'] ?? null;
+                            if ($productId) {
+                                $product = Product::with('suppliers')->find($productId);
+                                if ($product) {
+                                    $set("items.{$key}.supplier_article_number", $product->supplierSkuFor((int) $state) ?? '');
+                                    $set("items.{$key}.unit_price", $product->purchasePriceForSupplier((int) $state));
+                                }
+                            }
                         }
                     }
                 }),

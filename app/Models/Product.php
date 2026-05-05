@@ -199,7 +199,7 @@ class Product extends Model
     /**
      * Add stock to inventory and log the mutation.
      */
-    public function addStock(int $quantity, ?string $reason = null, ?\App\Models\User $user = null): void
+    public function addStock(int $quantity, ?string $reason = null, ?\App\Models\User $user = null, ?\Illuminate\Database\Eloquent\Model $reference = null): void
     {
         $before = $this->stock_quantity;
         $this->increment('stock_quantity', $quantity);
@@ -212,6 +212,8 @@ class Product extends Model
             'quantity_after' => $this->stock_quantity,
             'type' => StockMutationType::Purchase,
             'reason' => $reason,
+            'reference_type' => $reference ? get_class($reference) : null,
+            'reference_id' => $reference?->id,
         ]);
     }
 
