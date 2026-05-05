@@ -362,45 +362,47 @@
     @endif
 
     <!-- Items Tabel -->
-    @if($quote && $quote->show_item_breakdown && $quote->items->count())
+    @if($quote && $quote->items->count())
     <div class="items-section">
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Omschrijving</th>
+                    <th style="width: {{ $quote->show_item_breakdown ? '50%' : '75%' }};">Omschrijving</th>
                     <th style="width: 15%;" class="text-center">Aantal</th>
+                    @if($quote->show_item_breakdown)
                     <th style="width: 20%;" class="text-right">Prijs p/st (excl. BTW)</th>
                     <th style="width: 15%;" class="text-right">Totaal</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
                 @foreach($quote->items as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
+                @if($isDiscount && !$quote->show_item_breakdown)
+                    @continue
+                @endif
                 <tr @if($isDiscount) style="color: #c0392b;" @endif>
                     <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
                     <td class="text-center">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
+                    @if($quote->show_item_breakdown)
                     <td class="text-right">
-                        @if($isDiscount)
-                            —
-                        @else
-                            &euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}
-                        @endif
+                        @if($isDiscount) — @else &euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }} @endif
                     </td>
                     <td class="text-right">
-                        @if($isDiscount)
-                            &minus;&nbsp;&euro;&nbsp;{{ number_format(abs($item->total), 2, ',', '.') }}
-                        @else
-                            &euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }}
-                        @endif
+                        @if($isDiscount) &minus;&nbsp;&euro;&nbsp;{{ number_format(abs($item->total), 2, ',', '.') }}
+                        @else &euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }} @endif
                     </td>
+                    @endif
                 </tr>
                 @endforeach
                 @if($quote->travel_distance && $quote->travel_total)
                 <tr>
                     <td>Reiskosten ({{ number_format($quote->travel_distance, 0, ',', '.') }} km &times; &euro;&nbsp;{{ number_format($quote->travel_cost_per_km, 2, ',', '.') }})</td>
                     <td class="text-center">1</td>
+                    @if($quote->show_item_breakdown)
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+                    @endif
                 </tr>
                 @endif
             </tbody>
