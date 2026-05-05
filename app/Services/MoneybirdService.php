@@ -320,35 +320,54 @@ class MoneybirdService
                 $detail->tax_rate_id = $taxRateId;
                 $details[] = $detail;
             } else {
-                // Opleverings- of enkelvoudige factuur: items met unit_price als priced rows,
-                // de rest als omschrijvingsregels. Één totaalregel voor het resterende bedrag.
+                // Eindfactuur / enkelvoudige factuur:
+                // - Originele items (quote_item_id ingesteld, geen korting/aanpassing) → omschrijving + aantal, prijs 0
+                // - Één totaalregel "Resterend bedrag offerte" = offertebedrag minus al gefactureerd
+                // - Meerwerk items (quote_item_id null, geen korting/aanpassing) → met stuksprijs
+                $skipTypes = [
+                    \App\Enums\QuoteItemType::Discount,
+                    \App\Enums\QuoteItemType::Adjustment,
+                ];
+
                 $items = $invoice->project->items()->orderBy('sort_order')->get();
 
-                $pricedSubtotal = 0.0;
+                $originalItems  = $items->filter(fn ($i) => !is_null($i->quote_item_id) && !in_array($i->type, $skipTypes));
+                $meerwerkItems  = $items->filter(fn ($i) => is_null($i->quote_item_id) && !in_array($i->type, $skipTypes));
 
-                foreach ($items as $item) {
+                // 1. Originele items zonder prijs
+                foreach ($originalItems as $item) {
                     $detail = $moneybird->salesInvoiceDetail();
                     $detail->description = $this->projectItemDescription($item);
-                    $detail->amount = $this->formatQuantity($item->quantity).' x';
-
-                    if ((float) $item->unit_price > 0) {
-                        $detail->price = (string) round((float) $item->unit_price, 2);
-                        $detail->tax_rate_id = $taxRateId;
-                        $pricedSubtotal += round((float) $item->unit_price * (float) $item->quantity, 2);
-                    }
-
+                    $detail->amount = $this->formatQuantity($item->quantity) . ' x';
                     $details[] = $detail;
                 }
 
-                // Totaalregel voor het resterende bedrag (alles zonder stuksprijs)
-                $remainingSubtotal = round((float) $invoice->subtotal - $pricedSubtotal, 2);
+                // 2. Resterend bedrag offerte (offerte subtotaal minus aanbetaling)
+                $quote = $invoice->project->quote;
+                $alreadyInvoicedSubtotal = $invoice->project->invoices()
+                    ->where('id', '!=', $invoice->id)
+                    ->sum('subtotal');
+                $remainingSubtotal = max(0, round(($quote?->subtotal ?? 0) - $alreadyInvoicedSubtotal, 2));
+
                 if ($remainingSubtotal > 0) {
-                    $totalDetail = $moneybird->salesInvoiceDetail();
-                    $totalDetail->description = $subject;
-                    $totalDetail->price = (string) $remainingSubtotal;
-                    $totalDetail->amount = '1';
-                    $totalDetail->tax_rate_id = $taxRateId;
-                    $details[] = $totalDetail;
+                    $restDetail = $moneybird->salesInvoiceDetail();
+                    $restDetail->description = "Resterend bedrag offerte {$orderRef}";
+                    $restDetail->price = (string) $remainingSubtotal;
+                    $restDetail->amount = '1';
+                    $restDetail->tax_rate_id = $taxRateId;
+                    $details[] = $restDetail;
+                }
+
+                // 3. Meerwerk items met stuksprijs
+                foreach ($meerwerkItems as $item) {
+                    $detail = $moneybird->salesInvoiceDetail();
+                    $detail->description = $this->projectItemDescription($item);
+                    $detail->amount = $this->formatQuantity($item->quantity) . ' x';
+                    if ((float) $item->unit_price > 0) {
+                        $detail->price = (string) round((float) $item->unit_price, 2);
+                        $detail->tax_rate_id = $taxRateId;
+                    }
+                    $details[] = $detail;
                 }
             }
 
