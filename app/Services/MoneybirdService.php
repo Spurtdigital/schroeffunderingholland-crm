@@ -292,7 +292,7 @@ class MoneybirdService
 
             // Add percentage to subject if applicable
             if ($invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
-                $subject .= " ({$invoice->deposit_percentage}%)";
+                $subject .= " — {$invoice->deposit_percentage}% van totaalbedrag excl. BTW";
             }
 
             $mbInvoice->subject = $subject;
