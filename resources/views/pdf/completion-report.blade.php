@@ -117,7 +117,6 @@
             padding: 10px 0;
             margin-bottom: 14px;
             overflow: hidden;
-            border-bottom: 2px solid #000;
         }
         .doc-title-bar .doc-title {
             float: left;
