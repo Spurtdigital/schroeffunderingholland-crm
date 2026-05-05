@@ -168,8 +168,8 @@ class MoneybirdService
                 $contact->company_name = $company->name;
                 $contact->email = $company->email;
                 $contact->phone = $company->phone;
-                $contact->address1 = $company->street ?? '';
-                $contact->address2 = $company->house_number ?? '';
+                $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                $contact->address2 = '';
                 $contact->zipcode = $company->postal_code;
                 $contact->city = $company->city;
                 $contact->save($contact);
@@ -186,8 +186,8 @@ class MoneybirdService
                     $contact->company_name = $company->name;
                     $contact->email = $company->email;
                     $contact->phone = $company->phone;
-                    $contact->address1 = $company->street ?? '';
-                    $contact->address2 = $company->house_number ?? '';
+                    $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                    $contact->address2 = '';
                     $contact->zipcode = $company->postal_code;
                     $contact->city = $company->city;
                     $contact->save();
