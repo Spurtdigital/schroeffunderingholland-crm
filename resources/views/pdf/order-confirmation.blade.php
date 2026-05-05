@@ -92,6 +92,11 @@
             margin: 0;
             padding: 0;
         }
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
 
         /* ===================== CONTENT ===================== */
         .content {
@@ -292,7 +297,7 @@
 <div class="content">
 
     <!-- Opdrachtbevestiging titel balk -->
-    <div class="doc-title-bar">
+    <div class="doc-title-bar clearfix">
         <div class="doc-title">OPDRACHTBEVESTIGING</div>
         <div class="doc-meta">
             @if($quote && !str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
