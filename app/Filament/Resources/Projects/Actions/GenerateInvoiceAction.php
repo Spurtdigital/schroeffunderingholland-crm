@@ -34,11 +34,13 @@ class GenerateInvoiceAction extends Action
             $hasFirstInvoice = $record->invoices()->whereIn('invoice_type', [InvoiceType::Deposit, InvoiceType::Single])->exists();
             $hasSecondInvoice = $record->invoices()->where('invoice_type', InvoiceType::Final)->exists();
 
+            $defaultPct = null;
+
             if (! $hasFirstInvoice) {
                 if ($record->usesSplitInvoicing()) {
                     $pct = $record->getFirstInvoicePercentage();
-                    $firstAmount = round(($record->quote?->total ?? 0) * $pct / 100, 2);
-                    $options['first'] = "Eerste factuur ({$pct}% van offerte = €".number_format($firstAmount, 2, ',', '.').')';
+                    $defaultPct = $pct;
+                    $options['first'] = "Aanbetalingsfactuur ({$pct}% standaard, aanpasbaar)";
                 } else {
                     $options['single'] = 'Volledige factuur (100%)';
                 }
@@ -66,19 +68,22 @@ class GenerateInvoiceAction extends Action
                     ->default(array_key_first($options))
                     ->helperText(fn (Get $get) => match ($get('invoice_type_choice')) {
                         'second' => 'Bedrag = totaal project items (incl. meerwerk) minus al gefactureerd',
-                        'first' => 'Bedrag berekend op basis van het offertebedrag',
-                        default => 'Selecteer welk type factuur je wilt aanmaken',
+                        'first'  => 'Percentage van het subtotaal excl. BTW van de offerte',
+                        default  => 'Selecteer welk type factuur je wilt aanmaken',
                     }),
 
                 Forms\Components\TextInput::make('custom_percentage')
-                    ->label('Percentage')
+                    ->label('Percentage van subtotaal excl. BTW')
                     ->numeric()
                     ->suffix('%')
                     ->minValue(1)
                     ->maxValue(100)
                     ->required()
-                    ->visible(fn (Get $get) => $get('invoice_type_choice') === 'custom')
-                    ->helperText('Voer het percentage van het totaalbedrag in'),
+                    ->default($defaultPct)
+                    ->visible(fn (Get $get) => in_array($get('invoice_type_choice'), ['first', 'custom']))
+                    ->helperText(fn (Get $get) => $get('invoice_type_choice') === 'first'
+                        ? 'Standaard ingesteld op het projectpercentage — pas aan indien nodig'
+                        : 'Voer het percentage van het totaalbedrag in'),
 
                 Forms\Components\Textarea::make('notes')
                     ->label('Notities (optioneel)')
@@ -111,7 +116,7 @@ class GenerateInvoiceAction extends Action
             switch ($data['invoice_type_choice']) {
                 case 'first':
                     $invoiceType = InvoiceType::Deposit;
-                    $percentage = $record->getFirstInvoicePercentage();
+                    $percentage = $data['custom_percentage'] ?? $record->getFirstInvoicePercentage();
                     break;
                 case 'second':
                     $invoiceType = InvoiceType::Final;
@@ -159,10 +164,10 @@ class GenerateInvoiceAction extends Action
                     .($notes ? "\n\n{$notes}" : '');
             } elseif (! $notes) {
                 $notes = match ($data['invoice_type_choice']) {
-                    'first' => "Eerste factuur ({$percentage}%) voor project {$record->project_number}",
+                    'first'  => "Aanbetalingsfactuur ({$percentage}%) voor project {$record->project_number}",
                     'second' => "Eindfactuur voor project {$record->project_number} (resterend bedrag incl. meerwerk)",
                     'single' => "Volledige factuur voor project {$record->project_number}",
-                    default => ''
+                    default  => ''
                 };
             }
 
