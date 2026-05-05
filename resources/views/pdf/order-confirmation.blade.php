@@ -378,20 +378,15 @@
             <tbody>
                 @foreach($quote->items as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
-                @if($isDiscount && !$quote->show_item_breakdown)
+                @if($isDiscount)
                     @continue
                 @endif
-                <tr @if($isDiscount) style="color: #c0392b;" @endif>
+                <tr>
                     <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
-                    <td class="text-center">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                     @if($quote->show_item_breakdown)
-                    <td class="text-right">
-                        @if($isDiscount) — @else &euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }} @endif
-                    </td>
-                    <td class="text-right">
-                        @if($isDiscount) &minus;&nbsp;&euro;&nbsp;{{ number_format(abs($item->total), 2, ',', '.') }}
-                        @else &euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }} @endif
-                    </td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }}</td>
                     @endif
                 </tr>
                 @endforeach
