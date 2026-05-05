@@ -366,7 +366,7 @@
                     // Percentage toevoegen bij aanbetaling
                     if ($isDeposit && $invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
                         $pct = rtrim(rtrim(number_format((float)$invoice->deposit_percentage, 2, '.', ''), '0'), '.');
-                        $quoteSubtotalFormatted = $quote ? '€\u{00A0}' . number_format($quote->subtotal, 2, ',', '.') : '';
+                        $quoteSubtotalFormatted = $quote ? "\u{20AC}\u{00A0}" . number_format($quote->subtotal, 2, ',', '.') : '';
                         $lineDesc .= " — {$pct}% van totaalbedrag {$quoteSubtotalFormatted} excl. BTW";
                     }
                 @endphp
