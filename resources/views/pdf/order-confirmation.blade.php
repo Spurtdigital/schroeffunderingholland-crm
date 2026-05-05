@@ -304,9 +304,6 @@
             <div class="doc-number">{{ $quote->quote_number }}</div>
             @endif
             <div>{{ ($quote?->created_at ?? now())->format('d-m-Y') }}</div>
-            @if($project->start_date)
-            <div>Montagedatum: {{ $project->start_date->format('d-m-Y') }}</div>
-            @endif
         </div>
     </div>
 
@@ -378,9 +375,7 @@
             <tbody>
                 @foreach($quote->items as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
-                @if($isDiscount)
-                    @continue
-                @endif
+                @if(!$isDiscount)
                 <tr>
                     <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
                     <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
@@ -389,6 +384,7 @@
                     <td class="text-right">&euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }}</td>
                     @endif
                 </tr>
+                @endif
                 @endforeach
                 @if($quote->travel_distance && $quote->travel_total)
                 <tr>
