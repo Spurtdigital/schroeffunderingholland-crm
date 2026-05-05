@@ -216,10 +216,11 @@
             font-size: 8.5pt;
         }
         .totals-table .total-final {
-            background: linear-gradient(to right, #2563a8 0%, #4a8fd9 100%);
-            color: white;
+            background: none;
+            color: #000;
             font-weight: bold;
             font-size: 10pt;
+            border-top: 2px solid #000;
         }
         .totals-table .total-final td {
             padding: 7px 8px;
