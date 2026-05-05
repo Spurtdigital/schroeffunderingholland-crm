@@ -365,7 +365,7 @@
 
                     // Percentage toevoegen bij aanbetaling
                     if ($isDeposit && $invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
-                        $lineDesc .= " ({$invoice->deposit_percentage}%)";
+                        $lineDesc .= " — {$invoice->deposit_percentage}% van totaalbedrag excl. BTW";
                     }
                 @endphp
                 <tr>
@@ -389,7 +389,7 @@
                 </tr>
                 @if($invoice->deposit_percentage && $invoice->deposit_percentage != 100)
                 <tr>
-                    <td>Aanbetaling ({{ number_format($invoice->deposit_percentage, 0) }}%):</td>
+                    <td>Aanbetaling {{ number_format($invoice->deposit_percentage, 0) }}% van totaalbedrag excl. BTW:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($total, 2, ',', '.') }}</td>
                 </tr>
                 @else
