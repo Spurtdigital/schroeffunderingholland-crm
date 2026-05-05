@@ -374,8 +374,11 @@
             </thead>
             <tbody>
                 @foreach($quote->items as $item)
-                @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
-                @if(!$isDiscount)
+                @php
+                    $isPriceLine = $item->type === \App\Enums\QuoteItemType::Discount
+                                || $item->type === \App\Enums\QuoteItemType::Adjustment;
+                @endphp
+                @if(!$isPriceLine)
                 <tr>
                     <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
                     <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
