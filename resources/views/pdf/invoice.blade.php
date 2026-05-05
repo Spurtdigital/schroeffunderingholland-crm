@@ -365,7 +365,8 @@
 
                     // Percentage toevoegen bij aanbetaling
                     if ($isDeposit && $invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
-                        $lineDesc .= " — {$invoice->deposit_percentage}% van totaalbedrag excl. BTW";
+                        $pct = rtrim(rtrim(number_format((float)$invoice->deposit_percentage, 2, '.', ''), '0'), '.');
+                        $lineDesc .= " — {$pct}% van totaalbedrag excl. BTW";
                     }
                 @endphp
                 <tr>
@@ -382,26 +383,22 @@
     <div class="totals-container clearfix">
         <div class="totals-table">
             <table>
-                @if($isDeposit && $quote && $quote->total)
+                @if($isDeposit && $quote && $quote->subtotal && $invoice->deposit_percentage && $invoice->deposit_percentage != 100)
                 <tr>
-                    <td>Totaal orderbedrag incl. BTW:</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->total, 2, ',', '.') }}</td>
+                    <td>Subtotaal offerte excl. BTW:</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->subtotal, 2, ',', '.') }}</td>
                 </tr>
-                @if($invoice->deposit_percentage && $invoice->deposit_percentage != 100)
+                @php
+                    $pctLabel = rtrim(rtrim(number_format((float)$invoice->deposit_percentage, 2, '.', ''), '0'), '.');
+                @endphp
                 <tr>
-                    <td>Aanbetaling {{ number_format($invoice->deposit_percentage, 0) }}% van totaalbedrag excl. BTW:</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($total, 2, ',', '.') }}</td>
-                </tr>
-                @else
-                <tr>
-                    <td>Subtotaal excl. BTW:</td>
+                    <td>Aanbetaling {{ $pctLabel }}% excl. BTW:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($subtotal, 2, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <td>BTW (21%):</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($vatAmount, 2, ',', '.') }}</td>
                 </tr>
-                @endif
                 @else
                 <tr>
                     <td>Subtotaal excl. BTW:</td>
