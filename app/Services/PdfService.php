@@ -375,7 +375,7 @@ class PdfService
     /**
      * Get signature as base64 data URL for PDF embedding.
      */
-    private function getSignatureBase64(Project $project): ?string
+    public function getSignatureBase64(Project $project): ?string
     {
         $signature = $project->getFirstMedia('project-signature');
 

@@ -8,6 +8,7 @@ use App\Filament\Resources\Projects\Actions\GenerateCompletionReportAction;
 use App\Filament\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\Resources\Projects\Actions\GenerateOrderConfirmationAction;
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
+use App\Filament\Resources\Projects\Actions\PrintPackingSlipAction;
 use App\Filament\Resources\Projects\Actions\GeneratePurchaseOrdersFromProjectAction;
 use App\Filament\Resources\Projects\Actions\ResendCompletionMailAction;
 use App\Filament\Resources\Projects\ProjectResource;
@@ -44,6 +45,7 @@ class ViewProject extends ViewRecord
                 GenerateOrderConfirmationAction::make(),
                 GenerateCompletionReportAction::make(),
                 GeneratePackingSlipAction::make(),
+                PrintPackingSlipAction::make(),
                 ResendCompletionMailAction::make(),
             ])
                 ->label('Documenten')

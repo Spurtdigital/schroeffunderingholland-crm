@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Projects\Tables;
 
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
+use App\Filament\Resources\Projects\Actions\PrintPackingSlipAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -66,6 +67,7 @@ class ProjectsTable
                 EditAction::make()
                     ->label('Bewerken'),
                 GeneratePackingSlipAction::make(),
+                PrintPackingSlipAction::make(),
             ])
             ->recordUrl(fn ($record) => route('filament.admin.resources.projects.view', ['record' => $record]))
             ->toolbarActions([

@@ -15,6 +15,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/projects/{project}/packing-slip-pdf', [PdfController::class, 'packingSlip'])
         ->name('projects.packing-slip-pdf');
 
+    Route::get('/projects/{project}/packing-slip-print', [PdfController::class, 'packingSlipPrint'])
+        ->name('projects.packing-slip-print');
+
     Route::get('/projects/{project}/order-confirmation-pdf', [PdfController::class, 'orderConfirmationPdf'])
         ->name('projects.order-confirmation-pdf');
 
