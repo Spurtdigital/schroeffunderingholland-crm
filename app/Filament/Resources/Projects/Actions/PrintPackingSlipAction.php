@@ -13,7 +13,7 @@ class PrintPackingSlipAction
             ->label('Pakbon afdrukken')
             ->icon('heroicon-o-printer')
             ->color('info')
-            ->url(fn (Project $record) => route('projects.packing-slip-print', $record))
+            ->url(fn (Project $record) => route('projects.packing-slip-pdf', [$record, 'stream' => 1]))
             ->openUrlInNewTab();
     }
 }
