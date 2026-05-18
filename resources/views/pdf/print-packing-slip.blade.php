@@ -18,10 +18,12 @@
         $signatureUrl = $signatureBase64;
     }
 
+    $hasItems = false;
     $totalWeight = 0;
     $hasWeight = false;
     foreach ($project->items as $item) {
         if ($item->itemable_type === 'App\\Models\\Product' && $item->itemable) {
+            $hasItems = true;
             if ($item->itemable->weight) {
                 $hasWeight = true;
                 $totalWeight += $item->quantity * $item->itemable->weight;
@@ -292,12 +294,6 @@
     <p>KvK: {{ $settings->company_kvk_number }}@if($settings->company_vat_number) &nbsp;|&nbsp; BTW: {{ $settings->company_vat_number }}@endif</p>
     @endif
 </div>
-
-@php $hasItems = false; @endphp
-@foreach($project->items as $item)
-    @if($item->itemable_type === 'App\\Models\\Product' && $item->itemable)
-        @php $hasItems = true; @break; @endif
-@endforeach
 
 <script>
     (function() {
