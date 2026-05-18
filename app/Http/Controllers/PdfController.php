@@ -6,7 +6,6 @@ use App\Models\Project;
 use App\Models\PurchaseOrder;
 use App\Models\Quote;
 use App\Services\PdfService;
-use App\Settings\GeneralSettings;
 
 class PdfController extends Controller
 {
@@ -33,13 +32,13 @@ class PdfController extends Controller
     /**
      * Show packing slip as a print-friendly HTML page
      */
-    public function packingSlipPrint(Project $project, GeneralSettings $settings)
+    public function packingSlipPrint(Project $project)
     {
         $project->load(['company', 'items.itemable', 'quote.lead', 'quote.machine']);
 
         return view('pdf.print-packing-slip', [
             'project' => $project,
-            'settings' => $settings,
+            'settings' => app(\App\Settings\GeneralSettings::class),
             'signatureBase64' => $this->pdfService->getSignatureBase64($project),
         ]);
     }
