@@ -12,6 +12,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/quotes/{quote}/pdf', [PdfController::class, 'quotePdf'])
         ->name('quotes.pdf');
 
+    Route::get('/projects/{project}/work-ticket-pdf', [PdfController::class, 'workTicket'])
+        ->name('projects.work-ticket-pdf');
+
     Route::get('/projects/{project}/packing-slip-pdf', [PdfController::class, 'packingSlip'])
         ->name('projects.packing-slip-pdf');
 

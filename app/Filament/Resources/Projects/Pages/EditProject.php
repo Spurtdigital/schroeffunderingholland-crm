@@ -8,7 +8,9 @@ use App\Filament\Resources\Projects\Actions\GenerateCompletionReportAction;
 use App\Filament\Resources\Projects\Actions\GenerateInvoiceAction;
 use App\Filament\Resources\Projects\Actions\GenerateOrderConfirmationAction;
 use App\Filament\Resources\Projects\Actions\GeneratePackingSlipAction;
+use App\Filament\Resources\Projects\Actions\GenerateWorkTicketAction;
 use App\Filament\Resources\Projects\Actions\PrintPackingSlipAction;
+use App\Filament\Resources\Projects\Actions\PrintWorkTicketAction;
 use App\Filament\Resources\Projects\Actions\GeneratePurchaseOrdersFromProjectAction;
 use App\Filament\Resources\Projects\Actions\ResendCompletionMailAction;
 use App\Filament\Resources\Projects\ProjectResource;
@@ -35,6 +37,8 @@ class EditProject extends EditRecord
                 GenerateCompletionReportAction::make(),
                 GeneratePackingSlipAction::make(),
                 PrintPackingSlipAction::make(),
+                GenerateWorkTicketAction::make(),
+                PrintWorkTicketAction::make(),
                 ResendCompletionMailAction::make(),
             ])
                 ->label('Documenten')

@@ -22,6 +22,16 @@ class PdfController extends Controller
     }
 
     /**
+     * Generate and download/stream work ticket PDF for a project
+     */
+    public function workTicket(Project $project)
+    {
+        $download = !request()->query('stream');
+
+        return $this->pdfService->generateWorkTicketPdf($project, download: $download);
+    }
+
+    /**
      * Generate and download/stream packing slip PDF for a project
      */
     public function packingSlip(Project $project)

@@ -343,6 +343,26 @@ class PdfService
     }
 
     /**
+     * Generate work ticket PDF (same as packing slip, no weights, title WERKBON)
+     */
+    public function generateWorkTicketPdf(Project $project, bool $download = false): \Illuminate\Http\Response
+    {
+        $pdf = Pdf::loadView('pdf.work-ticket', [
+            'project' => $project->load(['company', 'items.itemable', 'quote.lead', 'quote.machine']),
+            'settings' => $this->settings,
+            'signatureBase64' => $this->getSignatureBase64($project),
+        ]);
+
+        $filename = "werkbon-{$project->project_number}.pdf";
+
+        if ($download) {
+            return $pdf->download($filename);
+        }
+
+        return $pdf->stream($filename);
+    }
+
+    /**
      * Get purchase order PDF filename
      */
     public function getPurchaseOrderPdfFilename(PurchaseOrder $order): string
