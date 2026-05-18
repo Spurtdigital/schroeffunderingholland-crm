@@ -22,25 +22,13 @@ class PdfController extends Controller
     }
 
     /**
-     * Generate and download packing slip PDF for a project
+     * Generate and download/stream packing slip PDF for a project
      */
     public function packingSlip(Project $project)
     {
-        return $this->pdfService->generatePackingSlipPdf($project, download: true);
-    }
+        $download = !request()->query('stream');
 
-    /**
-     * Show packing slip as a print-friendly HTML page
-     */
-    public function packingSlipPrint(Project $project)
-    {
-        $project->load(['company', 'items.itemable', 'quote.lead', 'quote.machine']);
-
-        return view('pdf.print-packing-slip', [
-            'project' => $project,
-            'settings' => app(\App\Settings\GeneralSettings::class),
-            'signatureBase64' => $this->pdfService->getSignatureBase64($project),
-        ]);
+        return $this->pdfService->generatePackingSlipPdf($project, download: $download);
     }
 
     /**
