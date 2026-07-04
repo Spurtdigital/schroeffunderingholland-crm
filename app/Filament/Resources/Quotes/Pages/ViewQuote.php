@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes\Pages;
 use App\Filament\Resources\Quotes\Actions\ApproveQuoteAction;
 use App\Filament\Resources\Quotes\Actions\ConvertToProjectAction;
 use App\Filament\Resources\Quotes\Actions\GeneratePdfAction;
+use App\Filament\Resources\Quotes\Actions\ResendQuoteAction;
 use App\Filament\Resources\Quotes\Actions\SendQuoteAction;
 use App\Filament\Resources\Quotes\Actions\SendToMoneybirdAction;
 use App\Filament\Resources\Quotes\Actions\SyncFromMoneybirdAction;
@@ -58,6 +59,7 @@ class ViewQuote extends ViewRecord
                 }),
 
             SendQuoteAction::make(),
+            ResendQuoteAction::make(),
             ApproveQuoteAction::make(),
             ConvertToProjectAction::make(),
 
