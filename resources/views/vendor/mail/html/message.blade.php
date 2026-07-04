@@ -18,10 +18,5 @@
 </x-slot:subcopy>
 @endisset
 
-{{-- Footer --}}
-<x-slot:footer>
-<x-mail::footer>
-© {{ date('Y') }} {{ config('app.name') }}. {{ __('All rights reserved.') }}
-</x-mail::footer>
-</x-slot:footer>
+{{-- Footer - intentionally empty, signature is in email content --}}
 </x-mail::layout>
