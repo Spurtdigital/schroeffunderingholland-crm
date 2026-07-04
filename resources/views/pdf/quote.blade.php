@@ -442,15 +442,15 @@
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
                 @endif
+                @endif
                 <tr>
                     <td><strong>Subtotaal excl. BTW:</strong></td>
-                    <td class="text-right"><strong>&euro;&nbsp;{{ number_format($quote->items->sum('total') + ($quote->travel_total ?? 0), 2, ',', '.') }}</strong></td>
+                    <td class="text-right"><strong>&euro;&nbsp;{{ number_format($quote->subtotal, 2, ',', '.') }}</strong></td>
                 </tr>
                 <tr>
                     <td>BTW (21%):</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->vat_amount, 2, ',', '.') }}</td>
                 </tr>
-                @endif
                 <tr class="total-final">
                     <td>Totaal incl. BTW:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->total, 2, ',', '.') }}</td>
