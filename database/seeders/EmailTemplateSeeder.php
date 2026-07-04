@@ -36,6 +36,26 @@ Geldig tot: {{geldig_tot}}',
                 'active' => true,
             ],
             [
+                'key' => 'quote_customer',
+                'name' => 'Offerte naar klant',
+                'subject' => 'Offerte {{offerte_nummer}}',
+                'description' => 'E-mail naar de klant wanneer een offerte wordt verstuurd',
+                'available_variables' => [
+                    'klant_naam' => 'Naam contactpersoon',
+                    'offerte_nummer' => 'Het offerte nummer',
+                    'totaal' => 'Totaalbedrag',
+                    'handtekening' => 'Handtekening onderaan de mail (ingesteld bij Instellingen)',
+                ],
+                'content' => 'Bijgaand ontvang je onze offerte voor de aangevraagde werkzaamheden.
+
+Je vindt de offerte als PDF in de bijlage van deze e-mail.
+
+Heb je vragen over de offerte? Neem dan gerust contact met ons op.
+
+{{handtekening}}',
+                'active' => true,
+            ],
+            [
                 'key' => 'quote_approved',
                 'name' => 'Offerte goedgekeurd',
                 'subject' => 'Offerte goedgekeurd - {{offerte_nummer}}',
@@ -81,7 +101,6 @@ Goedgekeurd op: {{goedgekeurd_op}}
                     'bericht' => 'Custom message met benodigde informatie',
                     'bedrijf_email' => 'Jullie contactemail',
                     'bedrijf_telefoon' => 'Jullie telefoonnummer',
-                    'handtekening' => 'E-mail handtekening (uit instellingen)',
                 ],
                 'content' => 'Bedankt voor je interesse in Schroeffundering Holland.
 
@@ -93,9 +112,7 @@ Je kunt deze informatie sturen naar:
 
 {{bedrijf_email}}
 
-We horen graag van je!
-
-{{handtekening}}',
+We horen graag van je!',
                 'active' => true,
             ],
             [
@@ -113,30 +130,29 @@ We horen graag van je!
                     'verwachte_oplevering' => 'Verwachte opleverdatum',
                     'facturatiemethode' => 'Uitleg facturatiemethode (50/50, 30/70, 100%)',
                     'eerste_factuur_info' => 'Info over eerste factuur indien van toepassing',
-                    'handtekening' => 'E-mail handtekening (uit instellingen)',
                 ],
                 'content' => 'Hartelijk dank voor je opdracht!
 
 Hierbij bevestigen we de opdracht voor project {{project_nummer}} op basis van offerte {{offerte_nummer}}.
 
+📋 Project Details
 Project nummer: {{project_nummer}}
 Totaalbedrag: {{totaal}}
 Montagedatum: {{montagedatum}}
 Verwachte oplevering: {{verwachte_oplevering}}
 
-Facturering: {{facturatiemethode}}
+💰 Facturering
+{{facturatiemethode}}
 
 {{eerste_factuur_info}}
 
-Wat gebeurt er nu?
+⚡ Wat gebeurt er nu?
 1. We plannen de werkzaamheden
 2. Je ontvangt een planning
 3. We starten met de uitvoering
 4. Je ontvangt regelmatige updates
 
-Heb je vragen? Neem gerust contact met ons op.
-
-{{handtekening}}',
+Heb je vragen? Neem gerust contact met ons op.',
                 'active' => true,
             ],
             [
@@ -151,10 +167,10 @@ Heb je vragen? Neem gerust contact met ons op.
                     'opleverdatum' => 'Datum van oplevering (dd-mm-yyyy)',
                     'aantal_fotos' => 'Aantal bijgevoegde foto\'s (0 = sectie verborgen)',
                     'review_url' => 'Link naar reviewpagina (leeg als niet ingesteld)',
-                    'handtekening' => 'E-mail handtekening (uit instellingen)',
                 ],
                 'content' => "Wij zijn blij u te informeren dat het project voor {{bedrijf_naam}} is afgerond!
 
+📋 Project Details
 Project nummer: {{project_nummer}}
 Opleverdatum: {{opleverdatum}}
 
@@ -166,7 +182,8 @@ Hartelijk dank voor uw vertrouwen in Schroeffundering Holland.
 
 Heeft u vragen of opmerkingen over het opgeleverde werk? Neem dan gerust contact met ons op.
 
-{{handtekening}}",
+Met vriendelijke groet,
+Schroeffundering Holland",
                 'active' => true,
             ],
         ];

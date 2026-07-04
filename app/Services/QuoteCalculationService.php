@@ -17,8 +17,8 @@ class QuoteCalculationService
         // Get all quote items
         $items = $quote->items;
 
-        // Calculate subtotal from all items (including mileage items)
-        $subtotal = $items->sum(function ($item) {
+        // Calculate subtotal from non-optional items only
+        $subtotal = $items->where('is_optional', false)->sum(function ($item) {
             return $item->quantity * $item->unit_price;
         });
 

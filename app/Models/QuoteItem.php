@@ -24,6 +24,7 @@ class QuoteItem extends Model
         'unit_price',
         'total',
         'sort_order',
+        'is_optional',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class QuoteItem extends Model
         'unit_price' => 'decimal:2',
         'total' => 'decimal:2',
         'sort_order' => 'integer',
+        'is_optional' => 'boolean',
     ];
 
     /**
@@ -44,8 +46,9 @@ class QuoteItem extends Model
         parent::boot();
 
         // Automatically calculate total when quantity or unit_price changes
+        // Optional items always have total = 0 (excluded from quote totals)
         static::saving(function ($item) {
-            $item->total = round($item->quantity * $item->unit_price, 2);
+            $item->total = $item->is_optional ? 0 : round($item->quantity * $item->unit_price, 2);
         });
 
         // Auto-set sort_order to next available position when creating

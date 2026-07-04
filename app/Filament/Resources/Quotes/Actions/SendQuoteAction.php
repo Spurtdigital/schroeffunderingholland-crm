@@ -3,12 +3,10 @@
 namespace App\Filament\Resources\Quotes\Actions;
 
 use App\Enums\QuoteStatus;
-use App\Enums\StockReservationStatus;
-use App\Models\Product;
+use App\Models\Quote;
 use App\Models\QuoteAssumption;
-use App\Models\StockReservation;
-use App\Models\User;
-use App\Notifications\QuoteSentNotification;
+use App\Notifications\CustomerQuoteNotification;
+use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 
 class SendQuoteAction extends Action
 {
@@ -36,7 +35,7 @@ class SendQuoteAction extends Action
 
         $this->modalHeading('Offerte versturen');
 
-        $this->modalDescription('Controleer de gegevens en verstuur de offerte. Voorraad wordt automatisch gereserveerd.');
+        $this->modalDescription('Controleer de gegevens en verstuur de offerte.');
 
         $this->modalSubmitActionLabel('Ja, verstuur');
 
@@ -132,22 +131,6 @@ class SendQuoteAction extends Action
                 return;
             }
 
-            // Reserve stock for product items
-            foreach ($record->items as $item) {
-                if ($item->itemable_type === Product::class && $item->itemable_id) {
-                    $product = Product::find($item->itemable_id);
-
-                    if ($product) {
-                        StockReservation::create([
-                            'product_id' => $product->id,
-                            'quote_id'   => $record->id,
-                            'quantity'   => $item->quantity,
-                            'status'     => StockReservationStatus::Active,
-                        ]);
-                    }
-                }
-            }
-
             // Sync selected assumptions with pivot values
             $syncData = [];
             foreach ($data['assumption_ids'] ?? [] as $assumptionId) {
@@ -156,22 +139,55 @@ class SendQuoteAction extends Action
             }
             $record->assumptions()->sync($syncData);
 
+            // Genereer lokaal offertenummer als Moneybird uitgeschakeld is en het nog een CONCEPT is
+            $settings = app(GeneralSettings::class);
+            $quoteNumber = $record->quote_number;
+            if (! ($settings->moneybird_enabled ?? true) && str_starts_with($record->quote_number ?? '', 'CONCEPT-')) {
+                $quoteNumber = static::generateLocalQuoteNumber();
+            }
+
             // Update quote status
             $record->update([
-                'status'  => QuoteStatus::Sent,
-                'sent_at' => now(),
+                'status'       => QuoteStatus::Sent,
+                'sent_at'      => now(),
+                'quote_number' => $quoteNumber,
             ]);
+
+            NotificationFacade::route('mail', $data['email'])->notify(
+                new CustomerQuoteNotification($record->fresh(), $data['contact_person'] ?? null)
+            );
 
             Notification::make()
                 ->success()
                 ->title('Offerte verstuurd')
-                ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is verstuurd en voorraad is gereserveerd.")
+                ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is per e-mail met PDF-bijlage verstuurd.")
                 ->send();
 
-            // Send internal notification to all users
-            foreach (User::all() as $user) {
-                $user->notify(new QuoteSentNotification($record));
-            }
         });
+    }
+
+    /**
+     * Genereer een lokaal oplopend offertenummer in het formaat YYYY-NNNN.
+     * Wordt gebruikt wanneer Moneybird uitgeschakeld is.
+     */
+    protected static function generateLocalQuoteNumber(): string
+    {
+        $year = now()->year;
+        $settings = app(GeneralSettings::class);
+        $start = max(1, (int) ($settings->quote_number_start ?? 1));
+
+        $last = Quote::whereYear('created_at', $year)
+            ->where('quote_number', 'like', $year.'-%')
+            ->orderByDesc('quote_number')
+            ->value('quote_number');
+
+        if ($last) {
+            $current = (int) substr($last, strpos($last, '-') + 1);
+            $next = max($start, $current + 1);
+        } else {
+            $next = $start;
+        }
+
+        return $year.'-'.str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 }

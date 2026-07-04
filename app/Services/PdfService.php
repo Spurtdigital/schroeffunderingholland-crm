@@ -195,6 +195,9 @@ class PdfService
      */
     public function generateCompletionReportPdf(Project $project, bool $download = false, ?string $clientName = null, ?string $technicianName = null): \Illuminate\Http\Response
     {
+        $clientName ??= $project->client_name;
+        $technicianName ??= $project->technician_name;
+
         $pdf = Pdf::loadView('pdf.completion-report', [
             'project' => $project->load(['company', 'items.itemable', 'quote.lead']),
             'settings' => $this->settings,
@@ -218,7 +221,7 @@ class PdfService
      */
     public function getCompletionReportPdfOutput(Project $project): string
     {
-        return $this->getCompletionReportPdfOutputWithNames($project, null, null);
+        return $this->getCompletionReportPdfOutputWithNames($project, $project->client_name, $project->technician_name);
     }
 
     /**
@@ -226,7 +229,7 @@ class PdfService
      */
     public function getCompletionReportPdfOutputWithClientName(Project $project, ?string $clientName): string
     {
-        return $this->getCompletionReportPdfOutputWithNames($project, $clientName, null);
+        return $this->getCompletionReportPdfOutputWithNames($project, $clientName, $project->technician_name);
     }
 
     /**
@@ -260,7 +263,7 @@ class PdfService
     public function getOrderConfirmationPdfOutput(Project $project): string
     {
         $quote = $project->quote
-            ? $project->quote->load(['company', 'lead', 'items.machine'])
+            ? $project->quote->load(['company', 'lead', 'items.machine', 'assumptions', 'paymentTerm'])
             : null;
 
         $company = $quote?->company ?? $project->load('company')->company;
@@ -289,7 +292,7 @@ class PdfService
     public function generateOrderConfirmationPdf(Project $project, bool $download = false): \Illuminate\Http\Response
     {
         $quote = $project->quote
-            ? $project->quote->load(['company', 'lead', 'items.machine'])
+            ? $project->quote->load(['company', 'lead', 'items.machine', 'assumptions', 'paymentTerm'])
             : null;
 
         $company = $quote?->company ?? $project->load('company')->company;

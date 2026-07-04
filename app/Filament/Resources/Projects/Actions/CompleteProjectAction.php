@@ -224,6 +224,8 @@ class CompleteProjectAction extends Action
                 'kans_op_zetting' => (bool) ($data['kans_op_zetting'] ?? false),
                 'indraaimoment' => (bool) ($data['indraaimoment'] ?? false),
                 'indraaimoment_value' => ($data['indraaimoment'] ?? false) ? ($data['indraaimoment_value'] ?? null) : null,
+                'client_name' => $data['client_name'] ?? null,
+                'technician_name' => $data['technician_name'] ?? null,
             ]);
 
             // Frish de record zodat media beschikbaar is voor de PDF

@@ -36,6 +36,10 @@ class GeneralSettings extends Settings
 
     public ?string $moneybird_administration_id;
 
+    public bool $moneybird_enabled;
+
+    public int $quote_number_start;
+
     public ?string $google_maps_api_key;
 
     public ?string $default_pre_text;
@@ -45,6 +49,10 @@ class GeneralSettings extends Settings
     public ?string $closing_text;
 
     public ?string $review_url;
+
+    public ?string $terms_pdf;
+
+    public ?string $email_signature;
 
     public static function group(): string
     {

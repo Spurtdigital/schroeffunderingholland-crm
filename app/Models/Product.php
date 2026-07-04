@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\StockMutationType;
 use App\Enums\StockReservationStatus;
+use App\Notifications\LowStockNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 
 class Product extends Model
 {
@@ -235,6 +237,34 @@ class Product extends Model
             'reason' => null,
             'reference_type' => $reservation ? get_class($reservation) : null,
             'reference_id' => $reservation?->id,
+        ]);
+
+        // Stuur een melding als de voorraad onder het minimumniveau komt
+        if ($this->min_stock_level > 0 && $this->available_stock <= $this->min_stock_level) {
+            NotificationFacade::route('mail', 'bob@schroeffunderingholland.nl')
+                ->notify(new LowStockNotification($this));
+        }
+    }
+
+    /**
+     * Credit (reduce) stock and log the mutation.
+     * Use this for returns to supplier, write-offs, damage, etc.
+     */
+    public function creditStock(int $quantity, ?string $reason = null, ?\App\Models\User $user = null, ?\Illuminate\Database\Eloquent\Model $reference = null): void
+    {
+        $before = $this->stock_quantity;
+        $this->decrement('stock_quantity', $quantity);
+        $this->refresh();
+
+        $this->stockMutations()->create([
+            'user_id' => $user?->id ?? Auth::id(),
+            'quantity' => -$quantity,
+            'quantity_before' => $before,
+            'quantity_after' => $this->stock_quantity,
+            'type' => StockMutationType::Credit,
+            'reason' => $reason,
+            'reference_type' => $reference ? get_class($reference) : null,
+            'reference_id' => $reference?->id,
         ]);
     }
 

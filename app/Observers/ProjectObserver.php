@@ -3,48 +3,50 @@
 namespace App\Observers;
 
 use App\Enums\ProjectStatus;
-use App\Enums\StockReservationStatus;
+use App\Enums\QuoteItemType;
+use App\Models\Product;
 use App\Models\Project;
 
 class ProjectObserver
 {
-    /**
-     * Handle the Project "deleting" event.
-     * Release all active stock reservations when a project is deleted.
-     */
-    public function deleting(Project $project): void
-    {
-        foreach ($project->stockReservations()->where('status', StockReservationStatus::Active)->get() as $reservation) {
-            $reservation->release();
-        }
-    }
-
-    /**
-     * Handle the Project "updating" event.
-     * Consume stock when project status changes to Completed
-     */
     public function updating(Project $project): void
     {
-        // Check if status is changing to Completed
-        if ($project->isDirty('status')) {
-            $newStatus = $project->status;
-            $oldStatus = $project->getOriginal('status');
+        if (! $project->isDirty('status')) {
+            return;
+        }
 
-            // If moving to Completed, consume all stock reservations from the quote
-            if ($newStatus === ProjectStatus::Completed && $oldStatus !== ProjectStatus::Completed) {
-                // Auto-fill completion_date if not already set
-                if (! $project->completion_date) {
-                    $project->completion_date = now()->toDateString();
-                }
+        $newStatus = $project->status;
+        $oldStatus = $project->getOriginal('status');
 
-                $quote = $project->quote;
+        if ($newStatus !== ProjectStatus::Completed || $oldStatus === ProjectStatus::Completed) {
+            return;
+        }
 
-                if ($quote) {
-                    // Consume all active stock reservations
-                    foreach ($quote->stockReservations()->where('status', 'active')->get() as $reservation) {
-                        $reservation->consume();
-                    }
-                }
+        if (! $project->completion_date) {
+            $project->completion_date = now()->toDateString();
+        }
+
+        // 1. Consume all active stock reservations
+        foreach ($project->stockReservations()->where('status', 'active')->get() as $reservation) {
+            $reservation->consume();
+        }
+
+        // 2. Handle returns: items with negative quantity → credit stock back
+        $project->load('items.itemable');
+        foreach ($project->items as $item) {
+            if (
+                $item->type === QuoteItemType::Product
+                && $item->itemable_type === Product::class
+                && $item->itemable_id
+                && $item->itemable
+                && (int) $item->quantity < 0
+            ) {
+                $item->itemable->addStock(
+                    abs((int) $item->quantity),
+                    "Retour: project #{$project->id}",
+                    null,
+                    $project,
+                );
             }
         }
     }

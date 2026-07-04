@@ -12,16 +12,16 @@ test('completing a project consumes all active stock reservations', function () 
     $quote = Quote::factory()->create();
     $project = Project::factory()->for($quote)->create(['status' => ProjectStatus::Active]);
 
-    // Create two active reservations on the quote
+    // Create two active reservations on the project
     $reservation1 = StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 3,
         'status' => StockReservationStatus::Active,
     ]);
     $reservation2 = StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 5,
         'status' => StockReservationStatus::Active,
     ]);
@@ -40,7 +40,7 @@ test('completing a project decreases product stock quantity', function () {
 
     StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 7,
         'status' => StockReservationStatus::Active,
     ]);
@@ -57,7 +57,7 @@ test('completing a project does not consume already released reservations', func
 
     $released = StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 5,
         'status' => StockReservationStatus::Released,
     ]);
@@ -77,7 +77,7 @@ test('completing a project does not consume already consumed reservations', func
 
     $consumed = StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 5,
         'status' => StockReservationStatus::Consumed,
     ]);
@@ -109,7 +109,7 @@ test('completing an already completed project does not double-consume stock', fu
 
     StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 4,
         'status' => StockReservationStatus::Active,
     ]);
@@ -131,7 +131,7 @@ test('changing project status to Active does not consume stock', function () {
 
     StockReservation::factory()->create([
         'product_id' => $product->id,
-        'quote_id' => $quote->id,
+        'project_id' => $project->id,
         'quantity' => 6,
         'status' => StockReservationStatus::Active,
     ]);

@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\EmailTemplate;
 use App\Models\Lead;
-use App\Settings\GeneralSettings;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\HtmlString;
@@ -32,12 +31,8 @@ class InfoRequiredNotification extends Notification
     {
         $template = EmailTemplate::getByKey('info_required');
         
-        $settings = app(GeneralSettings::class);
-        $signature = $settings->email_signature ?? "Met vriendelijke groet,\n\nSchroeffundering Holland";
-        $signatureHtml = nl2br(e($signature));
-        
         if (!$template) {
-            return $this->fallbackEmail($notifiable, $signatureHtml);
+            return $this->fallbackEmail($notifiable);
         }
         
         $rendered = $template->renderToHtml([
@@ -46,21 +41,19 @@ class InfoRequiredNotification extends Notification
             'bericht' => $this->message,
             'bedrijf_email' => 'info@schroeffunderingholland.nl',
             'bedrijf_telefoon' => 'Zie onze website voor contactgegevens',
-            'handtekening' => $signatureHtml,
         ]);
         
         return (new MailMessage)
             ->subject($rendered['subject'])
             ->replyTo('info@schroeffunderingholland.nl', 'Schroeffundering Holland')
             ->greeting('Dag ' . $this->lead->contact_name . ',')
-            ->line(new HtmlString($rendered['content']))
-            ->salutation('');
+            ->line(new HtmlString($rendered['content']));
     }
     
     /**
      * Fallback email when template is not found.
      */
-    private function fallbackEmail(object $notifiable, string $signatureHtml): MailMessage
+    private function fallbackEmail(object $notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject('Extra informatie nodig - ' . $this->lead->company_name)
@@ -74,6 +67,6 @@ class InfoRequiredNotification extends Notification
             ->line('Je kunt deze informatie sturen naar **info@schroeffunderingholland.nl**')
             ->line('')
             ->line('We horen graag van je!')
-            ->salutation(new HtmlString($signatureHtml));
+            ->salutation('Met vriendelijke groet, Schroeffundering Holland');
     }
 }

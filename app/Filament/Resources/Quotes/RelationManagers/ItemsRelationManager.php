@@ -120,6 +120,12 @@ class ItemsRelationManager extends RelationManager
                     ->dehydrated()
                     ->visible(fn (Forms\Components\TextInput $component) => $component->getRecord()?->type !== \App\Enums\QuoteItemType::Machine)
                     ->columnSpan(1),
+
+                Forms\Components\Toggle::make('is_optional')
+                    ->label('Optionele regel (PM — niet in totaal)')
+                    ->helperText('Optionele regels tonen op de offerte maar tellen niet mee in het totaal.')
+                    ->default(false)
+                    ->columnSpan(3),
             ]);
     }
 
@@ -131,6 +137,13 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge(),
+                Tables\Columns\IconColumn::make('is_optional')
+                    ->label('PM')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-star')
+                    ->falseIcon('')
+                    ->trueColor('warning')
+                    ->tooltip('Optionele regel — telt niet mee in totaal'),
                 Tables\Columns\TextColumn::make('description')
                     ->label('Omschrijving')
                     ->searchable()
@@ -159,16 +172,19 @@ class ItemsRelationManager extends RelationManager
                     ->label('Totaal')
                     ->money('EUR')
                     ->alignment(Alignment::End)
+                    ->color(fn ($record) => $record->is_optional ? 'gray' : null)
+                    ->formatStateUsing(fn ($state, $record) => $record->is_optional ? '—' : '€ '.number_format((float) $state, 2, ',', '.'))
                     ->summarize([
-                        Sum::make()->label('')->money('EUR'),
+                        Sum::make()->label('')->money('EUR')
+                            ->query(fn ($query) => $query->where('is_optional', false)),
                         Summarizer::make()
                             ->label('')
                             ->money('EUR')
-                            ->using(fn ($query) => round($query->sum('total') * 0.21, 2)),
+                            ->using(fn ($query) => round($query->where('is_optional', false)->sum('total') * 0.21, 2)),
                         Summarizer::make()
                             ->label('')
                             ->money('EUR')
-                            ->using(fn ($query) => round($query->sum('total') * 1.21, 2))
+                            ->using(fn ($query) => round($query->where('is_optional', false)->sum('total') * 1.21, 2))
                             ->extraAttributes(['style' => 'font-weight:600;']),
                     ]),
                 Tables\Columns\TextColumn::make('machine.name')
@@ -245,6 +261,12 @@ class ItemsRelationManager extends RelationManager
                                 ->disabled()
                                 ->dehydrated()
                                 ->columnSpan(1),
+
+                            Forms\Components\Toggle::make('is_optional')
+                                ->label('Optionele regel (PM — niet in totaal)')
+                                ->helperText('Optionele regels tonen op de offerte maar tellen niet mee in het totaal.')
+                                ->default(false)
+                                ->columnSpanFull(),
                         ])
                         ->action(function (array $data, RelationManager $livewire): void {
                             $data['type'] = QuoteItemType::Product->value;
@@ -304,6 +326,12 @@ class ItemsRelationManager extends RelationManager
                                 ->disabled()
                                 ->dehydrated()
                                 ->columnSpan(1),
+
+                            Forms\Components\Toggle::make('is_optional')
+                                ->label('Optionele regel (PM — niet in totaal)')
+                                ->helperText('Optionele regels tonen op de offerte maar tellen niet mee in het totaal.')
+                                ->default(false)
+                                ->columnSpanFull(),
                         ])
                         ->action(function (array $data, RelationManager $livewire): void {
                             $data['type'] = QuoteItemType::Labor->value;
@@ -410,6 +438,12 @@ class ItemsRelationManager extends RelationManager
                                 ->disabled()
                                 ->dehydrated()
                                 ->columnSpan(1),
+
+                            Forms\Components\Toggle::make('is_optional')
+                                ->label('Optionele regel (PM — niet in totaal)')
+                                ->helperText('Optionele regels tonen op de offerte maar tellen niet mee in het totaal.')
+                                ->default(false)
+                                ->columnSpanFull(),
                         ])
                         ->action(function (array $data, RelationManager $livewire): void {
                             $data['type'] = QuoteItemType::FreeLine->value;
@@ -605,10 +639,9 @@ class ItemsRelationManager extends RelationManager
                             // Remove any existing adjustment lines first
                             $quote->items()->where('type', QuoteItemType::Adjustment->value)->delete();
 
-                            $label = $adjustment > 0 ? 'Toeslag' : 'Korting';
                             $quote->items()->create([
                                 'type'         => QuoteItemType::Adjustment->value,
-                                'description'  => $label,
+                                'description'  => 'Totaalprijs incl. Montage excl. BTW',
                                 'quantity'     => 1,
                                 'unit_price'   => $adjustment,
                                 'total'        => $adjustment,

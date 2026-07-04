@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -21,7 +22,7 @@ class LeadActionsTest extends TestCase
         $this->seed();
     }
 
-    /** @test */
+    #[Test]
     public function create_quote_action_exists_on_lead_edit_page(): void
     {
         $user = User::first();
@@ -36,7 +37,7 @@ class LeadActionsTest extends TestCase
         $response->assertDontSee('Whoops');
     }
 
-    /** @test */
+    #[Test]
     public function request_more_info_action_exists_on_lead_edit_page(): void
     {
         $user = User::first();
@@ -50,7 +51,7 @@ class LeadActionsTest extends TestCase
         $response->assertDontSee('Whoops');
     }
 
-    /** @test */
+    #[Test]
     public function lead_can_be_converted_to_quote(): void
     {
         $user = User::first();

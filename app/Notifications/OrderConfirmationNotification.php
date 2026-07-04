@@ -8,6 +8,7 @@ use App\Services\PdfService;
 use App\Settings\GeneralSettings;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
 class OrderConfirmationNotification extends Notification
@@ -33,12 +34,8 @@ class OrderConfirmationNotification extends Notification
     {
         $template = EmailTemplate::getByKey('order_confirmation');
         
-        $settings = app(GeneralSettings::class);
-        $signature = $settings->email_signature ?? "Met vriendelijke groet,\n\nSchroeffundering Holland";
-        $signatureHtml = nl2br(e($signature));
-        
         if (!$template) {
-            return $this->fallbackEmail($notifiable, $signatureHtml);
+            return $this->fallbackEmail($notifiable);
         }
         
         $quote = $this->project->quote;
@@ -49,6 +46,7 @@ class OrderConfirmationNotification extends Notification
             'split_50_50' => 'Je ontvangt 2 facturen: 50% vooraf en 50% bij oplevering',
             'split_30_70' => 'Je ontvangt 2 facturen: 30% vooraf en 70% bij oplevering',
             'single' => 'Je ontvangt 1 factuur bij oplevering',
+            'single_upfront' => 'Je ontvangt 1 factuur vooraf',
             default => 'Facturatie volgens afspraak'
         };
         
@@ -69,14 +67,12 @@ class OrderConfirmationNotification extends Notification
             'verwachte_oplevering' => $this->project->completion_date?->format('d-m-Y') ?? 'Nader te bepalen',
             'facturatiemethode' => $facturatiemethode,
             'eerste_factuur_info' => $eersteFactuurInfo,
-            'handtekening' => $signatureHtml,
         ]);
         
         $mail = (new MailMessage)
             ->subject($rendered['subject'])
             ->greeting('Dag ' . ($company->contact_name ?? 'relatie') . ',')
-            ->line(new HtmlString($rendered['content']))
-            ->salutation('');
+            ->line(new HtmlString($rendered['content']));
         
         // Attach order confirmation PDF if available and requested
         if ($this->attachQuotePdf && $quote) {
@@ -88,13 +84,25 @@ class OrderConfirmationNotification extends Notification
             );
         }
 
+        // Attach algemene voorwaarden if uploaded
+        $settings = app(GeneralSettings::class);
+        if (! empty($settings->terms_pdf)) {
+            $path = Storage::disk('public')->path($settings->terms_pdf);
+            if (file_exists($path)) {
+                $mail->attach($path, [
+                    'as'   => 'algemene-voorwaarden.pdf',
+                    'mime' => 'application/pdf',
+                ]);
+            }
+        }
+
         return $mail;
     }
 
     /**
      * Fallback email when template is not found.
      */
-    private function fallbackEmail(object $notifiable, string $signatureHtml): MailMessage
+    private function fallbackEmail(object $notifiable): MailMessage
     {
         $quote = $this->project->quote;
         $company = $this->project->company;
@@ -125,6 +133,7 @@ class OrderConfirmationNotification extends Notification
             'split_50_50' => 'Je ontvangt 2 facturen: 50% vooraf en 50% bij oplevering',
             'split_30_70' => 'Je ontvangt 2 facturen: 30% vooraf en 70% bij oplevering',
             'single' => 'Je ontvangt 1 factuur bij oplevering',
+            'single_upfront' => 'Je ontvangt 1 factuur vooraf',
             default => 'Facturatie volgens afspraak'
         };
         
@@ -139,12 +148,13 @@ class OrderConfirmationNotification extends Notification
         
         $mail->line('')
             ->line('**Wat gebeurt er nu?**')
-            ->line('We plannen de werkzaamheden in')
-            ->line('Je ontvangt bericht over de planning')
-            ->line('Bij vragen kun je altijd contact met ons opnemen')
+            ->line('• We plannen de werkzaamheden in')
+            ->line('• Je ontvangt bericht over de planning')
+            ->line('• Bij vragen kun je altijd contact met ons opnemen')
             ->line('')
             ->line('Heb je vragen? Neem gerust contact met ons op!')
-            ->salutation(new HtmlString($signatureHtml));
+            ->salutation('Met vriendelijke groet,')
+            ->salutation(config('mail.from.name', 'Schroeffundering Holland'));
         
         // Attach order confirmation PDF if available and requested
         if ($this->attachQuotePdf && $quote) {
@@ -155,7 +165,19 @@ class OrderConfirmationNotification extends Notification
                 ['mime' => 'application/pdf']
             );
         }
-            
+
+        // Attach algemene voorwaarden if uploaded
+        $settings = app(GeneralSettings::class);
+        if (! empty($settings->terms_pdf)) {
+            $path = Storage::disk('public')->path($settings->terms_pdf);
+            if (file_exists($path)) {
+                $mail->attach($path, [
+                    'as'   => 'algemene-voorwaarden.pdf',
+                    'mime' => 'application/pdf',
+                ]);
+            }
+        }
+
         return $mail;
     }
 }

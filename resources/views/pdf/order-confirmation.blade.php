@@ -1,4 +1,6 @@
 @php
+    $mdBold = fn(string $text): string => preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
+
     // Achtergrond base64
     $bgPath = public_path('images/achtergrond-pdf.jpg');
     $bgBase64 = '';
@@ -243,12 +245,66 @@
             color: #000;
         }
 
+        /* Blokken bij elkaar houden op pagina */
+        .doc-title-bar,
+        .info-container,
+        .totals-container,
+        .notes-section,
+        .pre-text-section,
+        .payment-term-section {
+            page-break-inside: avoid;
+        }
+
+        /* Aannames mogen over pagina's lopen, maar elke regel blijft intact */
+        .assumptions-section li {
+            page-break-inside: avoid;
+        }
+
+        /* Aannames bullet-lijst */
+        .assumptions-section {
+            margin-bottom: 14px;
+        }
+        .assumptions-section ul {
+            margin: 0;
+            padding-left: 16px;
+        }
+        .assumptions-section ul li {
+            font-size: 8pt;
+            line-height: 1.6;
+            color: #000;
+        }
+
+        /* Inleidende tekst */
+        .pre-text-section p {
+            margin-bottom: 14px;
+            font-size: 9pt;
+            line-height: 1.5;
+        }
+
         /* Betalingsinfo */
         .payment-section {
             margin-top: 20px;
             padding: 10px 12px;
             border-top: 1px solid #ccc;
             font-size: 8pt;
+        }
+
+        /* Betalingsvoorwaarden */
+        .payment-term-section {
+            margin-top: 16px;
+            font-size: 8.5pt;
+            line-height: 1.5;
+            color: #333;
+        }
+        .payment-term-section p {
+            margin-bottom: 2px;
+        }
+        .payment-term-section .term-title {
+            font-weight: bold;
+        }
+        .payment-term-section .term-heading {
+            font-weight: bold;
+            margin-bottom: 4px;
         }
 
         /* Footer */
@@ -359,6 +415,24 @@
     </div>
     @endif
 
+    <!-- Inleidende tekst (pre_text) -->
+    @if($quote && $quote->pre_text)
+    <div class="pre-text-section">
+        <p>{!! nl2br($mdBold(e($quote->pre_text))) !!}</p>
+    </div>
+    @endif
+
+    <!-- Voorwaarden (aannames van de offerte) -->
+    @if($quote && $quote->assumptions->isNotEmpty())
+    <div class="assumptions-section">
+        <ul>
+            @foreach($quote->assumptions->sortBy('sort_order') as $assumption)
+            <li>{{ $assumption->resolveContent($assumption->pivot->pivot_value) }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
     <!-- Items Tabel -->
     @if($quote && $quote->items->count())
     <div class="items-section">
@@ -452,6 +526,15 @@
     <div class="payment-section">
         <p><strong>Betaling:</strong> {{ $settings->company_bank_account }}
         @if($settings->company_name) t.n.v. {{ $settings->company_name }}@endif</p>
+    </div>
+    @endif
+
+    <!-- Betalingsvoorwaarden -->
+    @if($quote && $quote->paymentTerm)
+    <div class="payment-term-section">
+        <p class="term-heading">Betalingsvoorwaarden</p>
+        <p class="term-title">{{ $quote->paymentTerm->title }}</p>
+        <p>{{ $quote->paymentTerm->content }}</p>
     </div>
     @endif
 

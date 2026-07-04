@@ -23,6 +23,7 @@ class ProjectItem extends Model
         'unit_price',
         'total',
         'sort_order',
+        'is_optional',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class ProjectItem extends Model
         'unit_price' => 'decimal:2',
         'total' => 'decimal:2',
         'sort_order' => 'integer',
+        'is_optional' => 'boolean',
     ];
 
     /**

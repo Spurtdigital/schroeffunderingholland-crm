@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\Actions\AddStockAction;
+use App\Filament\Resources\Products\Actions\CreditStockAction;
 use App\Filament\Resources\Products\ProductResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
@@ -15,6 +16,7 @@ class EditProduct extends EditRecord
     {
         return [
             AddStockAction::make(),
+            CreditStockAction::make(),
             DeleteAction::make(),
         ];
     }

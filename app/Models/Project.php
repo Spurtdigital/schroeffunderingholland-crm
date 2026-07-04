@@ -32,6 +32,8 @@ class Project extends Model implements HasMedia
         'kans_op_zetting',
         'indraaimoment',
         'indraaimoment_value',
+        'client_name',
+        'technician_name',
     ];
 
     protected $casts = [
@@ -121,6 +123,14 @@ class Project extends Model implements HasMedia
     }
 
     /**
+     * Get stock reservations for this project.
+     */
+    public function stockReservations(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
+    }
+
+    /**
      * Get all purchase orders linked to this project.
      */
     public function purchaseOrders(): HasMany
@@ -160,7 +170,10 @@ class Project extends Model implements HasMedia
      */
     public function usesSingleInvoice(): bool
     {
-        return $this->invoicing_type === InvoicingType::Single;
+        return in_array($this->invoicing_type, [
+            InvoicingType::Single,
+            InvoicingType::SingleUpfront,
+        ]);
     }
 
     /**

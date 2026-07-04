@@ -9,7 +9,7 @@ set -euo pipefail
 SSH_KEY="$HOME/.ssh/antagonist-ssh"
 SSH_USER="deb122730"
 SSH_HOST="141.138.169.228"
-SSH_OPTS="-i $SSH_KEY -p 22 -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ConnectTimeout=30"
+SSH_OPTS="-i $SSH_KEY -p 22 -o ServerAliveInterval=10 -o ServerAliveCountMax=30 -o ConnectTimeout=60 -o TCPKeepAlive=yes"
 SSH="ssh $SSH_OPTS $SSH_USER@$SSH_HOST"
 REMOTE_ROOT="/home/deb122730/domains/crm.schroeffunderingholland.nl"
 REMOTE_APP="$REMOTE_ROOT/app"
@@ -48,12 +48,14 @@ ddev exec "tar -cf - -C /var/www/html vendor" | tar -xf - -C "$VENDOR_TMP"
 echo "==> [3/6] Bestanden uploaden via rsync..."
 
 # Upload alles BEHALVE: .git, node_modules, vendor, .env*, storage logs, public/build (apart)
+# LET OP: storage/app/public/ is uitgesloten — bevat geüploade bestanden (logo, algemene voorwaarden, etc.)
 rsync -az --delete \
   -e "ssh $SSH_OPTS" \
   --exclude='.git' \
   --exclude='.env*' \
   --exclude='node_modules' \
   --exclude='vendor' \
+  --exclude='storage/app/public/' \
   --exclude='storage/logs/*' \
   --exclude='storage/framework/cache/*' \
   --exclude='storage/framework/sessions/*' \
@@ -116,6 +118,7 @@ echo "==> [6/6] Laravel optimalisaties + migraties..."
 $SSH "cd $REMOTE_APP && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php"
 $SSH "cd $REMOTE_APP && php artisan migrate --force 2>&1"
 $SSH "cd $REMOTE_APP && php artisan app:create-production-users --force 2>&1"
+$SSH "cd $REMOTE_APP && php artisan db:seed --class=EmailTemplateSeeder --force 2>&1"
 # LET OP: config:cache wordt NIET gedraaid - zie server-bootstrap.sh voor uitleg
 $SSH "cd $REMOTE_APP && php artisan route:cache && php artisan view:cache && php artisan event:cache 2>&1"
 # Permissies fixen zodat Apache de bestanden kan lezen

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\QuoteStatus;
 use App\Models\Quote;
 use App\Services\MoneybirdService;
+use App\Settings\GeneralSettings;
 use Illuminate\Console\Command;
 
 class SyncMoneybirdQuoteStatuses extends Command
@@ -14,6 +15,13 @@ class SyncMoneybirdQuoteStatuses extends Command
 
     public function handle(MoneybirdService $moneybirdService): int
     {
+        $settings = app(GeneralSettings::class);
+
+        if (! ($settings->moneybird_enabled ?? true)) {
+            $this->line('Moneybird is uitgeschakeld — sync overgeslagen.');
+            return 0;
+        }
+
         if (!$moneybirdService->isConfigured()) {
             $this->error('Moneybird is niet geconfigureerd!');
             return 1;

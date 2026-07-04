@@ -2,9 +2,7 @@
 
 namespace App\Filament\Resources\Quotes\Actions;
 
-use App\Enums\QuoteItemType;
 use App\Enums\QuoteStatus;
-use App\Models\Product;
 use App\Models\Quote;
 use App\Models\User;
 use App\Notifications\QuoteApprovedNotification;
@@ -25,29 +23,11 @@ class ApproveQuoteAction extends Action
             ->modalSubmitActionLabel('Ja, goedkeuren')
             ->visible(fn (Quote $record) => $record->status === QuoteStatus::Sent)
             ->action(function (Quote $record) {
-                // Update quote status to Approved
+                // Update quote status to Approved (stock reservations are created by QuoteObserver)
                 $record->update([
                     'status' => QuoteStatus::Approved,
                     'approved_at' => now(),
                 ]);
-
-                // Create stock reservations for all product items
-                foreach ($record->items as $item) {
-                    if ($item->type === QuoteItemType::Product && $item->itemable_type === Product::class && $item->itemable_id) {
-                        $product = Product::find($item->itemable_id);
-                        if ($product) {
-                            // Avoid duplicate reservations
-                            $alreadyReserved = $record->stockReservations()
-                                ->where('product_id', $product->id)
-                                ->where('status', 'active')
-                                ->exists();
-
-                            if (! $alreadyReserved) {
-                                $product->reserveStock($record, (int) $item->quantity);
-                            }
-                        }
-                    }
-                }
 
                 // Show success notification
                 Notification::make()

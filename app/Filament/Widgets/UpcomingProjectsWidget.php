@@ -13,9 +13,9 @@ class UpcomingProjectsWidget extends BaseWidget
 {
     protected static ?string $heading = 'Komende projecten (7 dagen)';
 
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 3;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = ['default' => 'full'];
 
     protected function getTableQuery(): Builder
     {

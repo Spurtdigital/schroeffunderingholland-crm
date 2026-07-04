@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes\Actions;
 use App\Enums\InvoicingType;
 use App\Enums\ProjectStatus;
 use App\Enums\QuoteStatus;
+use App\Enums\StockReservationStatus;
 use App\Models\Project;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -98,9 +99,11 @@ class ConvertToProjectAction extends Action
                 'start_date' => $data['start_date'] ?? null,
                 'completion_date' => $data['expected_completion_date'] ?? null,
                 'notes' => $data['notes'] ?? null,
+                'project_value' => $record->total,
             ]);
 
-            // Copy quote items to project items
+            // Copy quote items to project items FIRST
+            // ProjectItemObserver creates fresh reservations with correct qty
             foreach ($record->items as $quoteItem) {
                 $project->items()->create([
                     'quote_item_id' => $quoteItem->id,
@@ -112,7 +115,13 @@ class ConvertToProjectAction extends Action
                     'unit_price' => $quoteItem->unit_price,
                     'total' => $quoteItem->total,
                     'sort_order' => $quoteItem->sort_order,
+                    'is_optional' => $quoteItem->is_optional,
                 ]);
+            }
+
+            // Release old quote reservations (project items created fresh ones via observer)
+            foreach ($record->stockReservations()->where('status', StockReservationStatus::Active)->get() as $reservation) {
+                $reservation->release();
             }
 
             // Update quote status
@@ -148,7 +157,7 @@ class ConvertToProjectAction extends Action
                 ->send();
 
             // Redirect to project edit page
-            return redirect()->route('filament.admin.resources.projects.edit', ['record' => $project]);
+            return redirect()->route('filament.admin.resources.projects.view', ['record' => $project]);
         });
     }
 }
