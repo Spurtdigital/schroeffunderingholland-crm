@@ -141,3 +141,60 @@ test('changing project status to Active does not consume stock', function () {
 
     expect($product->fresh()->stock_quantity)->toBe(20);
 });
+
+// ─── Delete stock release ────────────────────────────────────────────────────
+
+test('deleting a project releases all active stock reservations', function () {
+    $product = Product::factory()->create(['stock_quantity' => 20]);
+    $quote = Quote::factory()->create();
+    $project = Project::factory()->for($quote)->create(['status' => ProjectStatus::Active]);
+
+    $reservation1 = StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 3,
+        'status' => StockReservationStatus::Active,
+    ]);
+    $reservation2 = StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 5,
+        'status' => StockReservationStatus::Active,
+    ]);
+
+    // Verify reservations exist and are active before delete
+    expect($reservation1->status)->toBe(StockReservationStatus::Active)
+        ->and($reservation2->status)->toBe(StockReservationStatus::Active);
+
+    $project->delete();
+
+    // After delete, reservations may be cascade-deleted but the release() was called first
+    // We verify by checking that stock mutations were created for the releases
+    $releaseMutations = $product->stockMutations()
+        ->where('type', \App\Enums\StockMutationType::Released)
+        ->count();
+    
+    expect($releaseMutations)->toBe(2);
+});
+
+test('deleting a project does not affect already consumed reservations', function () {
+    $product = Product::factory()->create(['stock_quantity' => 10]);
+    $quote = Quote::factory()->create();
+    $project = Project::factory()->for($quote)->create(['status' => ProjectStatus::Completed]);
+
+    StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 4,
+        'status' => StockReservationStatus::Consumed,
+    ]);
+
+    $project->delete();
+
+    // Consumed reservations should not create release mutations
+    $releaseMutations = $product->stockMutations()
+        ->where('type', \App\Enums\StockMutationType::Released)
+        ->count();
+    
+    expect($releaseMutations)->toBe(0);
+});
