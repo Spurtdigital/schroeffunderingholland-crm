@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Enums\LeadStatus;
 use App\Enums\QuoteStatus;
+use App\Enums\StockReservationStatus;
 use App\Models\Quote;
 use App\Services\QuoteCalculationService;
 
@@ -24,6 +25,17 @@ class QuoteObserver
         // Calculate totals after quote is created (if it has items)
         if ($quote->items()->count() > 0) {
             $this->calculationService->calculateTotals($quote);
+        }
+    }
+
+    /**
+     * Handle the Quote "deleting" event.
+     * Release all active stock reservations when a quote is deleted.
+     */
+    public function deleting(Quote $quote): void
+    {
+        foreach ($quote->stockReservations()->where('status', StockReservationStatus::Active)->get() as $reservation) {
+            $reservation->release();
         }
     }
 

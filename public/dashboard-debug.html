@@ -1,0 +1,272 @@
+<div wire:snapshot="{&quot;data&quot;:{&quot;mountedActions&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;defaultAction&quot;:null,&quot;defaultActionArguments&quot;:null,&quot;defaultActionContext&quot;:null,&quot;defaultTableAction&quot;:null,&quot;defaultTableActionRecord&quot;:null,&quot;defaultTableActionArguments&quot;:null,&quot;componentFileAttachments&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;areSchemaStateUpdateHooksDisabledForTesting&quot;:false,&quot;discoveredSchemaNames&quot;:[[&quot;content&quot;,&quot;headerWidgets&quot;,&quot;footerWidgets&quot;],{&quot;s&quot;:&quot;arr&quot;}]},&quot;memo&quot;:{&quot;id&quot;:&quot;cdrmLVemYjcMYI7jLhEN&quot;,&quot;name&quot;:&quot;app.filament.pages.dashboard&quot;,&quot;path&quot;:&quot;livewire-unit-test-endpoint\/th2JnopirFkJkIYuRfvT&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;release&quot;:&quot;a-a-a&quot;,&quot;children&quot;:{&quot;cdrmLVemYjcMYI7jLhEN.content.App\\Filament\\Widgets\\UpcomingProjectsWidget-0&quot;:[&quot;div&quot;,&quot;3qRV80x3xJBbysSWNx4h&quot;]},&quot;scripts&quot;:[],&quot;assets&quot;:[],&quot;errors&quot;:[],&quot;locale&quot;:&quot;nl&quot;},&quot;checksum&quot;:&quot;c094e51d11c895c958dd75b3d2679be3438cc582fc01ae61e4584d2ace296e32&quot;}" wire:effects="{&quot;partials&quot;:[],&quot;url&quot;:{&quot;defaultAction&quot;:{&quot;as&quot;:&quot;action&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultActionArguments&quot;:{&quot;as&quot;:&quot;actionArguments&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultActionContext&quot;:{&quot;as&quot;:&quot;actionContext&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultTableAction&quot;:{&quot;as&quot;:&quot;tableAction&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultTableActionRecord&quot;:{&quot;as&quot;:&quot;tableActionRecord&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultTableActionArguments&quot;:{&quot;as&quot;:&quot;tableActionArguments&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null}},&quot;listeners&quot;:[&quot;refresh-page&quot;]}" wire:id="cdrmLVemYjcMYI7jLhEN"
+    class="fi-page"
+>
+    
+
+    <div class="fi-page-header-main-ctn">
+        <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->
+        <!--[if BLOCK]><![endif]-->            
+            <!--[if BLOCK]><![endif]-->                <header
+    class="fi-header"
+>
+    <div>
+        <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->
+        <!--[if BLOCK]><![endif]-->            <h1 class="fi-header-heading">
+                Dashboard
+            </h1>
+        <!--[if ENDBLOCK]><![endif]-->
+        <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->    </div>
+
+    
+    <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]--></header>
+            <!--[if ENDBLOCK]><![endif]-->        <!--[if ENDBLOCK]><![endif]-->
+        <div class="fi-page-main">
+            <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->
+            <div class="fi-page-content">
+                
+
+                
+
+                
+
+                <div class="fi-grid-ctn">
+<div class="fi-sc fi-sc-has-gap fi-grid @xl:fi-grid-cols !@lg:fi-grid-cols"
+     style="--cols-cxl: repeat(3, minmax(0, 1fr)); --cols-nclg: repeat(3, minmax(0, 1fr)); --cols-default: repeat(1, minmax(0, 1fr));">
+
+    <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Openstaande offertes</span>
+                </div>
+                <div style="margin-top:.75rem;">
+                    <canvas id="sfh-chart-1" style="height:120px; width:100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Offertes verstuurd</span>
+                </div>
+                <div style="margin-top:.75rem;">
+                    <canvas id="sfh-chart-2" style="height:120px; width:100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Gem. offerte waarde</span>
+                </div>
+                <div style="margin-top:.75rem;">
+                    <canvas id="sfh-chart-3" style="height:120px; width:100%;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+
+<div class="fi-grid-ctn">
+<div class="fi-sc fi-sc-has-gap fi-grid @xl:fi-grid-cols !@lg:fi-grid-cols"
+     style="--cols-cxl: repeat(4, minmax(0, 1fr)); --cols-nclg: repeat(4, minmax(0, 1fr)); --cols-default: repeat(2, minmax(0, 1fr));">
+
+    <!--[if BLOCK]><![endif]-->    <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Leads</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">99</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>0 nieuw deze maand</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Conversie</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">9.1%</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>9 van 99 omgezet</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Offertes</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">54</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>Verstuurd: 28</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Offerte waarde</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">€ 41.262</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>Goedgekeurd &amp; omgezet</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Actieve projecten</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">14</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>2 afgerond</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Project waarde</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">€ 0</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>Totaal alle projecten</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Facturen betaald</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">0</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>€ 12.850 totaal</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="fi-grid-col" style="--col-span-default: span 1 / span 1;">
+        <div class="fi-wi-stats-overview-stat">
+            <div class="fi-wi-stats-overview-stat-content">
+                <div class="fi-wi-stats-overview-stat-label-ctn">
+                    <span class="fi-wi-stats-overview-stat-label">Klanten</span>
+                </div>
+                <div class="fi-wi-stats-overview-stat-value">127</div>
+                <div class="fi-wi-stats-overview-stat-description">
+                    <span>32 actieve producten</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--[if ENDBLOCK]><![endif]-->
+</div>
+</div>
+
+
+<div class="fi-sc fi-sc-has-gap fi-grid"
+     style="--cols-default: repeat(1, minmax(0, 1fr));">
+    <div class="fi-grid-col" style="--col-span-default: 1 / -1;">
+        
+        <div class="fi-sc  fi-sc-has-gap fi-grid" style="--cols-default: repeat(1, minmax(0, 1fr));" x-data="filamentSchema({ livewireId: 'cdrmLVemYjcMYI7jLhEN' })" x-on:form-validation-error.window="handleFormValidationError">
+                                                
+        <div
+                                        x-data="filamentSchemaComponent({
+                    path: '',
+                    containerPath: '',
+                    $wire,
+                })"
+                                                        class="fi-grid-col" style="--col-span-default: span 1 / span 1;"        >
+                            <div
+                    class="fi-sc-component"
+                >
+                    <div
+    
+>
+    
+        <div class="fi-sc  fi-sc-has-gap fi-grid lg:fi-grid-cols" style="--cols-lg: repeat(1, minmax(0, 1fr)); --cols-default: repeat(1, minmax(0, 1fr));">
+                                                <!--[if BLOCK]><![endif]-->
+    <div wire:snapshot="{&quot;data&quot;:{&quot;mountedActions&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;defaultAction&quot;:null,&quot;defaultActionArguments&quot;:null,&quot;defaultActionContext&quot;:null,&quot;defaultTableAction&quot;:null,&quot;defaultTableActionRecord&quot;:null,&quot;defaultTableActionArguments&quot;:null,&quot;componentFileAttachments&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;areSchemaStateUpdateHooksDisabledForTesting&quot;:false,&quot;discoveredSchemaNames&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;isTableLoaded&quot;:false,&quot;tableGrouping&quot;:null,&quot;tableRecordsPerPage&quot;:null,&quot;isTableReordering&quot;:false,&quot;tableColumnSearches&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;tableSearch&quot;:&quot;&quot;,&quot;tableSort&quot;:null,&quot;selectedTableRecords&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;deselectedTableRecords&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;isTrackingDeselectedTableRecords&quot;:false,&quot;tableColumns&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}],&quot;tableFilters&quot;:null,&quot;tableDeferredFilters&quot;:null,&quot;paginators&quot;:[[],{&quot;s&quot;:&quot;arr&quot;}]},&quot;memo&quot;:{&quot;id&quot;:&quot;3qRV80x3xJBbysSWNx4h&quot;,&quot;name&quot;:&quot;app.filament.widgets.upcoming-projects-widget&quot;,&quot;path&quot;:&quot;livewire-unit-test-endpoint\/th2JnopirFkJkIYuRfvT&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;release&quot;:&quot;a-a-a&quot;,&quot;children&quot;:[],&quot;scripts&quot;:[],&quot;assets&quot;:[],&quot;lazyLoaded&quot;:false,&quot;lazyIsolated&quot;:true,&quot;errors&quot;:[],&quot;locale&quot;:&quot;nl&quot;},&quot;checksum&quot;:&quot;2c00da76171f00c5ef3af42617b3246dbe4c653b1c96cdadd7a0cfe137e2a243&quot;}" wire:effects="{&quot;partials&quot;:[],&quot;url&quot;:{&quot;defaultAction&quot;:{&quot;as&quot;:&quot;action&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultActionArguments&quot;:{&quot;as&quot;:&quot;actionArguments&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultActionContext&quot;:{&quot;as&quot;:&quot;actionContext&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultTableAction&quot;:{&quot;as&quot;:&quot;tableAction&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultTableActionRecord&quot;:{&quot;as&quot;:&quot;tableActionRecord&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null},&quot;defaultTableActionArguments&quot;:{&quot;as&quot;:&quot;tableActionArguments&quot;,&quot;use&quot;:&quot;replace&quot;,&quot;alwaysShow&quot;:false,&quot;except&quot;:null}}}" wire:id="3qRV80x3xJBbysSWNx4h" x-intersect="$wire.__lazyLoad(&#039;eyJkYXRhIjp7ImZvck1vdW50IjpbeyJyZWNvcmQiOm51bGx9LHsicyI6ImFyciJ9XX0sIm1lbW8iOnsiaWQiOiJxbjJ2TW9hU3dlMnBjNWNJeGhPVCIsIm5hbWUiOiJfX21vdW50UGFyYW1zQ29udGFpbmVyIiwicGF0aCI6ImxpdmV3aXJlLXVuaXQtdGVzdC1lbmRwb2ludFwvdGgySm5vcGlyRmtKa0lZdVJmdlQiLCJtZXRob2QiOiJHRVQiLCJyZWxlYXNlIjoiYS1hLWEifSwiY2hlY2tzdW0iOiI3YzdkZTYyZmNjNDc2ZmVjNzY5OTQ4NWMyMTk2N2ZjY2Y1NzcxMWJiYjM2MTFmZjI0OTVjMTg1ZmI0MTBlYTAxIn0=&#039;)"
+    style="height: 8rem; --col-span-lg: 1 / -1;" class="fi-section fi-loading-section fi-grid-col lg:fi-grid-col-span"
+></div>
+<!--[if ENDBLOCK]><![endif]-->                                    </div>
+
+        
+</div>
+                </div>
+                    </div>
+
+                                            </div>
+
+        
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    var d = {"labels":["jan.","feb.","mrt.","apr.","mei","jun."],"openstaand":[0,0,34,1,3,0],"verstuurd":[0,0,25,0,3,0],"gemWaarde":[0,0,2252.35,527.56,2601.53,0],"stats":[{"label":"Leads","value":99,"sub":"0 nieuw deze maand"},{"label":"Conversie","value":"9.1%","sub":"9 van 99 omgezet"},{"label":"Offertes","value":54,"sub":"Verstuurd: 28"},{"label":"Offerte waarde","value":"\u20ac 41.262","sub":"Goedgekeurd \u0026 omgezet"},{"label":"Actieve projecten","value":14,"sub":"2 afgerond"},{"label":"Project waarde","value":"\u20ac 0","sub":"Totaal alle projecten"},{"label":"Facturen betaald","value":0,"sub":"\u20ac 12.850 totaal"},{"label":"Klanten","value":127,"sub":"32 actieve producten"}]};
+    function boot(){
+        if(typeof Chart==='undefined'){setTimeout(boot,80);return;}
+        var nl={plugins:{legend:{display:false}}};
+        new Chart(document.getElementById('sfh-chart-1'),{type:'line',data:{labels:d.labels,datasets:[{data:d.openstaand,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.1)',borderWidth:2,fill:true,tension:.4,pointRadius:3}]},options:{...nl,scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+        new Chart(document.getElementById('sfh-chart-2'),{type:'bar',data:{labels:d.labels,datasets:[{data:d.verstuurd,backgroundColor:'rgba(168,85,247,.75)',borderRadius:4}]},options:{...nl,scales:{y:{beginAtZero:true,ticks:{precision:0}}}}});
+        new Chart(document.getElementById('sfh-chart-3'),{type:'line',data:{labels:d.labels,datasets:[{data:d.gemWaarde,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',borderWidth:2,fill:true,tension:.4,pointRadius:3}]},options:{...nl,scales:{y:{beginAtZero:true,ticks:{callback:function(v){return'€ '+v.toLocaleString('nl-NL',{minimumFractionDigits:0})}}}}}});
+    }
+    if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',boot);}else{boot();}
+})();
+</script>
+
+                
+
+                
+
+                
+            </div>
+
+            <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->        </div>
+
+        <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->    </div>
+
+    <!--[if BLOCK]><![endif]-->        <!--[if BLOCK]><![endif]-->    <div
+        wire:partial="action-modals"
+        x-data="filamentActionModals({
+                    livewireId: 'cdrmLVemYjcMYI7jLhEN',
+                })"
+        style="height: 0"
+    >
+        <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->    </div>
+
+    <!--[if ENDBLOCK]><![endif]-->    <!--[if ENDBLOCK]><![endif]-->
+    <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->
+    
+
+    <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->
+    <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]-->
+    <!--[if BLOCK]><![endif]--><!--[if ENDBLOCK]><![endif]--></div>
