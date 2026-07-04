@@ -54,6 +54,7 @@ class ConvertToQuoteAction extends Action
                 'vat_amount' => 0,
                 'total' => 0,
                 'notes' => $notes,
+                'show_item_breakdown' => true,
             ];
 
             if ($hasLeadAddress) {
