@@ -65,6 +65,7 @@ class ManageSettings extends Page implements HasForms
             'default_post_text' => $settings->default_post_text,
             'closing_text' => $settings->closing_text,
             'review_url' => $settings->review_url,
+            'email_signature' => $settings->email_signature,
         ]);
     }
 
@@ -117,6 +118,11 @@ class ManageSettings extends Page implements HasForms
                             ->url()
                             ->maxLength(500)
                             ->helperText('Wordt als link meegestuurd in de oplevermail zodat de klant direct een review kan achterlaten.')
+                            ->columnSpanFull(),
+                        Textarea::make('email_signature')
+                            ->label('Handtekening offerte-mail')
+                            ->helperText('Wordt gebruikt als afsluiting van de offerte-mail. Bijv. "Met vriendelijke groet,\n\nBob Stokkingreef\nSchroeffundering Holland\n0548 123 456"')
+                            ->rows(5)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -234,6 +240,7 @@ class ManageSettings extends Page implements HasForms
         $settings->default_post_text = $data['default_post_text'] ?? null;
         $settings->closing_text = $data['closing_text'] ?? null;
         $settings->review_url = $data['review_url'] ?? null;
+        $settings->email_signature = $data['email_signature'] ?? null;
         $settings->save();
 
         Notification::make()
