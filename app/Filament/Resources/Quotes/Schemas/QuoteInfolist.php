@@ -28,94 +28,150 @@ class QuoteInfolist
 
                 // ── Rij 1: Offerte-informatie – volledige breedte ─────────────
                 Section::make('Offerte-informatie')
-                    ->columns(8)
+                    ->columns(3)
                     ->columnSpanFull()
                     ->schema([
-                        TextEntry::make('quote_number')
-                            ->label('Offertenummer')
-                            ->weight('bold')
-                            ->size('lg')
-                            ->state(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-')
-                                ? 'Concept'
-                                : $record->quote_number
-                            )
-                            ->color(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'warning' : null)
-                            ->hintIcon(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'heroicon-o-information-circle' : null)
-                            ->hintIconTooltip(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'Nog niet verstuurd naar Moneybird' : null),
 
-                        TextEntry::make('status')
-                            ->label('Status')
-                            ->badge(),
+                        // ── Blok 1: Identiteit ─────────────────────────────────
+                        Group::make([
+                            TextEntry::make('quote_number')
+                                ->label('Offertenummer')
+                                ->weight('bold')
+                                ->size('lg')
+                                ->state(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-')
+                                    ? 'Concept'
+                                    : $record->quote_number
+                                )
+                                ->color(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'warning' : null)
+                                ->hintIcon(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'heroicon-o-information-circle' : null)
+                                ->hintIconTooltip(fn ($record) => str_starts_with($record->quote_number ?? '', 'CONCEPT-') ? 'Nog niet verstuurd naar Moneybird' : null),
 
-                        TextEntry::make('total')
-                            ->label('Totaal incl. BTW')
-                            ->money('EUR'),
+                            TextEntry::make('status')
+                                ->label('Status')
+                                ->badge(),
 
-                        TextEntry::make('subtotal')
-                            ->label('Excl. BTW')
-                            ->money('EUR'),
+                            TextEntry::make('valid_until')
+                                ->label('Geldig tot')
+                                ->date('d-m-Y')
+                                ->placeholder('-'),
 
-                        TextEntry::make('valid_until')
-                            ->label('Geldig tot')
-                            ->date('d-m-Y')
-                            ->placeholder('-'),
+                            TextEntry::make('sent_at')
+                                ->label('Verzonden op')
+                                ->dateTime('d-m-Y H:i')
+                                ->placeholder('-'),
+                        ])->columns(2),
 
-                        TextEntry::make('sent_at')
-                            ->label('Verzonden op')
-                            ->dateTime('d-m-Y H:i')
-                            ->placeholder('-'),
+                        // ── Blok 2: Financieel overzicht ───────────────────────
+                        Group::make([
+                            TextEntry::make('subtotal')
+                                ->label('Excl. BTW')
+                                ->money('EUR'),
 
-                        TextEntry::make('machine.name')
-                            ->label('Montage machine')
-                            ->placeholder('-')
-                            ->hintAction(
-                                Action::make('editMachine')
-                                    ->icon('heroicon-m-pencil-square')
-                                    ->label('Bewerken')
-                                    ->fillForm(fn ($record) => ['machine_id' => $record->machine_id])
-                                    ->form([
-                                        FormSelect::make('machine_id')
-                                            ->label('Montage machine')
-                                            ->options(fn () => Machine::where('active', true)->orderBy('name')->pluck('name', 'id'))
-                                            ->searchable()
-                                            ->nullable()
-                                            ->placeholder('Geen machine geselecteerd'),
-                                    ])
-                                    ->action(function ($record, array $data, $livewire) {
-                                        $record->update(['machine_id' => $data['machine_id']]);
-                                        $livewire->record = $record->fresh();
-                                    })
-                            ),
+                            TextEntry::make('total')
+                                ->label('Incl. BTW')
+                                ->money('EUR')
+                                ->weight('bold'),
 
-                        IconEntry::make('show_item_breakdown')
-                            ->label('Regels op PDF')
-                            ->boolean()
-                            ->trueIcon('heroicon-o-eye')
-                            ->falseIcon('heroicon-o-eye-slash')
-                            ->trueColor('success')
-                            ->falseColor('gray'),
+                            TextEntry::make('cost_price_total')
+                                ->label('Inkoopprijs')
+                                ->state(function ($record) {
+                                    $cost = $record->items
+                                        ->filter(fn ($item) => $item->itemable_type === \App\Models\Product::class && $item->itemable)
+                                        ->sum(fn ($item) => (float) $item->itemable->purchase_price * (float) $item->quantity);
 
-                        TextEntry::make('reference')
-                            ->label('Kenmerk (Moneybird)')
-                            ->placeholder('-')
-                            ->columnSpan(2)
-                            ->hintAction(
-                                Action::make('editReference')
-                                    ->icon('heroicon-m-pencil-square')
-                                    ->label('Bewerken')
-                                    ->fillForm(fn ($record) => ['reference' => $record->reference])
-                                    ->form([
-                                        FormTextInput::make('reference')
-                                            ->label('Kenmerk (Moneybird)')
+                                    return $cost > 0 ? $cost : null;
+                                })
+                                ->money('EUR')
+                                ->placeholder('-'),
+
+                            TextEntry::make('margin')
+                                ->label('Marge')
+                                ->state(function ($record) {
+                                    $cost = $record->items
+                                        ->filter(fn ($item) => $item->itemable_type === \App\Models\Product::class && $item->itemable)
+                                        ->sum(fn ($item) => (float) $item->itemable->purchase_price * (float) $item->quantity);
+
+                                    $subtotal = (float) $record->subtotal;
+                                    if ($subtotal <= 0) return null;
+
+                                    $margin    = $subtotal - $cost;
+                                    $marginPct = round(($margin / $subtotal) * 100, 1);
+
+                                    return '€ '.number_format($margin, 2, ',', '.').' ('.$marginPct.'%)';
+                                })
+                                ->color(function ($record) {
+                                    $cost = $record->items
+                                        ->filter(fn ($item) => $item->itemable_type === \App\Models\Product::class && $item->itemable)
+                                        ->sum(fn ($item) => (float) $item->itemable->purchase_price * (float) $item->quantity);
+
+                                    $subtotal = (float) $record->subtotal;
+                                    if ($subtotal <= 0) return null;
+
+                                    $marginPct = (($subtotal - $cost) / $subtotal) * 100;
+
+                                    return match (true) {
+                                        $marginPct >= 20 => 'success',
+                                        $marginPct >= 10 => 'warning',
+                                        default          => 'danger',
+                                    };
+                                })
+                                ->weight('bold'),
+                        ])->columns(2),
+
+                        // ── Blok 3: Instellingen ───────────────────────────────
+                        Group::make([
+                            TextEntry::make('machine.name')
+                                ->label('Montage machine')
+                                ->placeholder('-')
+                                ->hintAction(
+                                    Action::make('editMachine')
+                                        ->icon('heroicon-m-pencil-square')
+                                        ->label('Bewerken')
+                                        ->fillForm(fn ($record) => ['machine_id' => $record->machine_id])
+                                        ->form([
+                                            FormSelect::make('machine_id')
+                                                ->label('Montage machine')
+                                                ->options(fn () => Machine::where('active', true)->orderBy('name')->pluck('name', 'id'))
+                                                ->searchable()
+                                                ->nullable()
+                                                ->placeholder('Geen machine geselecteerd'),
+                                        ])
+                                        ->action(function ($record, array $data, $livewire) {
+                                            $record->update(['machine_id' => $data['machine_id']]);
+                                            $livewire->record = $record->fresh();
+                                        })
+                                ),
+
+                            IconEntry::make('show_item_breakdown')
+                                ->label('Regels op PDF')
+                                ->boolean()
+                                ->trueIcon('heroicon-o-eye')
+                                ->falseIcon('heroicon-o-eye-slash')
+                                ->trueColor('success')
+                                ->falseColor('gray'),
+
+                            TextEntry::make('reference')
+                                ->label('Kenmerk (Moneybird)')
+                                ->placeholder('-')
+                                ->columnSpan(2)
+                                ->hintAction(
+                                    Action::make('editReference')
+                                        ->icon('heroicon-m-pencil-square')
+                                        ->label('Bewerken')
+                                        ->fillForm(fn ($record) => ['reference' => $record->reference])
+                                        ->form([
+                                            FormTextInput::make('reference')
+                                                ->label('Kenmerk (Moneybird)')
                                             ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
                                             ->maxLength(255)
                                             ->nullable(),
                                     ])
-                                    ->action(function ($record, array $data, $livewire) {
-                                        $record->update(['reference' => $data['reference']]);
-                                        $livewire->record = $record->fresh();
-                                    })
-                            ),
+                                     ->action(function ($record, array $data, $livewire) {
+                                         $record->update(['reference' => $data['reference']]);
+                                         $livewire->record = $record->fresh();
+                                     })
+                             ),
+                        ])->columns(2),
                     ]),
 
                 // ── Kolom links 3/4: Regels + Offerte tekst ──────────────────
@@ -273,13 +329,11 @@ class QuoteInfolist
 
                                 TextEntry::make('subtotal')
                                     ->label('Subtotaal excl. BTW')
-                                    ->money('EUR')
-                                    ->visible(fn ($record) => $record->show_item_breakdown),
+                                    ->money('EUR'),
 
                                 TextEntry::make('vat_amount')
-                                    ->label('BTW')
-                                    ->money('EUR')
-                                    ->visible(fn ($record) => $record->show_item_breakdown),
+                                    ->label('BTW (21%)')
+                                    ->money('EUR'),
                             ]),
 
                         Section::make('Offerte-aannames')

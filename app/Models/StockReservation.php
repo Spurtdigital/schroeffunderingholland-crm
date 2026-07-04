@@ -15,6 +15,7 @@ class StockReservation extends Model
     protected $fillable = [
         'product_id',
         'quote_id',
+        'project_id',
         'quantity',
         'status',
     ];
@@ -33,11 +34,19 @@ class StockReservation extends Model
     }
 
     /**
-     * Get the quote this reservation is for.
+     * Get the quote this reservation was originally created for.
      */
     public function quote(): BelongsTo
     {
         return $this->belongsTo(Quote::class);
+    }
+
+    /**
+     * Get the project this reservation is for.
+     */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
     }
 
     /**

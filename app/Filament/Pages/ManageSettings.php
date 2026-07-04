@@ -9,6 +9,8 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -60,11 +62,15 @@ class ManageSettings extends Page implements HasForms
             'default_travel_cost_per_km' => $settings->default_travel_cost_per_km,
             'moneybird_api_token' => $settings->moneybird_api_token,
             'moneybird_administration_id' => $settings->moneybird_administration_id,
+            'moneybird_enabled' => $settings->moneybird_enabled ?? true,
+            'quote_number_start' => $settings->quote_number_start ?? 1,
             'google_maps_api_key' => $settings->google_maps_api_key,
             'default_pre_text' => $settings->default_pre_text,
             'default_post_text' => $settings->default_post_text,
             'closing_text' => $settings->closing_text,
             'review_url' => $settings->review_url,
+            'terms_pdf' => $settings->terms_pdf,
+            'email_signature' => $settings->email_signature,
         ]);
     }
 
@@ -167,12 +173,45 @@ class ManageSettings extends Page implements HasForms
                                 'orderedList',
                             ])
                             ->columnSpanFull(),
+                        FileUpload::make('terms_pdf')
+                            ->label('Algemene voorwaarden (PDF)')
+                            ->helperText('Wordt automatisch als bijlage meegestuurd bij iedere offerte-mail.')
+                            ->disk('public')
+                            ->directory('documents')
+                            ->visibility('public')
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->maxSize(10240)
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
+
+                Section::make('E-mail handtekening')
+                    ->description('Wordt gebruikt als afsluiting van de offerte-mail.')
+                    ->schema([
+                        Textarea::make('email_signature')
+                            ->label('Handtekening offerte-mail')
+                            ->helperText('Bijv. "Met vriendelijke groet,\n\nBob Stokkingreef\nSchroeffundering Holland\n0548 123 456"')
+                            ->rows(5)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(1),
 
                 Section::make('Moneybird API Credentials')
                     ->description('Configureer de Moneybird API om offertes en facturen automatisch te synchroniseren.')
                     ->schema([
+                        Toggle::make('moneybird_enabled')
+                            ->label('Moneybird integratie ingeschakeld')
+                            ->helperText('Zet uit om tijdelijk zonder Moneybird te werken. Offertes worden dan handmatig verstuurd en krijgen een eigen nummering.')
+                            ->default(true)
+                            ->columnSpanFull(),
+                        TextInput::make('quote_number_start')
+                            ->label('Startnummer offertes (zonder Moneybird)')
+                            ->helperText('Het eerste volgnummer dat gebruikt wordt. Elk jaar begint opnieuw vanaf dit nummer. Bijv. 100 → 2026-0100, 2026-0101...')
+                            ->numeric()
+                            ->default(1)
+                            ->minValue(1)
+                            ->step(1)
+                            ->columnSpanFull(),
                         TextInput::make('moneybird_api_token')
                             ->label('API Token')
                             ->password()
@@ -229,11 +268,15 @@ class ManageSettings extends Page implements HasForms
         $settings->default_travel_cost_per_km = $data['default_travel_cost_per_km'] ?? 0.23;
         $settings->moneybird_api_token = $data['moneybird_api_token'] ?? null;
         $settings->moneybird_administration_id = $data['moneybird_administration_id'] ?? null;
+        $settings->moneybird_enabled = (bool) ($data['moneybird_enabled'] ?? true);
+        $settings->quote_number_start = (int) ($data['quote_number_start'] ?? 1);
         $settings->google_maps_api_key = $data['google_maps_api_key'] ?? null;
         $settings->default_pre_text = $data['default_pre_text'] ?? null;
         $settings->default_post_text = $data['default_post_text'] ?? null;
         $settings->closing_text = $data['closing_text'] ?? null;
         $settings->review_url = $data['review_url'] ?? null;
+        $settings->terms_pdf = $data['terms_pdf'] ?? null;
+        $settings->email_signature = $data['email_signature'] ?? null;
         $settings->save();
 
         Notification::make()

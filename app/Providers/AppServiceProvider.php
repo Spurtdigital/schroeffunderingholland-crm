@@ -14,6 +14,9 @@ use App\Observers\ProjectItemObserver;
 use App\Observers\ProjectObserver;
 use App\Observers\QuoteItemObserver;
 use App\Observers\QuoteObserver;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,6 +34,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Super admin heeft toegang tot alles
+        Gate::before(function ($user, $ability) {
+            return $user->isSuperAdmin() ? true : null;
+        });
+
+        // BCC alle uitgaande mails naar de eigenaar
+        Event::listen(MessageSending::class, function (MessageSending $event) {
+            $event->message->bcc('bob@schroeffunderingholland.nl');
+        });
+
         // Register observers
         Company::observe(CompanyObserver::class);
         Lead::observe(LeadObserver::class);

@@ -17,6 +17,7 @@ use App\Models\PaymentTerm;
 use App\Models\Quote;
 use App\Models\QuoteAssumption;
 use App\Services\QuoteCalculationService;
+use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -267,7 +268,7 @@ class ViewQuote extends ViewRecord
                 ->color('gray')
                 ->button(),
 
-            // Moneybird dropdown
+            // Moneybird dropdown — alleen tonen als Moneybird ingeschakeld is
             ActionGroup::make([
                 SendToMoneybirdAction::make(),
                 UpdateMoneybirdAction::make(),
@@ -276,7 +277,8 @@ class ViewQuote extends ViewRecord
                 ->label('Moneybird')
                 ->icon('heroicon-o-cloud-arrow-up')
                 ->color('gray')
-                ->button(),
+                ->button()
+                ->visible(fn () => app(GeneralSettings::class)->moneybird_enabled ?? true),
         ];
     }
 

@@ -3,8 +3,9 @@
 namespace App\Observers;
 
 use App\Enums\LeadStatus;
+use App\Enums\QuoteItemType;
 use App\Enums\QuoteStatus;
-use App\Enums\StockReservationStatus;
+use App\Models\Product;
 use App\Models\Quote;
 use App\Services\QuoteCalculationService;
 
@@ -29,17 +30,6 @@ class QuoteObserver
     }
 
     /**
-     * Handle the Quote "deleting" event.
-     * Release all active stock reservations when a quote is deleted.
-     */
-    public function deleting(Quote $quote): void
-    {
-        foreach ($quote->stockReservations()->where('status', StockReservationStatus::Active)->get() as $reservation) {
-            $reservation->release();
-        }
-    }
-
-    /**
      * Handle the Quote "updating" event.
      * - Geeft voorraad vrij bij afwijzing
      * - Synchroniseert de lead-status op basis van de nieuwe quote-status
@@ -51,6 +41,25 @@ class QuoteObserver
         }
 
         $newStatus = $quote->status;
+
+        // Voorraad reserveren bij goedkeuring (niet al bij versturen)
+        if ($newStatus === QuoteStatus::Approved) {
+            foreach ($quote->items as $item) {
+                if ($item->type === QuoteItemType::Product && $item->itemable_type === Product::class && $item->itemable_id) {
+                    $product = Product::find($item->itemable_id);
+                    if ($product) {
+                        $alreadyReserved = $quote->stockReservations()
+                            ->where('product_id', $product->id)
+                            ->where('status', 'active')
+                            ->exists();
+
+                        if (! $alreadyReserved) {
+                            $product->reserveStock($quote, (int) $item->quantity);
+                        }
+                    }
+                }
+            }
+        }
 
         // Voorraad vrijgeven bij afwijzing
         if ($newStatus === QuoteStatus::Rejected) {

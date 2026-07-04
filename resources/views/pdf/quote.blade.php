@@ -1,4 +1,7 @@
 @php
+    // Helper: converteer **bold** markdown naar <strong>bold</strong>
+    $mdBold = fn(string $text): string => preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
+
     // Achtergrond base64
     $bgPath = public_path('images/achtergrond-pdf.jpg');
     $bgBase64 = '';
@@ -41,38 +44,59 @@
             font-weight: bold;
             src: url("{{ public_path('fonts/montserrat/Montserrat-Bold.ttf') }}") format('truetype');
         }
-        @page {
+        @@page {
             margin: 0;
             size: A4 portrait;
         }
-        * {
+
+        /* html/body */
+        html, body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
+
         body {
             font-family: 'Montserrat', sans-serif;
             font-size: 9pt;
             color: #000;
             line-height: 1.3;
-            background-color: #fff;
+        }
+
+        /* page-bg niet meer nodig */
+        .page-bg {
+            display: none;
+        }
+
+        /* Achtergrond via position:fixed — herhaalt op elke pagina, vult volledig papier */
+        .page-bg-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 210mm;
+            height: 297mm;
             background-image: url("{{ $bgBase64 }}");
-            background-size: 100% 100%;
+            background-size: 210mm 297mm;
             background-repeat: no-repeat;
+            z-index: -1;
+        }
+
+        /* page-bg niet meer nodig */
+        .page-bg {
+            display: none;
         }
 
         /* ===================== HEADER ===================== */
         .header {
-            padding-top: 8.5mm;
+            padding-top: 10mm;
             padding-bottom: 8mm;
-            padding-left: 0;
-            padding-right: 0;
+            padding-left: 20mm;
+            padding-right: 15mm;
             overflow: hidden;
         }
         .header-logo {
             float: left;
             width: 120mm;
-            padding-left: 20mm;
+            padding-left: 0;
         }
         .header-logo img {
             max-width: 180px;
@@ -91,7 +115,9 @@
         .header-naw p {
             font-size: 7.5pt;
             color: #444;
-            line-height: 1.5;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
         }
         .clearfix:after {
             content: "";
@@ -101,7 +127,35 @@
 
         /* ===================== CONTENT ===================== */
         .content {
-            padding: 0 15mm 10mm 20mm;
+            padding: 0 15mm 20mm 20mm;
+        }
+
+        /* Blokken bij elkaar houden op pagina */
+        .doc-title-bar,
+        .info-container,
+        .totals-container,
+        .notes-section,
+        .pre-text-section,
+        .post-text-section,
+        .closing-section,
+        .payment-term-section,
+        .signature-section {
+            page-break-inside: avoid;
+        }
+
+        /* Aannames mogen over pagina's lopen, maar elke regel blijft intact */
+        .assumptions-section li {
+            page-break-inside: avoid;
+        }
+
+        /* Tabelrijen bij elkaar houden */
+        .items-table tr {
+            page-break-inside: avoid;
+        }
+
+        /* Minimaal 3 rijen op een pagina voor page-break */
+        .items-table tbody {
+            orphans: 3;
         }
 
         /* Offerte titel balk */
@@ -156,6 +210,21 @@
             font-weight: bold;
             color: #000;
         }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+        .info-table td {
+            padding: 1px 0;
+            vertical-align: top;
+        }
+        .info-table td.lbl {
+            font-weight: bold;
+            white-space: nowrap;
+            padding-right: 8px;
+            width: 90px;
+        }
 
         /* Items tabel */
         .items-section {
@@ -173,6 +242,9 @@
             border-top: 2px solid #000;
             border-bottom: 1px solid #000;
             font-size: 8pt;
+        }
+        .items-table th.text-right {
+            text-align: right;
         }
         .items-table td {
             padding: 9px 8px;
@@ -206,14 +278,14 @@
             font-size: 8.5pt;
         }
         .totals-table .total-final {
-            background-color: #2563a8;
-            color: #fff;
+            background-color: #fff;
+            color: #000;
             font-weight: bold;
             font-size: 10pt;
         }
         .totals-table .total-final td {
             padding: 7px 8px;
-            color: #fff;
+            color: #000;
         }
 
         /* Opmerkingen */
@@ -247,9 +319,13 @@
             color: #000;
         }
 
-        /* Footer */
+        /* Footer — in @page bottom margin zone */
         .footer {
-            padding: 7px 15mm 0 15mm;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding-bottom: 4px;
             text-align: center;
             font-size: 6.5pt;
             color: #666;
@@ -257,6 +333,8 @@
     </style>
 </head>
 <body>
+
+<div class="page-bg-fixed"></div>
 
 <!-- Header: logo links, bedrijfs-NAW rechts boven -->
 <div class="header clearfix">
@@ -268,6 +346,9 @@
         @endif
     </div>
     <div class="header-naw">
+        @if($settings->company_name)
+        <p><strong>{{ $settings->company_name }}</strong></p>
+        @endif
         @if($settings->company_address)
         <p>{{ $settings->company_address }}</p>
         @endif
@@ -280,8 +361,14 @@
         @if($settings->company_email)
         <p>E: {{ $settings->company_email }}</p>
         @endif
+        @if($settings->company_bank_account)
+        <p>IBAN: {{ $settings->company_bank_account }}</p>
+        @endif
         @if($settings->company_kvk_number)
         <p>KvK: {{ $settings->company_kvk_number }}</p>
+        @endif
+        @if($settings->company_vat_number)
+        <p>BTW: {{ $settings->company_vat_number }}</p>
         @endif
     </div>
 </div>
@@ -291,11 +378,9 @@
 
     <!-- Offerte titel balk -->
     <div class="doc-title-bar clearfix">
-        <div class="doc-title">OFFERTE</div>
+        @php $quoteNumberDisplay = !str_starts_with($quote->quote_number ?? '', 'CONCEPT-') ? ' ' . $quote->quote_number : ''; @endphp
+        <div class="doc-title">OFFERTE{{ $quoteNumberDisplay }}</div>
         <div class="doc-meta">
-            @if(!str_starts_with($quote->quote_number ?? '', 'CONCEPT-'))
-            <div class="doc-number">{{ $quote->quote_number }}</div>
-            @endif
             <div>{{ ($quote->created_at ?? now())->format('d-m-Y') }}</div>
             @if($quote->valid_until)
             <div>Geldig tot: {{ $quote->valid_until->format('d-m-Y') }}</div>
@@ -323,16 +408,18 @@
         </div>
 
         <div class="info-box">
-            @if($quote->lead?->project_description)
-            <p><span class="label">Project:</span> {{ $quote->lead->project_description }}</p>
-            @endif
-            @php
-                $werklocatie = $quote->workFullAddress();
-            @endphp
-            @if($werklocatie)
-            <p><span class="label">Werklocatie:</span></p>
-            <p style="padding-left: 105px; word-wrap: break-word; overflow-wrap: break-word;">{!! nl2br(e($werklocatie)) !!}</p>
-            @endif
+            <table class="info-table">
+                @if($quote->lead?->project_description)
+                <tr><td class="lbl">Project:</td><td>{{ $quote->lead->project_description }}</td></tr>
+                @endif
+                @if($quote->machine)
+                <tr><td class="lbl">Machine:</td><td>{{ $quote->machine->name }}</td></tr>
+                @endif
+                @php $werklocatie = $quote->workFullAddress(); @endphp
+                @if($werklocatie)
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                @endif
+            </table>
         </div>
     </div>
 
@@ -345,7 +432,9 @@
     @endif
 
     @if($quote->pre_text)
-    <p style="margin-bottom: 14px; font-size: 9pt; line-height: 1.5;">{{ $quote->pre_text }}</p>
+    <div class="pre-text-section">
+    <p style="margin-bottom: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br($mdBold(e($quote->pre_text))) !!}</p>
+    </div>
     @endif
 
     @if($quote->assumptions->isNotEmpty())
@@ -359,25 +448,34 @@
     @endif
 
     @if($quote->show_item_breakdown)
+    {{-- ── Volledige regelweergave (met prijzen) ──────────────────────── --}}
     <div class="items-section">
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 50%;">Omschrijving</th>
-                    <th style="width: 15%;" class="text-center">Aantal</th>
+                    <th style="width: 10%;">Aantal</th>
+                    <th style="width: 13%;">Artikelnr.</th>
+                    <th style="width: 42%;">Omschrijving</th>
                     <th style="width: 20%;" class="text-right">Prijs p/st (excl. BTW)</th>
                     <th style="width: 15%;" class="text-right">Totaal</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach($quote->items as $item)
+            @php $chunkIndex = 0; @endphp
+            @foreach($quote->items->chunk(3) as $chunk)
+            <tbody style="page-break-inside: avoid;">
+                @foreach($chunk as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
-                <tr @if($isDiscount) style="color: #c0392b;" @endif>
-                    <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
-                    <td class="text-center">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
-                    <td class="text-right">{{ $isDiscount ? '—' : '€ ' . number_format($item->unit_price, 2, ',', '.') }}</td>
+                <tr @if($item->is_optional) style="color: #888; font-style: italic;" @elseif($isDiscount) style="color: #c0392b;" @endif>
+                    <td>{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td>{{ $item->itemable?->sku ?? '' }}</td>
+                    <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
                     <td class="text-right">
-                        @if($isDiscount)
+                        @if($isDiscount)—@else&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}@endif
+                    </td>
+                    <td class="text-right">
+                        @if($item->is_optional)
+                            <em>PM</em>
+                        @elseif($isDiscount)
                             &minus;&nbsp;&euro;&nbsp;{{ number_format(abs($item->total), 2, ',', '.') }}
                         @else
                             &euro;&nbsp;{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }}
@@ -385,6 +483,8 @@
                     </td>
                 </tr>
                 @endforeach
+            </tbody>
+            @endforeach
                 @if($quote->travel_distance && $quote->travel_total)
                 @php
                     $originAddr = trim($settings->company_address ?? '');
@@ -394,8 +494,9 @@
                         : 'Reiskosten';
                 @endphp
                 <tr>
+                    <td>1</td>
+                    <td></td>
                     <td>{{ $travelDesc }} ({{ number_format($quote->travel_distance, 0, ',', '.') }} km &times; &euro;&nbsp;{{ number_format($quote->travel_cost_per_km, 2, ',', '.') }})</td>
-                    <td class="text-center">1</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
@@ -403,39 +504,54 @@
             </tbody>
         </table>
     </div>
+
     @else
+    {{-- ── Vereenvoudigde weergave (zonder prijzen) ────────────────────── --}}
     <div class="items-section">
         <table class="items-table">
             <thead>
                 <tr>
-                    <th style="width: 70%;">Omschrijving</th>
-                    <th style="width: 15%;" class="text-center">Aantal</th>
+                    <th style="width: 15%;">Aantal</th>
+                    <th style="width: 13%;">Artikelnr.</th>
+                    <th style="width: 72%;">Omschrijving</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach($quote->items as $item)
-                @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
-                @if(!$isDiscount)
-                <tr>
-                    <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
-                    <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+            @foreach($quote->items->filter(fn($i) => !($i->type instanceof \App\Enums\QuoteItemType && $i->type === \App\Enums\QuoteItemType::Discount))->chunk(3) as $chunk)
+            <tbody style="page-break-inside: avoid;">
+                @foreach($chunk as $item)
+                <tr @if($item->is_optional) style="color: #888; font-style: italic;" @endif>
+                    <td>{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td>{{ $item->itemable?->sku ?? '' }}</td>
+                    <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
                 </tr>
-                @endif
                 @endforeach
             </tbody>
+            @endforeach
         </table>
     </div>
     @endif
 
     <!-- Totalen -->
+    @php
+        $discountItems  = $quote->items->where('is_optional', false)->filter(fn($i) => $i->type instanceof \App\Enums\QuoteItemType && $i->type === \App\Enums\QuoteItemType::Discount);
+        $discountTotal  = $discountItems->sum(fn($i) => abs($i->total));
+        $itemsSubtotal  = $quote->items->where('is_optional', false)->sum('total');
+    @endphp
     <div class="totals-container clearfix">
         <div class="totals-table">
             <table>
                 @if($quote->show_item_breakdown)
                 <tr>
                     <td>Subtotaal producten:</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->items->sum('total'), 2, ',', '.') }}</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($itemsSubtotal, 2, ',', '.') }}</td>
                 </tr>
+                @if($quote->travel_total)
+                <tr>
+                    <td>Reiskosten:</td>
+                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+                </tr>
+                @endif
+                @else
                 @if($quote->travel_total)
                 <tr>
                     <td>Reiskosten:</td>
@@ -445,7 +561,7 @@
                 @endif
                 <tr>
                     <td><strong>Subtotaal excl. BTW:</strong></td>
-                    <td class="text-right"><strong>&euro;&nbsp;{{ number_format($quote->subtotal, 2, ',', '.') }}</strong></td>
+                    <td class="text-right"><strong>&euro;&nbsp;{{ number_format($itemsSubtotal + ($quote->travel_total ?? 0), 2, ',', '.') }}</strong></td>
                 </tr>
                 <tr>
                     <td>BTW (21%):</td>
@@ -468,7 +584,29 @@
     @endif
 
     @if($quote->post_text)
-    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{{ $quote->post_text }}</p>
+    <div class="post-text-section">
+    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br($mdBold(e($quote->post_text))) !!}</p>
+    </div>
+    @endif
+
+    @if($settings->closing_text)
+    <div class="closing-section">
+    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br($mdBold(e($settings->closing_text))) !!}</p>
+    </div>
+    @endif
+
+    @if($quote->paymentTerm)
+    <div class="payment-term-section" style="margin-top: 16px; font-size: 8.5pt; line-height: 1.5; color: #333;">
+        <p style="font-weight: bold; margin-bottom: 4px;">Betalingsvoorwaarden</p>
+        <p style="font-weight: bold; margin-bottom: 2px;">{{ $quote->paymentTerm->title }}</p>
+        <p>{{ $quote->paymentTerm->content }}</p>
+    </div>
+    @endif
+
+    @if($settings->email_signature)
+    <div class="signature-section">
+    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br(e($settings->email_signature)) !!}</p>
+    </div>
     @endif
 
 </div><!-- /content -->

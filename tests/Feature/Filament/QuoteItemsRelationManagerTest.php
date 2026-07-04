@@ -7,6 +7,7 @@ use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -22,7 +23,7 @@ class QuoteItemsRelationManagerTest extends TestCase
         $this->seed();
     }
 
-    /** @test */
+    #[Test]
     public function quote_edit_page_with_items_relation_loads(): void
     {
         $user = User::first();
@@ -38,7 +39,7 @@ class QuoteItemsRelationManagerTest extends TestCase
         $response->assertDontSee('Whoops');
     }
 
-    /** @test */
+    #[Test]
     public function quote_items_can_be_created(): void
     {
         $quote = Quote::first();
@@ -61,7 +62,7 @@ class QuoteItemsRelationManagerTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function quote_items_total_price_is_calculated(): void
     {
         $quote = Quote::first();

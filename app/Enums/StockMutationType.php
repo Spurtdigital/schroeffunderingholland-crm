@@ -9,6 +9,7 @@ use Filament\Support\Contracts\HasLabel;
 enum StockMutationType: string implements HasColor, HasIcon, HasLabel
 {
     case Purchase = 'purchase';
+    case Credit = 'credit';
     case Correction = 'correction';
     case Consumed = 'consumed';
     case Released = 'released';
@@ -18,6 +19,7 @@ enum StockMutationType: string implements HasColor, HasIcon, HasLabel
     {
         return match ($this) {
             self::Purchase => 'Inkoop',
+            self::Credit => 'Credit',
             self::Correction => 'Correctie',
             self::Consumed => 'Verbruikt',
             self::Released => 'Vrijgegeven',
@@ -29,6 +31,7 @@ enum StockMutationType: string implements HasColor, HasIcon, HasLabel
     {
         return match ($this) {
             self::Purchase => 'success',
+            self::Credit => 'danger',
             self::Correction => 'info',
             self::Consumed => 'danger',
             self::Released => 'gray',
@@ -40,6 +43,7 @@ enum StockMutationType: string implements HasColor, HasIcon, HasLabel
     {
         return match ($this) {
             self::Purchase => 'heroicon-o-arrow-down-tray',
+            self::Credit => 'heroicon-o-arrow-up-tray',
             self::Correction => 'heroicon-o-pencil-square',
             self::Consumed => 'heroicon-o-minus-circle',
             self::Released => 'heroicon-o-arrow-uturn-left',

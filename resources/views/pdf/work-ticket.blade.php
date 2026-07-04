@@ -341,37 +341,31 @@
     </div>
 
     <div class="materials-section">
-        <h3>Materialen</h3>
+        <h3>Te leveren en monteren producten</h3>
         @php
-            $hasItems = false;
-            foreach ($project->items as $item) {
-                if ($item->itemable_type === 'App\\Models\\Product' && $item->itemable) {
-                    $hasItems = true;
-                    break;
-                }
-            }
+            $allProductItems = $project->items->filter(fn ($item) => $item->itemable_type === 'App\\Models\\Product' && $item->itemable);
         @endphp
         <table class="materials-table">
             <thead>
                 <tr>
                     <th style="width: 10%;">Aantal</th>
                     <th style="width: 18%;">Artikelnummer</th>
-                    <th style="width: 72%;">Omschrijving</th>
+                    <th style="width: 57%;">Omschrijving</th>
+                    <th style="width: 15%;" class="text-center">Geleverd / Gereed</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($project->items as $item)
-                    @if($item->itemable_type === 'App\\Models\\Product' && $item->itemable)
-                        <tr>
-                            <td class="text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
-                            <td>{{ $item->itemable->sku ?? '-' }}</td>
-                            <td>{{ str_replace('⌀', 'Ø', $item->itemable->name ?? $item->description) }}</td>
-                        </tr>
-                    @endif
+                @foreach($allProductItems as $item)
+                    <tr @if($item->is_optional) style="color: #888; font-style: italic;" @endif>
+                        <td class="text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                        <td>{{ $item->itemable->sku ?? '-' }}</td>
+                        <td>{{ str_replace('⌀', 'Ø', $item->itemable->name ?? $item->description) }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
+                        <td class="text-center">&nbsp;</td>
+                    </tr>
                 @endforeach
-                @if(!$hasItems)
+                @if($allProductItems->isEmpty())
                 <tr>
-                    <td colspan="3" class="text-center" style="padding: 25px;">Geen materialen beschikbaar</td>
+                    <td colspan="4" class="text-center" style="padding: 25px;">Geen materialen beschikbaar</td>
                 </tr>
                 @endif
             </tbody>

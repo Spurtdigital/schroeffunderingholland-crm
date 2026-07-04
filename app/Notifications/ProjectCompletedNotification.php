@@ -31,18 +31,14 @@ class ProjectCompletedNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $template = EmailTemplate::getByKey('project_completed');
-        
-        $settings = app(GeneralSettings::class);
-        $signature = $settings->email_signature ?? "Met vriendelijke groet,\n\nSchroeffundering Holland";
-        $signatureHtml = nl2br(e($signature));
 
         if (! $template) {
-            return $this->fallbackEmail($notifiable, $signatureHtml);
+            return $this->fallbackEmail($notifiable);
         }
 
         $company = $this->project->company;
         $photos = $this->project->getMedia('project-photos');
-        $reviewUrl = $settings->review_url;
+        $reviewUrl = app(GeneralSettings::class)->review_url;
 
         $quote = $this->project->quote;
 
@@ -54,14 +50,12 @@ class ProjectCompletedNotification extends Notification
             'opleverdatum' => $this->project->completion_date?->format('d-m-Y') ?? now()->format('d-m-Y'),
             'aantal_fotos' => $photos->count(),
             'review_url' => $reviewUrl ?? '',
-            'handtekening' => $signatureHtml,
         ]);
 
         $mail = (new MailMessage)
             ->subject($rendered['subject'])
             ->greeting('Dag '.($company->contact_name ?? 'relatie').',')
-            ->line(new HtmlString($rendered['content']))
-            ->salutation('');
+            ->line(new HtmlString($rendered['content']));
 
         if ($reviewUrl) {
             $mail->action('Laat een review achter', $reviewUrl);
@@ -85,7 +79,7 @@ class ProjectCompletedNotification extends Notification
     /**
      * Fallback email when template is not found.
      */
-    private function fallbackEmail(object $notifiable, string $signatureHtml): MailMessage
+    private function fallbackEmail(object $notifiable): MailMessage
     {
         $company = $this->project->company;
         $photos = $this->project->getMedia('project-photos');
@@ -109,7 +103,8 @@ class ProjectCompletedNotification extends Notification
         $mail->line('')
             ->line('Hartelijk dank voor uw vertrouwen in Schroeffundering Holland.')
             ->line('Heeft u vragen over het project? Neem gerust contact met ons op.')
-            ->salutation(new HtmlString($signatureHtml));
+            ->salutation('Met vriendelijke groet,')
+            ->salutation(config('mail.from.name', 'Schroeffundering Holland'));
 
         if ($reviewUrl) {
             $mail->action('Laat een review achter', $reviewUrl);

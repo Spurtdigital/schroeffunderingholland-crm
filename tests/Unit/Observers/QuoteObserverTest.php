@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\LeadStatus;
+use App\Enums\QuoteItemType;
 use App\Enums\QuoteStatus;
 use App\Enums\StockReservationStatus;
 use App\Models\Lead;
 use App\Models\Product;
 use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\StockReservation;
 
 test('rejecting a quote releases all active stock reservations', function () {
@@ -166,6 +168,73 @@ test('quote observer: converted lead status is never downgraded', function () {
     $quote->update(['status' => QuoteStatus::Rejected]);
 
     expect($lead->fresh()->status)->toBe(LeadStatus::Converted);
+});
+
+test('approving a quote creates stock reservations for product items', function () {
+    $product = Product::factory()->create(['stock_quantity' => 10]);
+    $quote = Quote::factory()->create(['status' => QuoteStatus::Sent]);
+    QuoteItem::factory()->create([
+        'quote_id' => $quote->id,
+        'type' => QuoteItemType::Product,
+        'itemable_type' => Product::class,
+        'itemable_id' => $product->id,
+        'quantity' => 3,
+    ]);
+
+    $quote->update(['status' => QuoteStatus::Approved]);
+
+    expect(
+        StockReservation::where('quote_id', $quote->id)
+            ->where('product_id', $product->id)
+            ->where('status', StockReservationStatus::Active)
+            ->exists()
+    )->toBeTrue();
+});
+
+test('sending a quote does NOT create stock reservations', function () {
+    $product = Product::factory()->create(['stock_quantity' => 10]);
+    $quote = Quote::factory()->create(['status' => QuoteStatus::Draft]);
+    QuoteItem::factory()->create([
+        'quote_id' => $quote->id,
+        'type' => QuoteItemType::Product,
+        'itemable_type' => Product::class,
+        'itemable_id' => $product->id,
+        'quantity' => 3,
+    ]);
+
+    $quote->update(['status' => QuoteStatus::Sent]);
+
+    expect(
+        StockReservation::where('quote_id', $quote->id)
+            ->where('product_id', $product->id)
+            ->exists()
+    )->toBeFalse();
+});
+
+test('approving a quote does not double-reserve when reservation already exists', function () {
+    $product = Product::factory()->create(['stock_quantity' => 10]);
+    $quote = Quote::factory()->create(['status' => QuoteStatus::Sent]);
+    QuoteItem::factory()->create([
+        'quote_id' => $quote->id,
+        'type' => QuoteItemType::Product,
+        'itemable_type' => Product::class,
+        'itemable_id' => $product->id,
+        'quantity' => 3,
+    ]);
+
+    // Eerste goedkeuring
+    $quote->update(['status' => QuoteStatus::Approved]);
+
+    // Opnieuw Approved zetten mag geen tweede reservering aanmaken
+    $quote->forceFill(['status' => QuoteStatus::Sent])->save();
+    $quote->update(['status' => QuoteStatus::Approved]);
+
+    expect(
+        StockReservation::where('quote_id', $quote->id)
+            ->where('product_id', $product->id)
+            ->where('status', StockReservationStatus::Active)
+            ->count()
+    )->toBe(1);
 });
 
 test('quote observer: quote without lead does not throw on status change', function () {
