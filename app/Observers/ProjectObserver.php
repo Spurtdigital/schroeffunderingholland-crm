@@ -50,4 +50,16 @@ class ProjectObserver
             }
         }
     }
+
+    /**
+     * Handle the Project "deleting" event.
+     * Release all active stock reservations before deleting the project.
+     */
+    public function deleting(Project $project): void
+    {
+        // Release all active stock reservations
+        foreach ($project->stockReservations()->where('status', 'active')->get() as $reservation) {
+            $reservation->release();
+        }
+    }
 }

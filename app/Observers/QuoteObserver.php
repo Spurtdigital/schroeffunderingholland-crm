@@ -127,6 +127,18 @@ class QuoteObserver
     }
 
     /**
+     * Handle the Quote "deleting" event.
+     * Release all active stock reservations before deleting the quote.
+     */
+    public function deleting(Quote $quote): void
+    {
+        // Release all active stock reservations
+        foreach ($quote->stockReservations()->where('status', 'active')->get() as $reservation) {
+            $reservation->release();
+        }
+    }
+
+    /**
      * Als de offerte wordt afgewezen: controleer of er nog andere actieve
      * offertes zijn voor dezelfde lead. Zo ja, laat de lead-status ongewijzigd.
      * Zo nee, zet de lead op "afgewezen".
