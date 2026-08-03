@@ -8,6 +8,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class InvoiceForm
@@ -104,6 +105,12 @@ class InvoiceForm
                 Textarea::make('notes')
                     ->label('Notities')
                     ->rows(3)
+                    ->columnSpan(2),
+
+                Toggle::make('include_terms')
+                    ->label('Betalingsvoorwaarden opnemen op PDF')
+                    ->default(true)
+                    ->helperText('Toon de betalingsvoorwaarden onderaan de factuur PDF')
                     ->columnSpan(2),
             ]);
     }

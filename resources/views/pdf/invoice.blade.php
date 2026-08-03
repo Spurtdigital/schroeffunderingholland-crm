@@ -444,6 +444,15 @@
         <p style="margin-top: 6px;">Gelieve &euro;&nbsp;{{ number_format($total, 2, ',', '.') }} over te maken o.v.v. kenmerk <strong>{{ $kenmerk }}</strong>.</p>
     </div>
 
+    @if($invoice->include_terms && $quote && $quote->paymentTerm)
+    <!-- Betalingsvoorwaarden -->
+    <div class="terms-section" style="margin-top: 14px; padding: 10px 12px; border-left: 3px solid #666;">
+        <h4 style="font-size: 8.5pt; font-weight: bold; color: #333; margin-bottom: 6px;">Betalingsvoorwaarden</h4>
+        <p style="font-size: 8pt; font-weight: bold; margin-bottom: 2px;">{{ $quote->paymentTerm->title }}</p>
+        <p style="font-size: 8pt; line-height: 1.5;">{{ $quote->paymentTerm->content }}</p>
+    </div>
+    @endif
+
 </div><!-- /content -->
 
 <!-- Footer -->
