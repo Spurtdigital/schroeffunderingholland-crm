@@ -7,6 +7,7 @@ use App\Enums\StockMutationType;
 use App\Enums\StockReservationStatus;
 use App\Models\Product;
 use App\Models\ProjectItem;
+use App\Models\SerialNumber;
 use Illuminate\Support\Facades\Auth;
 
 class ProjectItemObserver
@@ -14,6 +15,7 @@ class ProjectItemObserver
     public function created(ProjectItem $item): void
     {
         $this->syncReservationOnCreate($item);
+        $this->autoAssignSerialNumbers($item);
 
         $project = $item->project;
         if (! $project) {
@@ -37,6 +39,11 @@ class ProjectItemObserver
     public function updated(ProjectItem $item): void
     {
         $this->syncReservationOnUpdate($item);
+        
+        // Re-assign serial numbers if quantity changed
+        if ($item->wasChanged('quantity')) {
+            $this->reassignSerialNumbers($item);
+        }
 
         $project = $item->project;
         if (! $project) {
@@ -68,6 +75,7 @@ class ProjectItemObserver
 
     public function deleted(ProjectItem $item): void
     {
+        $this->releaseSerialNumbers($item);
         $this->releaseReservationOnDelete($item);
 
         $project = $item->project;
@@ -85,6 +93,69 @@ class ProjectItemObserver
             ])
             ->event('item_deleted')
             ->log('Item verwijderd: '.$item->description);
+    }
+
+    /**
+     * Automatically assign serial numbers to a project item (FIFO).
+     */
+    private function autoAssignSerialNumbers(ProjectItem $item): void
+    {
+        if ($item->type !== QuoteItemType::Product || $item->itemable_type !== Product::class || ! $item->itemable_id) {
+            return;
+        }
+
+        $requiredQty = (int) $item->quantity;
+        if ($requiredQty <= 0) {
+            return;
+        }
+
+        // Get available serial numbers for this product (FIFO - oldest first)
+        $availableSerials = SerialNumber::where('product_id', $item->itemable_id)
+            ->whereRaw('quantity > quantity_reserved')
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $remainingQty = $requiredQty;
+
+        foreach ($availableSerials as $serial) {
+            if ($remainingQty <= 0) {
+                break;
+            }
+
+            $availableQty = $serial->available_quantity;
+            $assignQty = min($availableQty, $remainingQty);
+
+            if ($assignQty > 0) {
+                $serial->reserve($item, $assignQty);
+                $remainingQty -= $assignQty;
+            }
+        }
+    }
+
+    /**
+     * Reassign serial numbers when quantity changes.
+     */
+    private function reassignSerialNumbers(ProjectItem $item): void
+    {
+        if ($item->type !== QuoteItemType::Product || $item->itemable_type !== Product::class || ! $item->itemable_id) {
+            return;
+        }
+
+        // Release all current assignments
+        $this->releaseSerialNumbers($item);
+
+        // Re-assign based on new quantity
+        $this->autoAssignSerialNumbers($item);
+    }
+
+    /**
+     * Release all serial numbers assigned to this item.
+     */
+    private function releaseSerialNumbers(ProjectItem $item): void
+    {
+        foreach ($item->serialNumbers as $serial) {
+            $serial->release($item);
+        }
     }
 
     private function syncReservationOnCreate(ProjectItem $item): void

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Products;
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Filament\Resources\Products\RelationManagers\SerialNumbersRelationManager;
 use App\Filament\Resources\Products\RelationManagers\StockMutationsRelationManager;
 use App\Filament\Resources\Products\RelationManagers\StockReservationsRelationManager;
 use App\Filament\Resources\Products\Schemas\ProductForm;
@@ -44,6 +45,7 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
+            SerialNumbersRelationManager::class,
             StockMutationsRelationManager::class,
             StockReservationsRelationManager::class,
         ];

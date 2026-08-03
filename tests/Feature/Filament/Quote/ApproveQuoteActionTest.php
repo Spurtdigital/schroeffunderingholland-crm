@@ -33,7 +33,7 @@ test('approve quote action: sets status to approved and timestamps', function ()
         ->and($fresh->approved_at)->not->toBeNull();
 });
 
-test('approve quote action: creates stock reservations for product items', function () {
+test('approve quote action: does NOT create stock reservations (happens at project conversion)', function () {
     $product = Product::first();
     $product->update(['stock_quantity' => 20]);
     $quote = Quote::factory()->sent()->create();
@@ -52,48 +52,12 @@ test('approve quote action: creates stock reservations for product items', funct
         ->test(ViewQuote::class, ['record' => $quote->getRouteKey()])
         ->callAction('approve');
 
-    $this->assertDatabaseHas('stock_reservations', [
-        'product_id' => $product->id,
-        'quote_id' => $quote->id,
-        'status' => StockReservationStatus::Active->value,
-    ]);
+    // No reservations should be created - they are made when converting to project
+    expect(StockReservation::where('quote_id', $quote->id)->count())->toBe(0);
 });
 
-test('approve quote action: skips duplicate reservation when active one already exists', function () {
-    $product = Product::first();
-    $product->update(['stock_quantity' => 20]);
-    $quote = Quote::factory()->sent()->create();
-
-    QuoteItem::factory()->create([
-        'quote_id' => $quote->id,
-        'itemable_type' => Product::class,
-        'itemable_id' => $product->id,
-        'type' => QuoteItemType::Product,
-        'quantity' => 4,
-        'unit_price' => $product->sales_price,
-        'total' => $product->sales_price * 4,
-    ]);
-
-    // Pre-create an active reservation for this product
-    StockReservation::factory()->create([
-        'product_id' => $product->id,
-        'quote_id' => $quote->id,
-        'quantity' => 4,
-        'status' => StockReservationStatus::Active,
-    ]);
-
-    Livewire::actingAs(User::first())
-        ->test(ViewQuote::class, ['record' => $quote->getRouteKey()])
-        ->callAction('approve');
-
-    // Still exactly one reservation — no duplicate
-    expect(
-        StockReservation::where('quote_id', $quote->id)
-            ->where('product_id', $product->id)
-            ->where('status', StockReservationStatus::Active->value)
-            ->count()
-    )->toBe(1);
-});
+// Test verwijderd - voorraad wordt niet meer gereserveerd bij quote goedkeuring
+// Reserveringen worden nu alleen aangemaakt bij conversie naar project
 
 test('approve quote action: notifies all users on approval', function () {
     $quote = Quote::factory()->sent()->create();

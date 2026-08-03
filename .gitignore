@@ -24,3 +24,4 @@ Homestead.yaml
 Thumbs.db
 problemen-pdf.png
 backups/
+database_backup_*.sql.gz

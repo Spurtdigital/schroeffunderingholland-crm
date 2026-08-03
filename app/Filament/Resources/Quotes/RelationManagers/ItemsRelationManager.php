@@ -516,16 +516,12 @@ class ItemsRelationManager extends RelationManager
                                 $totalKm = $result['distance_km'] * 2; // heen én terug
                                 $total = round($totalKm * $pricePerKm, 2);
 
-                                $originAddress = trim($settings->company_address ?? '');
-                                $destAddress = trim($distanceService->buildAddressFromQuote($quote) ?? '');
-                                $travelDesc = "Reiskosten: {$originAddress} → {$destAddress} en retour ({$result['distance_text']} × 2 = {$totalKm} km)";
-
-                                // Create the quote item
+                                // Create the quote item - simplified description for customer
                                 $quote->items()->create([
                                     'type' => QuoteItemType::Mileage->value,
-                                    'description' => $travelDesc,
-                                    'quantity' => $totalKm,
-                                    'unit_price' => $pricePerKm,
+                                    'description' => 'Voorrijkosten',
+                                    'quantity' => 1,
+                                    'unit_price' => $total,
                                     'total' => $total,
                                     'itemable_type' => null,
                                     'itemable_id' => null,
@@ -651,6 +647,7 @@ class ItemsRelationManager extends RelationManager
 
                             $livewire->recalculateAndRefresh();
 
+                            $label = $adjustment < 0 ? 'Korting' : 'Toeslag';
                             $formattedDiff = '€ '.number_format(abs($adjustment), 2, ',', '.');
                             Notification::make()
                                 ->success()

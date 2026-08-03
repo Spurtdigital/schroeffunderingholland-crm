@@ -42,26 +42,11 @@ class QuoteObserver
 
         $newStatus = $quote->status;
 
-        // Voorraad reserveren bij goedkeuring (niet al bij versturen)
-        if ($newStatus === QuoteStatus::Approved) {
-            foreach ($quote->items as $item) {
-                if ($item->type === QuoteItemType::Product && $item->itemable_type === Product::class && $item->itemable_id) {
-                    $product = Product::find($item->itemable_id);
-                    if ($product) {
-                        $alreadyReserved = $quote->stockReservations()
-                            ->where('product_id', $product->id)
-                            ->where('status', 'active')
-                            ->exists();
+        // Voorraad wordt NIET meer gereserveerd bij goedkeuring.
+        // Reservering gebeurt pas bij conversie naar project (ConvertToProjectAction).
+        // Zie: nieuwe voorraad methode vanaf 03 augustus 2026 12:00.
 
-                        if (! $alreadyReserved) {
-                            $product->reserveStock($quote, (int) $item->quantity);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Voorraad vrijgeven bij afwijzing
+        // Voorraad vrijgeven bij afwijzing (voor legacy reserveringen)
         if ($newStatus === QuoteStatus::Rejected) {
             foreach ($quote->stockReservations()->where('status', 'active')->get() as $reservation) {
                 $reservation->release();

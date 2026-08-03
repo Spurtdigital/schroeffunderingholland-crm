@@ -11,10 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Quote extends Model
+class Quote extends Model implements HasMedia
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, InteractsWithMedia;
 
     protected $fillable = [
         'company_id',
@@ -46,6 +48,9 @@ class Quote extends Model
         'sent_at',
         'approved_at',
         'show_item_breakdown',
+        'signed_at',
+        'signed_ip',
+        'signed_by_name',
     ];
 
     protected $casts = [
@@ -62,6 +67,7 @@ class Quote extends Model
         'work_address_different' => 'boolean',
         'sent_at' => 'datetime',
         'approved_at' => 'datetime',
+        'signed_at' => 'datetime',
         'show_item_breakdown' => 'boolean',
     ];
 
@@ -144,6 +150,32 @@ class Quote extends Model
     public function stockReservations(): HasMany
     {
         return $this->hasMany(StockReservation::class);
+    }
+
+    /**
+     * Get view logs for this quote.
+     */
+    public function viewLogs(): HasMany
+    {
+        return $this->hasMany(QuoteViewLog::class)->orderByDesc('created_at');
+    }
+
+    /**
+     * Register media collections for signature.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('quote-signature')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/png']);
+    }
+
+    /**
+     * Check if the quote has been signed.
+     */
+    public function isSigned(): bool
+    {
+        return $this->signed_at !== null;
     }
 
     /**

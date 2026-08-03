@@ -6,6 +6,7 @@ use App\Enums\QuoteItemType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ProjectItem extends Model
@@ -73,6 +74,32 @@ class ProjectItem extends Model
     public function itemable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * Get the serial numbers assigned to this project item.
+     */
+    public function serialNumbers(): BelongsToMany
+    {
+        return $this->belongsToMany(SerialNumber::class, 'project_item_serial_number')
+            ->withPivot('quantity')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get total quantity of serial numbers assigned.
+     */
+    public function getAssignedSerialQuantityAttribute(): int
+    {
+        return $this->serialNumbers->sum('pivot.quantity');
+    }
+
+    /**
+     * Check if this item is a product.
+     */
+    public function isProduct(): bool
+    {
+        return $this->itemable_type === Product::class;
     }
 
     /**

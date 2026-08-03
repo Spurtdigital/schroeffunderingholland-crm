@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Pages;
 
+use App\Filament\Resources\Projects\Actions\CancelProjectAction;
 use App\Filament\Resources\Projects\Actions\CompleteProjectAction;
 use App\Filament\Resources\Projects\Actions\CreatePurchaseOrderFromProjectAction;
 use App\Filament\Resources\Projects\Actions\GenerateCompletionReportAction;
@@ -66,6 +67,9 @@ class ViewProject extends ViewRecord
                 ->icon('heroicon-o-shopping-cart')
                 ->color('warning')
                 ->button(),
+
+            // Project annuleren
+            CancelProjectAction::make(),
 
             EditAction::make()->color('primary'),
         ];

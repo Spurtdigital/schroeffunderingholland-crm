@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Projects\RelationManagers;
 
 use App\Enums\QuoteItemType;
 use App\Models\Product;
+use App\Models\SerialNumber;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -99,6 +100,12 @@ class ItemsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('total')
                     ->label('Totaal')
                     ->money('EUR'),
+                Tables\Columns\TextColumn::make('serialNumbers')
+                    ->label('Serienummers')
+                    ->badge()
+                    ->color(fn ($record) => $this->getSerialBadgeColor($record))
+                    ->formatStateUsing(fn ($record) => $this->getSerialBadgeText($record))
+                    ->tooltip(fn ($record) => $this->getSerialTooltip($record)),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
@@ -239,6 +246,142 @@ class ItemsRelationManager extends RelationManager
                     }),
             ])
             ->recordActions([
+                Action::make('assignSerialNumbers')
+                    ->label('Serienummers')
+                    ->icon('heroicon-o-qr-code')
+                    ->color('warning')
+                    ->visible(fn ($record) => $record->type === QuoteItemType::Product
+                        && $record->itemable_type === Product::class
+                        && $record->itemable_id
+                        && (int) $record->quantity > 0
+                    )
+                    ->modalHeading(fn ($record) => "Serienummers voor {$record->description}")
+                    ->modalDescription(fn ($record) => "Wijs serienummers toe voor {$record->quantity} stuks.")
+                    ->modalWidth('xl')
+                    ->form(function ($record) {
+                        $product = Product::find($record->itemable_id);
+                        $requiredQuantity = (int) $record->quantity;
+
+                        // Get available serial numbers for this product
+                        $availableSerials = SerialNumber::where('product_id', $product->id)
+                            ->where(function ($q) {
+                                $q->whereRaw('quantity > quantity_reserved');
+                            })
+                            ->get();
+
+                        // Get already assigned serial numbers for this item
+                        $assignedSerials = $record->serialNumbers()->get();
+
+                        $fields = [];
+
+                        // Repeater for assigning serial numbers with quantities
+                        $fields[] = Forms\Components\Repeater::make('assignments')
+                            ->label('Serienummer toewijzingen')
+                            ->schema([
+                                Forms\Components\Select::make('serial_number_id')
+                                    ->label('Serienummer')
+                                    ->options(function () use ($availableSerials, $assignedSerials) {
+                                        $options = [];
+                                        foreach ($availableSerials as $serial) {
+                                            $options[$serial->id] = "{$serial->serial_number} (beschikbaar: {$serial->available_quantity})";
+                                        }
+                                        // Include already assigned ones
+                                        foreach ($assignedSerials as $serial) {
+                                            if (!isset($options[$serial->id])) {
+                                                $totalAvailable = $serial->available_quantity + $serial->pivot->quantity;
+                                                $options[$serial->id] = "{$serial->serial_number} (beschikbaar: {$totalAvailable})";
+                                            }
+                                        }
+                                        return $options;
+                                    })
+                                    ->required()
+                                    ->searchable()
+                                    ->columnSpan(2),
+                                Forms\Components\TextInput::make('quantity')
+                                    ->label('Aantal')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(1)
+                                    ->default(1)
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(3)
+                            ->defaultItems(0)
+                            ->addActionLabel('Serienummer toevoegen')
+                            ->default(function () use ($assignedSerials) {
+                                $defaults = [];
+                                foreach ($assignedSerials as $serial) {
+                                    $defaults[] = [
+                                        'serial_number_id' => $serial->id,
+                                        'quantity' => $serial->pivot->quantity,
+                                    ];
+                                }
+                                return $defaults;
+                            })
+                            ->helperText("Totaal toe te wijzen: {$requiredQuantity} stuks");
+
+                        return $fields;
+                    })
+                    ->action(function (array $data, $record): void {
+                        $assignments = $data['assignments'] ?? [];
+                        $requiredQuantity = (int) $record->quantity;
+
+                        // Calculate total assigned
+                        $totalAssigned = 0;
+                        foreach ($assignments as $assignment) {
+                            $totalAssigned += (int) ($assignment['quantity'] ?? 0);
+                        }
+
+                        // Warn if not matching, but allow it
+                        if ($totalAssigned > $requiredQuantity) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Te veel toegewezen')
+                                ->body("Je hebt {$totalAssigned} stuks toegewezen, maar er zijn maar {$requiredQuantity} stuks nodig.")
+                                ->send();
+                            return;
+                        }
+
+                        // Release all current assignments
+                        foreach ($record->serialNumbers as $serial) {
+                            $serial->release($record);
+                        }
+
+                        // Create new assignments
+                        foreach ($assignments as $assignment) {
+                            $serialNumber = SerialNumber::find($assignment['serial_number_id']);
+                            $qty = (int) $assignment['quantity'];
+
+                            if (!$serialNumber) {
+                                continue;
+                            }
+
+                            if ($qty > $serialNumber->available_quantity) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('Onvoldoende voorraad')
+                                    ->body("Serienummer {$serialNumber->serial_number} heeft maar {$serialNumber->available_quantity} beschikbaar.")
+                                    ->send();
+                                return;
+                            }
+
+                            $serialNumber->reserve($record, $qty);
+                        }
+
+                        if ($totalAssigned < $requiredQuantity) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Serienummers toegewezen')
+                                ->body("{$totalAssigned} van {$requiredQuantity} stuks gekoppeld. Nog " . ($requiredQuantity - $totalAssigned) . " stuks zonder serienummer.")
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->success()
+                                ->title('Serienummers toegewezen')
+                                ->body("{$totalAssigned} stuks gekoppeld aan dit item.")
+                                ->send();
+                        }
+                    }),
                 EditAction::make()
                     ->label('Bewerken'),
                 DeleteAction::make()
@@ -252,5 +395,46 @@ class ItemsRelationManager extends RelationManager
             ])
             ->reorderable('sort_order')
             ->defaultSort('sort_order');
+    }
+
+    private function getSerialBadgeColor($record): string
+    {
+        if ($record->type !== QuoteItemType::Product || $record->itemable_type !== Product::class) {
+            return 'gray';
+        }
+
+        $assigned = $record->serialNumbers->sum('pivot.quantity');
+        $required = (int) $record->quantity;
+
+        if ($assigned === 0) {
+            return 'gray';
+        }
+
+        return $assigned >= $required ? 'success' : 'warning';
+    }
+
+    private function getSerialBadgeText($record): string
+    {
+        if ($record->type !== QuoteItemType::Product || $record->itemable_type !== Product::class) {
+            return '-';
+        }
+
+        $assigned = $record->serialNumbers->sum('pivot.quantity');
+        $required = (int) $record->quantity;
+
+        return "{$assigned}/{$required}";
+    }
+
+    private function getSerialTooltip($record): ?string
+    {
+        if ($record->type !== QuoteItemType::Product || $record->itemable_type !== Product::class) {
+            return null;
+        }
+
+        $serials = $record->serialNumbers->map(function ($serial) {
+            return "{$serial->serial_number} ({$serial->pivot->quantity}x)";
+        })->join(', ');
+
+        return $serials ?: null;
     }
 }
