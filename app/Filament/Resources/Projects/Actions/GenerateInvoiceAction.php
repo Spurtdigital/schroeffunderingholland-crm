@@ -203,6 +203,8 @@ class GenerateInvoiceAction extends Action
                             ->body("Factuur {$invoice->invoice_number} is aangemaakt, maar Moneybird is niet geconfigureerd. Je kunt de factuur later handmatig versturen.")
                             ->send();
                     } else {
+                        // Reload invoice with relationships for Moneybird
+                        $invoice->load(['project.company', 'project.quote']);
                         $moneybirdService->sendInvoice($invoice);
 
                         Notification::make()
