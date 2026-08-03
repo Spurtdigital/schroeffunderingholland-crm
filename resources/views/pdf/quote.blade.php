@@ -60,6 +60,7 @@
             font-size: 9pt;
             color: #000;
             line-height: 1.3;
+            padding-top: 15mm;
         }
 
         /* page-bg niet meer nodig */
@@ -87,6 +88,7 @@
 
         /* ===================== HEADER ===================== */
         .header {
+            margin-top: -15mm; /* Compenseer body padding-top op eerste pagina */
             padding-top: 10mm;
             padding-bottom: 8mm;
             padding-left: 20mm;
@@ -233,6 +235,13 @@
         .items-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 0;
+        }
+        .items-table + .items-table {
+            margin-top: 0;
+        }
+        .items-table + .items-table th {
+            border-top: none;
         }
         .items-table th {
             color: #000;
@@ -449,8 +458,17 @@
 
     @if($quote->show_item_breakdown)
     {{-- ── Volledige regelweergave (met prijzen) ──────────────────────── --}}
+    @php
+        // Bereken chunk sizes: eerste chunk = minimaal 50% van items (min 3)
+        $allItems = $quote->items;
+        $totalItems = $allItems->count();
+        $firstChunkSize = max(3, (int) ceil($totalItems * 0.5));
+        $firstChunk = $allItems->take($firstChunkSize);
+        $remainingItems = $allItems->skip($firstChunkSize);
+    @endphp
     <div class="items-section">
-        <table class="items-table">
+        {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
+        <table class="items-table" style="page-break-inside: avoid;">
             <thead>
                 <tr>
                     <th style="width: 10%;">Aantal</th>
@@ -460,10 +478,8 @@
                     <th style="width: 15%;" class="text-right">Totaal</th>
                 </tr>
             </thead>
-            @php $chunkIndex = 0; @endphp
-            @foreach($quote->items->chunk(3) as $chunk)
-            <tbody style="page-break-inside: avoid;">
-                @foreach($chunk as $item)
+            <tbody>
+                @foreach($firstChunk as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
                 <tr @if($item->is_optional) style="color: #888; font-style: italic;" @elseif($isDiscount) style="color: #c0392b;" @endif>
                     <td>{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
@@ -484,31 +500,63 @@
                 </tr>
                 @endforeach
             </tbody>
-            @endforeach
-                @if($quote->travel_distance && $quote->travel_total)
-                @php
-                    $originAddr = trim($settings->company_address ?? '');
-                    $destAddr   = trim(str_replace("\n", ', ', $quote->workFullAddress() ?? ''));
-                    $travelDesc = $originAddr && $destAddr
-                        ? "Reiskosten: {$originAddr} → {$destAddr} en retour"
-                        : 'Reiskosten';
-                @endphp
-                <tr>
-                    <td>1</td>
-                    <td></td>
-                    <td>{{ $travelDesc }} ({{ number_format($quote->travel_distance, 0, ',', '.') }} km &times; &euro;&nbsp;{{ number_format($quote->travel_cost_per_km, 2, ',', '.') }})</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+        </table>
+        {{-- Overige items in aparte tabellen --}}
+        @foreach($remainingItems->chunk(5) as $chunk)
+        <table class="items-table" style="page-break-inside: avoid; border-top: none;">
+            <tbody>
+                @foreach($chunk as $item)
+                @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
+                <tr @if($item->is_optional) style="color: #888; font-style: italic;" @elseif($isDiscount) style="color: #c0392b;" @endif>
+                    <td style="width: 10%;">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td style="width: 13%;">{{ $item->itemable?->sku ?? '' }}</td>
+                    <td style="width: 42%;">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
+                    <td style="width: 20%;" class="text-right">
+                        @if($isDiscount)—@else&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}@endif
+                    </td>
+                    <td style="width: 15%;" class="text-right">
+                        @if($item->is_optional)
+                            <em>PM</em>
+                        @elseif($isDiscount)
+                            &minus;&nbsp;&euro;&nbsp;{{ number_format(abs($item->total), 2, ',', '.') }}
+                        @else
+                            &euro;&nbsp;{{ number_format($item->quantity * $item->unit_price, 2, ',', '.') }}
+                        @endif
+                    </td>
                 </tr>
-                @endif
+                @endforeach
             </tbody>
         </table>
+        @endforeach
+        {{-- Voorrijkosten als aparte tabel --}}
+        @if($quote->travel_total)
+        <table class="items-table" style="border-top: none;">
+            <tbody>
+                <tr>
+                    <td style="width: 10%;">1</td>
+                    <td style="width: 13%;"></td>
+                    <td style="width: 42%;">Voorrijkosten</td>
+                    <td style="width: 20%;" class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+                    <td style="width: 15%;" class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+                </tr>
+            </tbody>
+        </table>
+        @endif
     </div>
 
     @else
     {{-- ── Vereenvoudigde weergave (zonder prijzen) ────────────────────── --}}
+    @php
+        // Filter kortingen en bereken chunk sizes
+        $filteredItems = $quote->items->filter(fn($i) => !($i->type instanceof \App\Enums\QuoteItemType && $i->type === \App\Enums\QuoteItemType::Discount));
+        $totalItems = $filteredItems->count();
+        $firstChunkSize = max(3, (int) ceil($totalItems * 0.5));
+        $firstChunk = $filteredItems->take($firstChunkSize);
+        $remainingItems = $filteredItems->skip($firstChunkSize);
+    @endphp
     <div class="items-section">
-        <table class="items-table">
+        {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
+        <table class="items-table" style="page-break-inside: avoid;">
             <thead>
                 <tr>
                     <th style="width: 15%;">Aantal</th>
@@ -516,9 +564,8 @@
                     <th style="width: 72%;">Omschrijving</th>
                 </tr>
             </thead>
-            @foreach($quote->items->filter(fn($i) => !($i->type instanceof \App\Enums\QuoteItemType && $i->type === \App\Enums\QuoteItemType::Discount))->chunk(3) as $chunk)
-            <tbody style="page-break-inside: avoid;">
-                @foreach($chunk as $item)
+            <tbody>
+                @foreach($firstChunk as $item)
                 <tr @if($item->is_optional) style="color: #888; font-style: italic;" @endif>
                     <td>{{ number_format($item->quantity, 0, ',', '.') }}</td>
                     <td>{{ $item->itemable?->sku ?? '' }}</td>
@@ -526,8 +573,21 @@
                 </tr>
                 @endforeach
             </tbody>
-            @endforeach
         </table>
+        {{-- Overige items in aparte tabellen --}}
+        @foreach($remainingItems->chunk(5) as $chunk)
+        <table class="items-table" style="page-break-inside: avoid; border-top: none;">
+            <tbody>
+                @foreach($chunk as $item)
+                <tr @if($item->is_optional) style="color: #888; font-style: italic;" @endif>
+                    <td style="width: 15%;">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td style="width: 13%;">{{ $item->itemable?->sku ?? '' }}</td>
+                    <td style="width: 72%;">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endforeach
     </div>
     @endif
 
@@ -547,14 +607,14 @@
                 </tr>
                 @if($quote->travel_total)
                 <tr>
-                    <td>Reiskosten:</td>
+                    <td>Voorrijkosten:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
                 @endif
                 @else
                 @if($quote->travel_total)
                 <tr>
-                    <td>Reiskosten:</td>
+                    <td>Voorrijkosten:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
                 @endif
@@ -591,7 +651,41 @@
 
     @if($settings->closing_text)
     <div class="closing-section">
-    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br($mdBold(e($settings->closing_text))) !!}</p>
+        @php
+            // Split closing text op secties die beginnen met **titel**
+            $closingText = trim($settings->closing_text);
+            $sections = preg_split('/\n{2,}/', $closingText);
+            
+            // Groepeer secties: als een sectie begint met ** is het een nieuwe groep
+            $groupedSections = [];
+            $currentGroup = '';
+            
+            foreach ($sections as $section) {
+                $section = trim($section);
+                if (empty($section)) continue;
+                
+                if (preg_match('/^\*\*[^*]+\*\*/', $section)) {
+                    if (!empty($currentGroup)) {
+                        $groupedSections[] = $currentGroup;
+                    }
+                    $currentGroup = $section;
+                } else {
+                    if (!empty($currentGroup)) {
+                        $currentGroup .= "\n\n" . $section;
+                    } else {
+                        $currentGroup = $section;
+                    }
+                }
+            }
+            if (!empty($currentGroup)) {
+                $groupedSections[] = $currentGroup;
+            }
+        @endphp
+        @foreach($groupedSections as $section)
+        <table style="width: 100%; margin-bottom: 10px;"><tbody style="page-break-inside: avoid;"><tr><td style="padding: 0;">
+            <p style="font-size: 9pt; line-height: 1.5; margin: 0;">{!! nl2br($mdBold(e(trim($section)))) !!}</p>
+        </td></tr></tbody></table>
+        @endforeach
     </div>
     @endif
 

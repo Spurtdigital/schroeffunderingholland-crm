@@ -35,8 +35,8 @@
 
 @endforeach
 
-{{-- Salutation - only show if explicitly set and not empty --}}
-@if (! empty($salutation))
+{{-- Salutation - only show if explicitly set and not whitespace-only --}}
+@if (isset($salutation) && trim($salutation) !== '')
 {{ $salutation }}
 @endif
 

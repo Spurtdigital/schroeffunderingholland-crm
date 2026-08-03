@@ -371,6 +371,7 @@
             $hasItems = false;
             $totalWeight = 0;
             $hasWeight = false;
+            $hasSerialNumbers = false;
             foreach ($project->items as $item) {
                 if ($item->itemable_type === 'App\\Models\\Product' && $item->itemable) {
                     $hasItems = true;
@@ -378,16 +379,27 @@
                         $hasWeight = true;
                         $totalWeight += $item->quantity * $item->itemable->weight;
                     }
+                    if ($item->serialNumbers->count() > 0) {
+                        $hasSerialNumbers = true;
+                    }
                 }
             }
         @endphp
-        @php $descWidth = $hasWeight ? '47%' : '58%'; @endphp
+        @php 
+            $descWidth = '47%';
+            if (!$hasWeight && !$hasSerialNumbers) $descWidth = '58%';
+            elseif (!$hasWeight || !$hasSerialNumbers) $descWidth = '47%';
+            else $descWidth = '32%';
+        @endphp
         <table class="materials-table">
             <thead>
                 <tr>
                     <th style="width: 9%;">Aantal</th>
                     <th style="width: 16%;">Artikelnummer</th>
                     <th style="width: {{ $descWidth }};">Omschrijving</th>
+                    @if($hasSerialNumbers)
+                    <th style="width: 15%;">Serienummer(s)</th>
+                    @endif
                     @if($hasWeight)
                     <th style="width: 13%; text-align: right; padding-right: 10px;">Gewicht</th>
                     @endif
@@ -396,11 +408,21 @@
             <tbody>
                 @foreach($project->items as $item)
                     @if($item->itemable_type === 'App\\Models\\Product' && $item->itemable)
-                        @php $lineWeight = $item->itemable->weight ? $item->quantity * $item->itemable->weight : null; @endphp
+                        @php 
+                            $lineWeight = $item->itemable->weight ? $item->quantity * $item->itemable->weight : null;
+                            $serials = $item->serialNumbers->map(function ($serial) {
+                                return $serial->pivot->quantity > 1
+                                    ? $serial->serial_number . ' (' . $serial->pivot->quantity . 'x)'
+                                    : $serial->serial_number;
+                            })->toArray();
+                        @endphp
                         <tr>
                             <td class="text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
                             <td>{{ $item->itemable->sku ?? '-' }}</td>
                             <td>{{ str_replace('⌀', 'Ø', $item->itemable->name ?? $item->description) }}</td>
+                            @if($hasSerialNumbers)
+                            <td style="font-size: 7pt;">{{ implode(', ', $serials) ?: '-' }}</td>
+                            @endif
                             @if($hasWeight)
                             <td class="text-right" style="padding-right: 10px;">{{ $lineWeight ? number_format($lineWeight, 1, ',', '.') . ' kg' : '-' }}</td>
                             @endif
@@ -409,14 +431,14 @@
                 @endforeach
                 @if(!$hasItems)
                 <tr>
-                    <td colspan="{{ $hasWeight ? 4 : 3 }}" class="text-center" style="padding: 25px;">Geen materialen beschikbaar</td>
+                    <td colspan="{{ 3 + ($hasSerialNumbers ? 1 : 0) + ($hasWeight ? 1 : 0) }}" class="text-center" style="padding: 25px;">Geen materialen beschikbaar</td>
                 </tr>
                 @endif
             </tbody>
             @if($hasWeight)
             <tfoot>
                 <tr>
-                    <td colspan="3" style="text-align: right;">Totaalgewicht:</td>
+                    <td colspan="{{ 3 + ($hasSerialNumbers ? 1 : 0) }}" style="text-align: right;">Totaalgewicht:</td>
                     <td class="text-right" style="padding-right: 10px;">{{ number_format($totalWeight, 1, ',', '.') }} kg</td>
                 </tr>
             </tfoot>

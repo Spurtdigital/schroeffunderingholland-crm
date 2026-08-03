@@ -9,6 +9,7 @@ use App\Settings\GeneralSettings;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\HtmlString;
 
 class CustomerQuoteNotification extends Notification
@@ -36,6 +37,13 @@ class CustomerQuoteNotification extends Notification
 
         $template = EmailTemplate::getByKey('quote_customer');
 
+        // Generate a signed URL valid for 30 days
+        $viewUrl = URL::signedRoute(
+            'quotes.public.show',
+            ['quote' => $this->quote->id],
+            now()->addDays(30)
+        );
+
         $mail = (new MailMessage);
 
         if ($template) {
@@ -44,17 +52,21 @@ class CustomerQuoteNotification extends Notification
                 'offerte_nummer' => $displayNumber,
                 'totaal' => '€ '.number_format($this->quote->total, 2, ',', '.'),
                 'handtekening' => $signature,
+                'bekijk_link' => $viewUrl,
             ]);
 
             $mail->subject($rendered['subject'])
                 ->greeting('Dag '.$greetingName.',')
                 ->line(new HtmlString($rendered['content']))
+                ->action('Offerte bekijken en ondertekenen', $viewUrl)
                 ->salutation('');
         } else {
             $mail->subject('Offerte '.$displayNumber)
                 ->greeting('Dag '.$greetingName.',')
                 ->line('Bijgaand ontvang je onze offerte voor de aangevraagde werkzaamheden.')
                 ->line('Je vindt de offerte als PDF in de bijlage van deze e-mail.')
+                ->action('Offerte bekijken en ondertekenen', $viewUrl)
+                ->line('Via bovenstaande knop kun je de offerte online bekijken en digitaal ondertekenen.')
                 ->line('Heb je vragen over de offerte? Neem dan gerust contact met ons op.')
                 ->salutation($signature);
         }

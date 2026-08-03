@@ -170,7 +170,7 @@ test('quote observer: converted lead status is never downgraded', function () {
     expect($lead->fresh()->status)->toBe(LeadStatus::Converted);
 });
 
-test('approving a quote creates stock reservations for product items', function () {
+test('approving a quote does NOT create stock reservations (reservations happen at project conversion)', function () {
     $product = Product::factory()->create(['stock_quantity' => 10]);
     $quote = Quote::factory()->create(['status' => QuoteStatus::Sent]);
     QuoteItem::factory()->create([
@@ -183,12 +183,12 @@ test('approving a quote creates stock reservations for product items', function 
 
     $quote->update(['status' => QuoteStatus::Approved]);
 
+    // No reservations should be created - they are made when converting to project
     expect(
         StockReservation::where('quote_id', $quote->id)
             ->where('product_id', $product->id)
-            ->where('status', StockReservationStatus::Active)
             ->exists()
-    )->toBeTrue();
+    )->toBeFalse();
 });
 
 test('sending a quote does NOT create stock reservations', function () {
@@ -211,31 +211,8 @@ test('sending a quote does NOT create stock reservations', function () {
     )->toBeFalse();
 });
 
-test('approving a quote does not double-reserve when reservation already exists', function () {
-    $product = Product::factory()->create(['stock_quantity' => 10]);
-    $quote = Quote::factory()->create(['status' => QuoteStatus::Sent]);
-    QuoteItem::factory()->create([
-        'quote_id' => $quote->id,
-        'type' => QuoteItemType::Product,
-        'itemable_type' => Product::class,
-        'itemable_id' => $product->id,
-        'quantity' => 3,
-    ]);
-
-    // Eerste goedkeuring
-    $quote->update(['status' => QuoteStatus::Approved]);
-
-    // Opnieuw Approved zetten mag geen tweede reservering aanmaken
-    $quote->forceFill(['status' => QuoteStatus::Sent])->save();
-    $quote->update(['status' => QuoteStatus::Approved]);
-
-    expect(
-        StockReservation::where('quote_id', $quote->id)
-            ->where('product_id', $product->id)
-            ->where('status', StockReservationStatus::Active)
-            ->count()
-    )->toBe(1);
-});
+// Test verwijderd - voorraad wordt niet meer gereserveerd bij quote goedkeuring
+// Reserveringen worden nu alleen aangemaakt bij conversie naar project
 
 test('quote observer: quote without lead does not throw on status change', function () {
     $quote = Quote::factory()->create([

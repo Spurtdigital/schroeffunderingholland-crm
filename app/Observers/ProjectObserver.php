@@ -18,10 +18,26 @@ class ProjectObserver
         $newStatus = $project->status;
         $oldStatus = $project->getOriginal('status');
 
-        if ($newStatus !== ProjectStatus::Completed || $oldStatus === ProjectStatus::Completed) {
+        // Handle project completion
+        if ($newStatus === ProjectStatus::Completed && $oldStatus !== ProjectStatus::Completed) {
+            $this->handleProjectCompleted($project);
+
             return;
         }
 
+        // Handle project cancellation - release stock reservations
+        if ($newStatus === ProjectStatus::Cancelled && $oldStatus !== ProjectStatus::Cancelled) {
+            $this->handleProjectCancelled($project);
+
+            return;
+        }
+    }
+
+    /**
+     * Handle project completion: consume stock and process returns.
+     */
+    private function handleProjectCompleted(Project $project): void
+    {
         if (! $project->completion_date) {
             $project->completion_date = now()->toDateString();
         }
@@ -31,7 +47,15 @@ class ProjectObserver
             $reservation->consume();
         }
 
-        // 2. Handle returns: items with negative quantity → credit stock back
+        // 2. Consume all reserved serial numbers (reduce quantity)
+        $project->load('items.serialNumbers');
+        foreach ($project->items as $item) {
+            foreach ($item->serialNumbers as $serialNumber) {
+                $serialNumber->consume($item);
+            }
+        }
+
+        // 3. Handle returns: items with negative quantity → credit stock back
         $project->load('items.itemable');
         foreach ($project->items as $item) {
             if (
@@ -52,6 +76,24 @@ class ProjectObserver
     }
 
     /**
+     * Handle project cancellation: release all active stock reservations and serial numbers.
+     */
+    private function handleProjectCancelled(Project $project): void
+    {
+        foreach ($project->stockReservations()->where('status', 'active')->get() as $reservation) {
+            $reservation->release();
+        }
+
+        // Release all reserved serial numbers back to available stock
+        $project->load('items.serialNumbers');
+        foreach ($project->items as $item) {
+            foreach ($item->serialNumbers as $serialNumber) {
+                $serialNumber->release($item);
+            }
+        }
+    }
+
+    /**
      * Handle the Project "deleting" event.
      * Release all active stock reservations before deleting the project.
      */
@@ -60,6 +102,14 @@ class ProjectObserver
         // Release all active stock reservations
         foreach ($project->stockReservations()->where('status', 'active')->get() as $reservation) {
             $reservation->release();
+        }
+
+        // Release all reserved serial numbers
+        $project->load('items.serialNumbers');
+        foreach ($project->items as $item) {
+            foreach ($item->serialNumbers as $serialNumber) {
+                $serialNumber->release($item);
+            }
         }
     }
 }

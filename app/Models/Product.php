@@ -289,6 +289,22 @@ class Product extends Model
     }
 
     /**
+     * Get all serial numbers for this product.
+     */
+    public function serialNumbers(): HasMany
+    {
+        return $this->hasMany(SerialNumber::class);
+    }
+
+    /**
+     * Get available serial numbers (in stock).
+     */
+    public function availableSerialNumbers(): HasMany
+    {
+        return $this->serialNumbers()->where('status', \App\Enums\SerialNumberStatus::InStock);
+    }
+
+    /**
      * Get all purchase order items for this product.
      */
     public function purchaseOrderItems(): HasMany

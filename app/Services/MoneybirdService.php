@@ -291,6 +291,7 @@ class MoneybirdService
                 \App\Enums\InvoiceType::Deposit => "Aanbetaling order {$orderRef}",
                 \App\Enums\InvoiceType::Final => "Order {$orderRef} | eindfactuur",
                 \App\Enums\InvoiceType::Single => "Order {$orderRef}",
+                \App\Enums\InvoiceType::Cancellation => "Annuleringskosten order {$orderRef}",
             };
 
             // Set subject based on invoice type
@@ -298,6 +299,7 @@ class MoneybirdService
                 \App\Enums\InvoiceType::Deposit => "Aanbetaling offerte {$orderRef}",
                 \App\Enums\InvoiceType::Final => "Eindfactuur order {$orderRef}",
                 \App\Enums\InvoiceType::Single => "Factuur order {$orderRef}",
+                \App\Enums\InvoiceType::Cancellation => "Annuleringskosten order {$orderRef}",
             };
 
             // Add percentage to subject if applicable
@@ -318,6 +320,14 @@ class MoneybirdService
                 // Aanbetaling: één samenvattingsregel
                 $detail = $moneybird->salesInvoiceDetail();
                 $detail->description = $subject;
+                $detail->price = (string) round($invoice->subtotal, 2);
+                $detail->amount = '1';
+                $detail->tax_rate_id = $taxRateId;
+                $details[] = $detail;
+            } elseif ($invoice->invoice_type === \App\Enums\InvoiceType::Cancellation) {
+                // Annuleringskosten: één regel met omschrijving uit notes
+                $detail = $moneybird->salesInvoiceDetail();
+                $detail->description = $invoice->notes ?? $subject;
                 $detail->price = (string) round($invoice->subtotal, 2);
                 $detail->amount = '1';
                 $detail->tax_rate_id = $taxRateId;
@@ -676,15 +686,9 @@ class MoneybirdService
             }
 
             // Travel costs as description line if applicable
-            if ($quote->travel_distance && $quote->travel_total) {
-                $originAddress = trim($this->settings->company_address ?? '');
-                $destAddress = trim(str_replace("\n", ', ', $quote->workFullAddress() ?? ''));
-                $travelDesc = $originAddress && $destAddress
-                    ? "Reiskosten: {$originAddress} → {$destAddress} en retour ({$quote->travel_distance} km × 2)"
-                    : "Reiskosten ({$quote->travel_distance} km)";
-
+            if ($quote->travel_total) {
                 $detail = $moneybird->salesInvoiceDetail();
-                $detail->description = $travelDesc;
+                $detail->description = 'Voorrijkosten';
                 $detail->amount = '1';
                 $details[] = $detail;
             }
@@ -729,6 +733,17 @@ class MoneybirdService
         }
 
         $parts[] = $item->description;
+
+        // Append serial numbers with quantities if available
+        $serialNumbers = $item->serialNumbers;
+        if ($serialNumbers->isNotEmpty()) {
+            $serialParts = $serialNumbers->map(function ($serial) {
+                return $serial->pivot->quantity > 1
+                    ? "{$serial->serial_number} ({$serial->pivot->quantity}x)"
+                    : $serial->serial_number;
+            })->toArray();
+            $parts[] = 'S/N: '.implode(', ', $serialParts);
+        }
 
         return implode("\n", $parts);
     }

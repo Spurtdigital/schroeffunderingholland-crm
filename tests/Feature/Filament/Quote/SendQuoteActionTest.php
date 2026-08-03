@@ -108,18 +108,16 @@ test('send quote action: sends customer quote email to entered address', functio
     });
 });
 
-test('customer quote email contains quote pdf attachment and no crm action link', function () {
+test('customer quote email contains signed URL action link for viewing and signing', function () {
     $quote = Quote::factory()->create(['status' => QuoteStatus::Draft]);
     QuoteItem::factory()->create(['quote_id' => $quote->id]);
 
     $mail = (new CustomerQuoteNotification($quote, 'Jan Jansen'))->toMail(new stdClass());
 
     expect($mail->subject)->toBe('Offerte '.($quote->displayNumber() ?? 'Concept'))
-        ->and($mail->actionText)->toBeNull()
-        ->and($mail->rawAttachments)->toHaveCount(1)
-        ->and($mail->rawAttachments[0]['name'])->toBe(app(\App\Services\PdfService::class)->getQuotePdfFilename($quote))
-        ->and($mail->rawAttachments[0]['options']['mime'])->toBe('application/pdf')
-        ->and($mail->rawAttachments[0]['data'])->not->toBe('');
+        ->and($mail->actionText)->toBe('Offerte bekijken en ondertekenen')
+        ->and($mail->actionUrl)->toContain('/offerte/'.$quote->id)
+        ->and($mail->actionUrl)->toContain('signature=');
 });
 
 test('resend quote action sends customer email without changing status or stock reservations', function () {

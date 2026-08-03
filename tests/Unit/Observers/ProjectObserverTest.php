@@ -198,3 +198,76 @@ test('deleting a project does not affect already consumed reservations', functio
     
     expect($releaseMutations)->toBe(0);
 });
+
+// ─── Cancellation stock release ──────────────────────────────────────────────
+
+test('cancelling a project releases all active stock reservations', function () {
+    $product = Product::factory()->create(['stock_quantity' => 20]);
+    $quote = Quote::factory()->create();
+    $project = Project::factory()->for($quote)->create(['status' => ProjectStatus::Active]);
+
+    $reservation1 = StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 3,
+        'status' => StockReservationStatus::Active,
+    ]);
+    $reservation2 = StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 5,
+        'status' => StockReservationStatus::Active,
+    ]);
+
+    $project->update(['status' => ProjectStatus::Cancelled]);
+
+    expect($reservation1->fresh()->status)->toBe(StockReservationStatus::Released)
+        ->and($reservation2->fresh()->status)->toBe(StockReservationStatus::Released);
+});
+
+test('cancelling a project does not consume stock', function () {
+    $product = Product::factory()->create(['stock_quantity' => 20]);
+    $quote = Quote::factory()->create();
+    $project = Project::factory()->for($quote)->create(['status' => ProjectStatus::Active]);
+
+    StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 5,
+        'status' => StockReservationStatus::Active,
+    ]);
+
+    $project->update(['status' => ProjectStatus::Cancelled]);
+
+    // Stock should remain unchanged (not consumed, only released)
+    expect($product->fresh()->stock_quantity)->toBe(20);
+});
+
+test('cancelling an already cancelled project does not double-release', function () {
+    $product = Product::factory()->create(['stock_quantity' => 20]);
+    $quote = Quote::factory()->create();
+    $project = Project::factory()->for($quote)->create(['status' => ProjectStatus::Active]);
+
+    StockReservation::factory()->create([
+        'product_id' => $product->id,
+        'project_id' => $project->id,
+        'quantity' => 5,
+        'status' => StockReservationStatus::Active,
+    ]);
+
+    // Cancel once
+    $project->update(['status' => ProjectStatus::Cancelled]);
+
+    $releaseMutationsAfterFirst = $product->stockMutations()
+        ->where('type', \App\Enums\StockMutationType::Released)
+        ->count();
+
+    // Update again while still Cancelled
+    $project->update(['notes' => 'Updated note']);
+
+    $releaseMutationsAfterSecond = $product->stockMutations()
+        ->where('type', \App\Enums\StockMutationType::Released)
+        ->count();
+
+    expect($releaseMutationsAfterSecond)->toBe($releaseMutationsAfterFirst);
+});

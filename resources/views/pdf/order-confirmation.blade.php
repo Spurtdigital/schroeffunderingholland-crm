@@ -464,9 +464,9 @@
                 </tr>
                 @endif
                 @endforeach
-                @if($quote->travel_distance && $quote->travel_total)
+                @if($quote->travel_total)
                 <tr>
-                    <td>Reiskosten ({{ number_format($quote->travel_distance, 0, ',', '.') }} km &times; &euro;&nbsp;{{ number_format($quote->travel_cost_per_km, 2, ',', '.') }})</td>
+                    <td>Voorrijkosten</td>
                     <td class="text-center">1</td>
                     @if($quote->show_item_breakdown)
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
@@ -491,7 +491,7 @@
                 </tr>
                 @if($quote->travel_total)
                 <tr>
-                    <td>Reiskosten:</td>
+                    <td>Voorrijkosten:</td>
                     <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
                 @endif

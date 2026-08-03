@@ -59,6 +59,20 @@ class QuoteInfolist
                                 ->label('Verzonden op')
                                 ->dateTime('d-m-Y H:i')
                                 ->placeholder('-'),
+
+                            TextEntry::make('signed_info')
+                                ->label('Ondertekend')
+                                ->state(function ($record) {
+                                    if (!$record->signed_at) {
+                                        return null;
+                                    }
+                                    return $record->signed_by_name . ' op ' . $record->signed_at->format('d-m-Y H:i');
+                                })
+                                ->icon(fn ($record) => $record->signed_at ? 'heroicon-o-check-badge' : null)
+                                ->color(fn ($record) => $record->signed_at ? 'success' : null)
+                                ->placeholder('-')
+                                ->hintIcon(fn ($record) => $record->signed_ip ? 'heroicon-o-information-circle' : null)
+                                ->hintIconTooltip(fn ($record) => $record->signed_ip ? 'IP-adres: ' . $record->signed_ip : null),
                         ])->columns(2),
 
                         // ── Blok 2: Financieel overzicht ───────────────────────
