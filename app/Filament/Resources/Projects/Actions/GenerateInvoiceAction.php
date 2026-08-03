@@ -90,6 +90,11 @@ class GenerateInvoiceAction extends Action
                     ->rows(3)
                     ->placeholder('Eventuele opmerkingen voor deze factuur...'),
 
+                Forms\Components\Toggle::make('include_terms')
+                    ->label('Betalingsvoorwaarden opnemen')
+                    ->default(true)
+                    ->helperText('Toon de betalingsvoorwaarden onderaan de factuur PDF'),
+
                 Forms\Components\Toggle::make('send_to_moneybird')
                     ->label('Direct naar Moneybird sturen')
                     ->default(true)
@@ -184,6 +189,7 @@ class GenerateInvoiceAction extends Action
                 'total' => round($total, 2),
                 'status' => InvoiceStatus::Draft,
                 'notes' => $notes,
+                'include_terms' => $data['include_terms'] ?? true,
                 'deposit_percentage' => $data['invoice_type_choice'] === 'second' ? null : $percentage,
             ]);
 

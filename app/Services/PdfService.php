@@ -44,7 +44,7 @@ class PdfService
     public function generateInvoicePdf(Invoice $invoice, bool $download = false): \Illuminate\Http\Response
     {
         $pdf = Pdf::loadView('pdf.invoice', [
-            'invoice' => $invoice->load(['project.company', 'project.quote.items']),
+            'invoice' => $invoice->load(['project.company', 'project.quote.items', 'project.quote.paymentTerm']),
             'settings' => $this->settings,
         ]);
 
@@ -79,7 +79,7 @@ class PdfService
     public function saveInvoicePdf(Invoice $invoice): string
     {
         $pdf = Pdf::loadView('pdf.invoice', [
-            'invoice' => $invoice->load(['project.company', 'project.quote.items']),
+            'invoice' => $invoice->load(['project.company', 'project.quote.items', 'project.quote.paymentTerm']),
             'settings' => $this->settings,
         ]);
 

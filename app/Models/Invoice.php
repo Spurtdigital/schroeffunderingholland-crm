@@ -25,6 +25,7 @@ class Invoice extends Model
         'vat_amount',
         'total',
         'notes',
+        'include_terms',
         'deposit_percentage',
         'moneybird_invoice_id',
         'sent_at',
@@ -40,6 +41,7 @@ class Invoice extends Model
         'vat_amount' => 'decimal:2',
         'total' => 'decimal:2',
         'deposit_percentage' => 'decimal:2',
+        'include_terms' => 'boolean',
         'sent_at' => 'datetime',
         'paid_at' => 'datetime',
     ];
