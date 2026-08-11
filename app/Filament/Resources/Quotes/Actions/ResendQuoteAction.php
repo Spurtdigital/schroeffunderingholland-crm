@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes\Actions;
 use App\Enums\QuoteStatus;
 use App\Notifications\CustomerQuoteNotification;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
@@ -45,6 +46,12 @@ class ResendQuoteAction extends Action
                 ->default($record->company?->email)
                 ->required()
                 ->maxLength(255),
+
+            Textarea::make('custom_message')
+                ->label('Eigen mailtekst (optioneel)')
+                ->helperText('Laat leeg om de standaard e-mailtekst te gebruiken. Vul hier een eigen tekst in om de standaard body te vervangen.')
+                ->rows(4)
+                ->maxLength(5000),
         ]);
 
         $this->visible(fn (Model $record): bool => in_array($record->status, [
@@ -55,7 +62,7 @@ class ResendQuoteAction extends Action
 
         $this->action(function (Model $record, array $data) {
             NotificationFacade::route('mail', $data['email'])->notify(
-                new CustomerQuoteNotification($record->fresh(), $data['contact_person'] ?? null)
+                new CustomerQuoteNotification($record->fresh(), $data['contact_person'] ?? null, $data['custom_message'] ?? null)
             );
 
             Notification::make()

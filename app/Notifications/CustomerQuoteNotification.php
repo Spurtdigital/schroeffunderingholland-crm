@@ -17,6 +17,7 @@ class CustomerQuoteNotification extends Notification
     public function __construct(
         public Quote $quote,
         public ?string $contactPerson = null,
+        public ?string $customMessage = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -46,7 +47,14 @@ class CustomerQuoteNotification extends Notification
 
         $mail = (new MailMessage);
 
-        if ($template) {
+        if ($this->customMessage) {
+            // Use the custom message provided by the user
+            $mail->subject('Offerte '.$displayNumber)
+                ->greeting('Dag '.$greetingName.',')
+                ->line(new HtmlString(nl2br(e($this->customMessage))))
+                ->action('Offerte bekijken en ondertekenen', $viewUrl)
+                ->salutation($signature);
+        } elseif ($template) {
             $rendered = $template->renderToHtml([
                 'klant_naam' => $greetingName,
                 'offerte_nummer' => $displayNumber,

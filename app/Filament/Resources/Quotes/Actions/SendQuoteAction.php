@@ -9,7 +9,9 @@ use App\Notifications\CustomerQuoteNotification;
 use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -52,6 +54,12 @@ class SendQuoteAction extends Action
                 ->required()
                 ->maxLength(255),
 
+            Textarea::make('custom_message')
+                ->label('Eigen mailtekst (optioneel)')
+                ->helperText('Laat leeg om de standaard e-mailtekst te gebruiken. Vul hier een eigen tekst in om de standaard body te vervangen.')
+                ->rows(4)
+                ->maxLength(5000),
+
             Section::make('Offerte-aannames')
                 ->description('Selecteer de aannames die van toepassing zijn op deze offerte. Ze worden als bullet-lijst opgenomen in de offerte.')
                 ->schema(function () use ($record) {
@@ -92,6 +100,12 @@ class SendQuoteAction extends Action
                         ->toArray();
 
                     $components = [
+                        Toggle::make('show_assumptions')
+                            ->label('Toon uitgangspunten op offerte PDF')
+                            ->default($record->show_assumptions ?? true)
+                            ->live()
+                            ->helperText('Zet dit uit om de uitgangspunten/aannames niet op de offerte te tonen'),
+
                         CheckboxList::make('assumption_ids')
                             ->label('')
                             ->options(fn () => QuoteAssumption::where('active', true)
@@ -100,7 +114,8 @@ class SendQuoteAction extends Action
                                 ->toArray())
                             ->default($defaultIds)
                             ->columns(1)
-                            ->live(),
+                            ->live()
+                            ->visible(fn (Get $get) => $get('show_assumptions') !== false),
                     ];
 
                     foreach ($variableAssumptions as $assumption) {
@@ -109,8 +124,8 @@ class SendQuoteAction extends Action
                             ->suffix($assumption->variable_input_suffix)
                             ->default($pivotValues[$assumption->id] ?? null)
                             ->placeholder('bijv. 3,5')
-                            ->visible(fn (Get $get) => in_array($assumption->id, (array) ($get('assumption_ids') ?? [])))
-                            ->required(fn (Get $get) => in_array($assumption->id, (array) ($get('assumption_ids') ?? [])));
+                            ->visible(fn (Get $get) => $get('show_assumptions') !== false && in_array($assumption->id, (array) ($get('assumption_ids') ?? [])))
+                            ->required(fn (Get $get) => $get('show_assumptions') !== false && in_array($assumption->id, (array) ($get('assumption_ids') ?? [])));
                     }
 
                     return $components;
@@ -131,13 +146,15 @@ class SendQuoteAction extends Action
                 return;
             }
 
-            // Sync selected assumptions with pivot values
-            $syncData = [];
-            foreach ($data['assumption_ids'] ?? [] as $assumptionId) {
-                $pivotValue = $data["assumption_value_{$assumptionId}"] ?? null;
-                $syncData[$assumptionId] = ['pivot_value' => $pivotValue];
+            // Sync selected assumptions with pivot values (only if show_assumptions is true)
+            if ($data['show_assumptions'] ?? true) {
+                $syncData = [];
+                foreach ($data['assumption_ids'] ?? [] as $assumptionId) {
+                    $pivotValue = $data["assumption_value_{$assumptionId}"] ?? null;
+                    $syncData[$assumptionId] = ['pivot_value' => $pivotValue];
+                }
+                $record->assumptions()->sync($syncData);
             }
-            $record->assumptions()->sync($syncData);
 
             // Genereer lokaal offertenummer als Moneybird uitgeschakeld is en het nog een CONCEPT is
             $settings = app(GeneralSettings::class);
@@ -148,13 +165,14 @@ class SendQuoteAction extends Action
 
             // Update quote status
             $record->update([
-                'status'       => QuoteStatus::Sent,
-                'sent_at'      => now(),
-                'quote_number' => $quoteNumber,
+                'status'           => QuoteStatus::Sent,
+                'sent_at'          => now(),
+                'quote_number'     => $quoteNumber,
+                'show_assumptions' => $data['show_assumptions'] ?? true,
             ]);
 
             NotificationFacade::route('mail', $data['email'])->notify(
-                new CustomerQuoteNotification($record->fresh(), $data['contact_person'] ?? null)
+                new CustomerQuoteNotification($record->fresh(), $data['contact_person'] ?? null, $data['custom_message'] ?? null)
             );
 
             Notification::make()
