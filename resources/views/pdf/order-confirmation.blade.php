@@ -43,7 +43,7 @@
             font-weight: bold;
             src: url("{{ public_path('fonts/montserrat/Montserrat-Bold.ttf') }}") format('truetype');
         }
-        @page {
+        @@page {
             margin: 0;
             size: A4 portrait;
         }
@@ -52,19 +52,34 @@
             padding: 0;
             box-sizing: border-box;
         }
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Montserrat', sans-serif;
             font-size: 9pt;
             color: #000;
             line-height: 1.3;
-            background-color: #fff;
+            padding-top: 15mm;
+        }
+
+        /* Achtergrond via position:fixed — herhaalt op elke pagina, vult volledig papier */
+        .page-bg-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 210mm;
+            height: 297mm;
             background-image: url("{{ $bgBase64 }}");
-            background-size: 100% 100%;
+            background-size: 210mm 297mm;
             background-repeat: no-repeat;
+            z-index: -1;
         }
 
         /* ===================== HEADER ===================== */
         .header {
+            margin-top: -15mm; /* Compenseer body padding-top op eerste pagina */
             padding: 8.5mm 15mm 8mm 20mm;
         }
         .header-table {
@@ -172,10 +187,26 @@
         /* Items tabel */
         .items-section {
             margin-bottom: 14px;
+            page-break-before: always;
         }
         .items-table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 0;
+        }
+        .items-table + .items-table {
+            margin-top: 0;
+        }
+        .items-table + .items-table th {
+            border-top: none;
+        }
+        /* Tabelrijen bij elkaar houden */
+        .items-table tr {
+            page-break-inside: avoid;
+        }
+        /* Minimaal 3 rijen op een pagina voor page-break */
+        .items-table tbody {
+            orphans: 3;
         }
         .items-table th {
             color: #000;
@@ -251,6 +282,7 @@
         .totals-container,
         .notes-section,
         .pre-text-section,
+        .payment-section,
         .payment-term-section {
             page-break-inside: avoid;
         }
@@ -317,6 +349,8 @@
     </style>
 </head>
 <body>
+
+<div class="page-bg-fixed"></div>
 
 <!-- Header: logo links, bedrijfs-NAW rechts boven -->
 <div class="header">
@@ -397,9 +431,9 @@
                 @if($quote?->machine)
                 <tr><td class="lbl">Machine:</td><td>{{ $quote->machine->name }}</td></tr>
                 @endif
-                @php $werklocatie = $quote?->workFullAddress(); @endphp
+                @php $werklocatie = $quote?->workAddressLines(); @endphp
                 @if($werklocatie)
-                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e(implode("\n", $werklocatie))) !!}</td></tr>
                 @elseif($quote?->lead?->project_description)
                 <tr><td class="lbl">Project:</td><td>{{ $quote->lead->project_description }}</td></tr>
                 @endif
@@ -423,7 +457,7 @@
     @endif
 
     <!-- Voorwaarden (aannames van de offerte) -->
-    @if($quote && $quote->assumptions->isNotEmpty())
+    @if($quote && $quote->show_assumptions !== false && $quote->assumptions->isNotEmpty())
     <div class="assumptions-section">
         <ul>
             @foreach($quote->assumptions->sortBy('sort_order') as $assumption)
@@ -435,8 +469,16 @@
 
     <!-- Items Tabel -->
     @if($quote && $quote->items->count())
+    @php
+        $filteredItems = $quote->items->filter(fn($i) => !($i->type === \App\Enums\QuoteItemType::Discount || $i->type === \App\Enums\QuoteItemType::Adjustment));
+        $totalItems = $filteredItems->count();
+        $firstChunkSize = max(3, (int) ceil($totalItems * 0.5));
+        $firstChunk = $filteredItems->take($firstChunkSize);
+        $remainingItems = $filteredItems->skip($firstChunkSize);
+    @endphp
     <div class="items-section">
-        <table class="items-table">
+        {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
+        <table class="items-table" style="page-break-inside: avoid;">
             <thead>
                 <tr>
                     <th style="width: {{ $quote->show_item_breakdown ? '50%' : '75%' }};">Omschrijving</th>
@@ -448,12 +490,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($quote->items as $item)
-                @php
-                    $isPriceLine = $item->type === \App\Enums\QuoteItemType::Discount
-                                || $item->type === \App\Enums\QuoteItemType::Adjustment;
-                @endphp
-                @if(!$isPriceLine)
+                @foreach($firstChunk as $item)
                 <tr>
                     <td>{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
                     <td class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
@@ -462,20 +499,41 @@
                     <td class="text-right">&euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }}</td>
                     @endif
                 </tr>
-                @endif
                 @endforeach
-                @if($quote->travel_total)
-                <tr>
-                    <td>Voorrijkosten</td>
-                    <td class="text-center">1</td>
-                    @if($quote->show_item_breakdown)
-                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
-                    <td class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
-                    @endif
-                </tr>
-                @endif
             </tbody>
         </table>
+        {{-- Overige items in aparte tabellen --}}
+        @foreach($remainingItems->chunk(5) as $chunk)
+        <table class="items-table" style="page-break-inside: avoid; border-top: none;">
+            <tbody>
+                @foreach($chunk as $item)
+                <tr>
+                    <td style="width: {{ $quote->show_item_breakdown ? '50%' : '75%' }};">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}</td>
+                    <td style="width: 15%;" class="text-center">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                    @if($quote->show_item_breakdown)
+                    <td style="width: 20%;" class="text-right">&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}</td>
+                    <td style="width: 15%;" class="text-right">&euro;&nbsp;{{ number_format($item->total, 2, ',', '.') }}</td>
+                    @endif
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endforeach
+        {{-- Voorrijkosten als aparte tabel --}}
+        @if($quote->travel_total)
+        <table class="items-table" style="border-top: none;">
+            <tbody>
+                <tr>
+                    <td style="width: {{ $quote->show_item_breakdown ? '50%' : '75%' }};">Voorrijkosten</td>
+                    <td style="width: 15%;" class="text-center">1</td>
+                    @if($quote->show_item_breakdown)
+                    <td style="width: 20%;" class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+                    <td style="width: 15%;" class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
+                    @endif
+                </tr>
+            </tbody>
+        </table>
+        @endif
     </div>
     @endif
 
