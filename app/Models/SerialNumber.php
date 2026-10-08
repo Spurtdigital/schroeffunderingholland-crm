@@ -57,6 +57,34 @@ class SerialNumber extends Model
     }
 
     /**
+     * Get the locations (projects/customers) this serial number is linked to,
+     * grouped per project. Used to trace where the product was delivered.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function deliveryLocations(): array
+    {
+        return $this->projectItems
+            ->groupBy('project_id')
+            ->map(function ($items) {
+                $project = $items->first()->project;
+
+                return [
+                    'project_id' => $project?->id,
+                    'project_number' => $project?->project_number,
+                    'company_id' => $project?->company_id,
+                    'company' => $project?->company?->name,
+                    'quantity' => (int) $items->sum(fn ($item) => (int) $item->pivot->quantity),
+                    'status' => $project?->status,
+                    'completion_date' => $project?->completion_date,
+                ];
+            })
+            ->sortByDesc('quantity')
+            ->values()
+            ->all();
+    }
+
+    /**
      * Check if there's available stock.
      */
     public function hasAvailableStock(): bool
@@ -88,7 +116,7 @@ class SerialNumber extends Model
     public function release(ProjectItem $projectItem): void
     {
         $pivotRecord = $this->projectItems()->where('project_item_id', $projectItem->id)->first();
-        
+
         if ($pivotRecord) {
             $reservedQty = $pivotRecord->pivot->quantity;
             $this->decrement('quantity_reserved', $reservedQty);
@@ -103,7 +131,7 @@ class SerialNumber extends Model
     public function consume(ProjectItem $projectItem): void
     {
         $pivotRecord = $this->projectItems()->where('project_item_id', $projectItem->id)->first();
-        
+
         if ($pivotRecord) {
             $consumedQty = $pivotRecord->pivot->quantity;
             $this->decrement('quantity', $consumedQty);

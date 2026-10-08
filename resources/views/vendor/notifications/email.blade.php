@@ -37,7 +37,7 @@
 
 {{-- Salutation - only show if explicitly set and not whitespace-only --}}
 @if (isset($salutation) && trim($salutation) !== '')
-{{ $salutation }}
+{!! nl2br(e($salutation)) !!}
 @endif
 
 {{-- Subcopy --}}

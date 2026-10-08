@@ -61,13 +61,12 @@ class ProductForm
                                     ->preload()
                                     ->required()
                                     ->placeholder('Selecteer leverancier...')
-                                    ->columnSpan(2),
+                                    ->columnSpanFull(),
 
                                 TextInput::make('supplier_sku')
                                     ->label('Art.nr. leverancier')
                                     ->maxLength(100)
-                                    ->placeholder('bijv. SFH-001')
-                                    ->columnSpan(1),
+                                    ->placeholder('bijv. SFH-001'),
 
                                 TextInput::make('purchase_price')
                                     ->label('Inkoopprijs')
@@ -75,15 +74,13 @@ class ProductForm
                                     ->prefix('€')
                                     ->step('0.01')
                                     ->required()
-                                    ->minValue(0)
-                                    ->columnSpan(1),
+                                    ->minValue(0),
 
                                 Toggle::make('is_preferred')
                                     ->label('Voorkeur')
-                                    ->inline(false)
-                                    ->columnSpan(1),
+                                    ->inline(false),
                             ])
-                            ->columns(5)
+                            ->columns(3)
                             ->addActionLabel('Leverancier toevoegen')
                             ->defaultItems(0)
                             ->reorderable(false)

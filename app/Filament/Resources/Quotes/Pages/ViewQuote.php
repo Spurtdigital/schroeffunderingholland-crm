@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Quotes\Pages;
 
 use App\Filament\Resources\Quotes\Actions\ApproveQuoteAction;
 use App\Filament\Resources\Quotes\Actions\ConvertToProjectAction;
+use App\Filament\Resources\Quotes\Actions\DuplicateQuoteAction;
 use App\Filament\Resources\Quotes\Actions\GeneratePdfAction;
 use App\Filament\Resources\Quotes\Actions\ResendQuoteAction;
 use App\Filament\Resources\Quotes\Actions\SendQuoteAction;
@@ -64,7 +65,7 @@ class ViewQuote extends ViewRecord
             ApproveQuoteAction::make(),
             ConvertToProjectAction::make(),
 
-            // PDF dropdown
+            // Documenten dropdown
             ActionGroup::make([
                 GeneratePdfAction::make(),
 
@@ -76,13 +77,14 @@ class ViewQuote extends ViewRecord
                         $this->refreshFormData(['show_item_breakdown']);
                     }),
             ])
-                ->label('PDF')
+                ->label('Documenten')
                 ->icon('heroicon-o-document-text')
                 ->color('info')
                 ->button(),
 
-            // Snel bewerken dropdown
+            // Meer dropdown: dupliceren, snel bewerken en instellingen
             ActionGroup::make([
+                DuplicateQuoteAction::make(),
                 Action::make('editTexts')
                     ->label('Teksten bewerken')
                     ->icon('heroicon-o-document-text')
@@ -188,14 +190,6 @@ class ViewQuote extends ViewRecord
                         $this->refreshFormData(['travel_distance', 'travel_cost_per_km', 'travel_total', 'subtotal', 'vat_amount', 'total']);
                         Notification::make()->success()->title('Reiskosten opgeslagen')->send();
                     }),
-            ])
-                ->label('Snel bewerken')
-                ->icon('heroicon-o-pencil-square')
-                ->color('warning')
-                ->button(),
-
-            // Instellingen dropdown
-            ActionGroup::make([
                 Action::make('editWorkAddress')
                     ->label('Werkadres & machine')
                     ->icon('heroicon-o-map-pin')
@@ -263,8 +257,8 @@ class ViewQuote extends ViewRecord
                         $this->refreshFormData(['machine_id', 'work_address_different', 'work_street', 'work_house_number', 'work_postal_code', 'work_city']);
                     }),
             ])
-                ->label('Instellingen')
-                ->icon('heroicon-o-cog-6-tooth')
+                ->label('Meer')
+                ->icon('heroicon-o-ellipsis-horizontal')
                 ->color('gray')
                 ->button(),
 

@@ -189,7 +189,7 @@ Schroeffundering Holland",
         ];
 
         foreach ($templates as $template) {
-            EmailTemplate::updateOrCreate(
+            EmailTemplate::firstOrCreate(
                 ['key' => $template['key']],
                 $template
             );

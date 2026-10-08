@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Models\Company;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Project;
@@ -124,6 +125,20 @@ class FilamentResourcesLoadTest extends TestCase
         $response = $this->get('/admin/companies');
 
         $response->assertStatus(200);
+    }
+
+    #[Test]
+    public function company_view_page_loads_without_errors(): void
+    {
+        $this->actingAs(User::first());
+
+        $company = Company::first();
+
+        $response = $this->get("/admin/companies/{$company->id}");
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Whoops');
+        $response->assertDontSee('Exception');
     }
 
     #[Test]

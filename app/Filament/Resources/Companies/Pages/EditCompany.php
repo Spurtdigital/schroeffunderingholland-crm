@@ -13,6 +13,11 @@ class EditCompany extends EditRecord
 {
     protected static string $resource = CompanyResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('view', ['record' => $this->getRecord()]);
+    }
+
     /**
      * Automatically sync to Moneybird after saving
      */

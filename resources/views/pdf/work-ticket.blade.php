@@ -50,7 +50,7 @@
         }
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             background-color: #fff;
@@ -332,9 +332,9 @@
                 @if($project->quote?->machine)
                 <tr><td class="lbl">Machine:</td><td>{{ $project->quote->machine->name }}</td></tr>
                 @endif
-                @php $werklocatie = $project->quote?->workFullAddress(); @endphp
+                @php $werklocatie = $project->quote?->workAddressLines(); @endphp
                 @if($werklocatie)
-                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e(implode("\n", $werklocatie))) !!}</td></tr>
                 @endif
             </table>
         </div>
@@ -348,9 +348,9 @@
         <table class="materials-table">
             <thead>
                 <tr>
-                    <th style="width: 10%;">Aantal</th>
-                    <th style="width: 18%;">Artikelnummer</th>
-                    <th style="width: 57%;">Omschrijving</th>
+                    <th style="width: 8%;">Aantal</th>
+                    <th style="width: 22%;">Artikelnummer</th>
+                    <th style="width: 55%;">Omschrijving</th>
                     <th style="width: 15%;" class="text-center">Geleverd / Gereed</th>
                 </tr>
             </thead>

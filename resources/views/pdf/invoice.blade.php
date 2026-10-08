@@ -60,7 +60,7 @@
         }
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             background-color: #fff;

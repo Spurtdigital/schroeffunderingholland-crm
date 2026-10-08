@@ -52,7 +52,7 @@
         }
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             background-color: #fff;
@@ -356,9 +356,9 @@
                 @if($project->quote?->machine)
                 <tr><td class="lbl">Machine:</td><td>{{ $project->quote->machine->name }}</td></tr>
                 @endif
-                @php $werklocatie = $project->quote?->workFullAddress(); @endphp
+                @php $werklocatie = $project->quote?->workAddressLines(); @endphp
                 @if($werklocatie)
-                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e(implode("\n", $werklocatie))) !!}</td></tr>
                 @endif
             </table>
         </div>
@@ -386,16 +386,16 @@
             }
         @endphp
         @php 
-            $descWidth = '47%';
-            if (!$hasWeight && !$hasSerialNumbers) $descWidth = '58%';
-            elseif (!$hasWeight || !$hasSerialNumbers) $descWidth = '47%';
-            else $descWidth = '32%';
+            $descWidth = '45%';
+            if (!$hasWeight && !$hasSerialNumbers) $descWidth = '56%';
+            elseif (!$hasWeight || !$hasSerialNumbers) $descWidth = '45%';
+            else $descWidth = '30%';
         @endphp
         <table class="materials-table">
             <thead>
                 <tr>
-                    <th style="width: 9%;">Aantal</th>
-                    <th style="width: 16%;">Artikelnummer</th>
+                    <th style="width: 8%;">Aantal</th>
+                    <th style="width: 20%;">Artikelnummer</th>
                     <th style="width: {{ $descWidth }};">Omschrijving</th>
                     @if($hasSerialNumbers)
                     <th style="width: 15%;">Serienummer(s)</th>

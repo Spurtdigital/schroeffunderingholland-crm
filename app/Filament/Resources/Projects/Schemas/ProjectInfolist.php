@@ -79,7 +79,7 @@ class ProjectInfolist
                                     ->label('Bedrijf')
                                     ->weight('bold')
                                     ->url(fn ($record) => $record->company
-                                        ? route('filament.admin.resources.companies.edit', ['record' => $record->company_id])
+                                        ? route('filament.admin.resources.companies.view', ['record' => $record->company_id])
                                         : null
                                     )
                                     ->openUrlInNewTab(),

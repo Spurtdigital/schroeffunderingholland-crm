@@ -184,6 +184,40 @@ test('convert to project action: stores invoicing type on project', function () 
     expect($project->invoicing_type)->toBe(InvoicingType::Split5050);
 });
 
+test('convert to project action: keeps an active stock reservation for product items', function () {
+    $product = Product::first();
+    $quote = Quote::factory()->approved()->create();
+
+    QuoteItem::factory()->create([
+        'quote_id' => $quote->id,
+        'itemable_type' => Product::class,
+        'itemable_id' => $product->id,
+        'type' => QuoteItemType::Product,
+        'description' => 'Test product',
+        'quantity' => 5,
+        'unit_price' => 100.00,
+        'total' => 500.00,
+    ]);
+
+    Livewire::actingAs(User::first())
+        ->test(ViewQuote::class, ['record' => $quote->getRouteKey()])
+        ->callAction('convertToProject', data: [
+            'invoicing_type' => InvoicingType::Split5050,
+            'start_date' => null,
+            'expected_completion_date' => now()->addWeeks(2)->format('Y-m-d'),
+            'send_order_confirmation' => false,
+            'notes' => null,
+        ]);
+
+    $project = Project::where('quote_id', $quote->id)->firstOrFail();
+
+    $reservation = $project->stockReservations()->where('product_id', $product->id)->first();
+
+    expect($reservation)->not->toBeNull()
+        ->and($reservation->status)->toBe(\App\Enums\StockReservationStatus::Active)
+        ->and((int) $reservation->quantity)->toBe(5);
+});
+
 test('convert to project action: is only visible for approved quotes', function () {
     $sentQuote = Quote::factory()->sent()->create();
 

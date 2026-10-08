@@ -138,24 +138,14 @@ class GenerateInvoiceAction extends Action
             }
 
             // Calculate amounts
-            if ($data['invoice_type_choice'] === 'second') {
-                // Final invoice: project total (from project items) minus already invoiced
-                $projectSubtotal = $record->items()->sum('total');
-                $projectVat = round($projectSubtotal * 0.21, 2);
-                $projectTotal = round($projectSubtotal + $projectVat, 2);
+            if (in_array($data['invoice_type_choice'], ['second', 'single'])) {
+                // Eindfactuur / volledige factuur: project items (incl. meerwerk,
+                // rekening houdend met minderwerk) minus al gefactureerd
+                $amounts = $record->getFinalInvoiceAmounts();
 
-                $alreadyInvoicedSubtotal = $record->invoices()->sum('subtotal');
-                $alreadyInvoicedVat = $record->invoices()->sum('vat_amount');
-                $alreadyInvoicedTotal = $record->invoices()->sum('total');
-
-                $subtotal = round($projectSubtotal - $alreadyInvoicedSubtotal, 2);
-                $vatAmount = round($projectVat - $alreadyInvoicedVat, 2);
-                $total = round($projectTotal - $alreadyInvoicedTotal, 2);
-
-                // Ensure no negative amounts
-                $subtotal = max(0, $subtotal);
-                $vatAmount = max(0, $vatAmount);
-                $total = max(0, $total);
+                $subtotal = $amounts['subtotal'];
+                $vatAmount = $amounts['vat_amount'];
+                $total = $amounts['total'];
             } else {
                 $subtotal = ($quote->subtotal * $percentage) / 100;
                 $vatAmount = ($quote->vat_amount * $percentage) / 100;

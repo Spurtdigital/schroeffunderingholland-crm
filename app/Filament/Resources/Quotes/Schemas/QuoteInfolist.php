@@ -63,16 +63,17 @@ class QuoteInfolist
                             TextEntry::make('signed_info')
                                 ->label('Ondertekend')
                                 ->state(function ($record) {
-                                    if (!$record->signed_at) {
+                                    if (! $record->signed_at) {
                                         return null;
                                     }
-                                    return $record->signed_by_name . ' op ' . $record->signed_at->format('d-m-Y H:i');
+
+                                    return $record->signed_by_name.' op '.$record->signed_at->format('d-m-Y H:i');
                                 })
                                 ->icon(fn ($record) => $record->signed_at ? 'heroicon-o-check-badge' : null)
                                 ->color(fn ($record) => $record->signed_at ? 'success' : null)
                                 ->placeholder('-')
                                 ->hintIcon(fn ($record) => $record->signed_ip ? 'heroicon-o-information-circle' : null)
-                                ->hintIconTooltip(fn ($record) => $record->signed_ip ? 'IP-adres: ' . $record->signed_ip : null),
+                                ->hintIconTooltip(fn ($record) => $record->signed_ip ? 'IP-adres: '.$record->signed_ip : null),
                         ])->columns(2),
 
                         // ── Blok 2: Financieel overzicht ───────────────────────
@@ -106,9 +107,11 @@ class QuoteInfolist
                                         ->sum(fn ($item) => (float) $item->itemable->purchase_price * (float) $item->quantity);
 
                                     $subtotal = (float) $record->subtotal;
-                                    if ($subtotal <= 0) return null;
+                                    if ($subtotal <= 0) {
+                                        return null;
+                                    }
 
-                                    $margin    = $subtotal - $cost;
+                                    $margin = $subtotal - $cost;
                                     $marginPct = round(($margin / $subtotal) * 100, 1);
 
                                     return '€ '.number_format($margin, 2, ',', '.').' ('.$marginPct.'%)';
@@ -119,14 +122,16 @@ class QuoteInfolist
                                         ->sum(fn ($item) => (float) $item->itemable->purchase_price * (float) $item->quantity);
 
                                     $subtotal = (float) $record->subtotal;
-                                    if ($subtotal <= 0) return null;
+                                    if ($subtotal <= 0) {
+                                        return null;
+                                    }
 
                                     $marginPct = (($subtotal - $cost) / $subtotal) * 100;
 
                                     return match (true) {
                                         $marginPct >= 20 => 'success',
                                         $marginPct >= 10 => 'warning',
-                                        default          => 'danger',
+                                        default => 'danger',
                                     };
                                 })
                                 ->weight('bold'),
@@ -176,15 +181,15 @@ class QuoteInfolist
                                         ->form([
                                             FormTextInput::make('reference')
                                                 ->label('Kenmerk (Moneybird)')
-                                            ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
-                                            ->maxLength(255)
-                                            ->nullable(),
-                                    ])
-                                     ->action(function ($record, array $data, $livewire) {
-                                         $record->update(['reference' => $data['reference']]);
-                                         $livewire->record = $record->fresh();
-                                     })
-                             ),
+                                                ->helperText('Bijv. "Overkapping Markelo" — wordt als kenmerk zichtbaar in Moneybird.')
+                                                ->maxLength(255)
+                                                ->nullable(),
+                                        ])
+                                        ->action(function ($record, array $data, $livewire) {
+                                            $record->update(['reference' => $data['reference']]);
+                                            $livewire->record = $record->fresh();
+                                        })
+                                ),
                         ])->columns(2),
                     ]),
 
@@ -201,10 +206,10 @@ class QuoteInfolist
                             ->collapsible()
                             ->collapsed(fn ($record) => blank($record->notes))
                             ->schema([
-                                TextEntry::make('notes')
-                                    ->label('')
-                                    ->placeholder('Geen opmerkingen')
-                                    ->prose(),
+                                   TextEntry::make('notes')
+                                       ->label('')
+                                       ->placeholder('Geen opmerkingen')
+                                       ->prose(),
                             ]),
 
                         Section::make('Offerte tekst (Moneybird)')
@@ -212,30 +217,30 @@ class QuoteInfolist
                             ->collapsible()
                             ->collapsed()
                             ->schema([
-                                TextEntry::make('pre_text_preview')
-                                    ->label('Aanhef + opening + aannames (pre_text)')
-                                    ->columnSpanFull()
-                                    ->state(function ($record) {
-                                        $service = app(MoneybirdService::class);
+                                   TextEntry::make('pre_text_preview')
+                                       ->label('Aanhef + opening + aannames (pre_text)')
+                                       ->columnSpanFull()
+                                       ->state(function ($record) {
+                                           $service = app(MoneybirdService::class);
 
-                                        return $service->buildPreText($record);
-                                    })
-                                    ->prose()
-                                    ->placeholder('(leeg)')
-                                    ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">leeg</em>')
-                                    ->html(),
+                                           return $service->buildPreText($record);
+                                       })
+                                       ->prose()
+                                       ->placeholder('(leeg)')
+                                       ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">leeg</em>')
+                                       ->html(),
 
-                                TextEntry::make('post_text_preview')
-                                    ->label('Betalingsvoorwaarden + slottekst (post_text)')
-                                    ->columnSpanFull()
-                                    ->state(function ($record) {
-                                        $service = app(MoneybirdService::class);
+                                   TextEntry::make('post_text_preview')
+                                       ->label('Betalingsvoorwaarden + slottekst (post_text)')
+                                       ->columnSpanFull()
+                                       ->state(function ($record) {
+                                           $service = app(MoneybirdService::class);
 
-                                        return $service->buildPostText($record);
-                                    })
-                                    ->placeholder('(leeg)')
-                                    ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">leeg</em>')
-                                    ->html(),
+                                           return $service->buildPostText($record);
+                                       })
+                                       ->placeholder('(leeg)')
+                                       ->formatStateUsing(fn (?string $state) => $state ? nl2br(e($state)) : '<em class="text-gray-400">leeg</em>')
+                                       ->html(),
                             ]),
                     ]),
 
@@ -246,117 +251,117 @@ class QuoteInfolist
                         Section::make('Klant')
                             ->schema([
                                 TextEntry::make('company.name')
-                                    ->label('Bedrijf')
-                                    ->weight('bold')
-                                    ->url(fn ($record) => $record->company
-                                        ? route('filament.admin.resources.companies.edit', ['record' => $record->company_id])
-                                        : null
-                                    )
-                                    ->openUrlInNewTab(),
+                                       ->label('Bedrijf')
+                                       ->weight('bold')
+                                       ->url(fn ($record) => $record->company
+                                           ? route('filament.admin.resources.companies.view', ['record' => $record->company_id])
+                                           : null
+                                       )
+                                       ->openUrlInNewTab(),
 
                                 TextEntry::make('company.contact_person')
-                                    ->label('Contactpersoon')
-                                    ->placeholder('-'),
+                                       ->label('Contactpersoon')
+                                       ->placeholder('-'),
 
                                 TextEntry::make('company_address')
-                                    ->label('Adres')
-                                    ->state(fn ($record) => $record->company
-                                        ? trim(($record->company->street ?? '').' '.($record->company->house_number ?? ''))
-                                        : '-'
-                                    )
-                                    ->placeholder('-'),
+                                       ->label('Adres')
+                                       ->state(fn ($record) => $record->company
+                                           ? trim(($record->company->street ?? '').' '.($record->company->house_number ?? ''))
+                                           : '-'
+                                       )
+                                       ->placeholder('-'),
 
                                 TextEntry::make('company_city')
-                                    ->label('Plaats')
-                                    ->state(fn ($record) => $record->company
-                                        ? trim(($record->company->postal_code ?? '').' '.($record->company->city ?? ''))
-                                        : '-'
-                                    )
-                                    ->placeholder('-'),
+                                       ->label('Plaats')
+                                       ->state(fn ($record) => $record->company
+                                           ? trim(($record->company->postal_code ?? '').' '.($record->company->city ?? ''))
+                                           : '-'
+                                       )
+                                       ->placeholder('-'),
 
                                 TextEntry::make('company.phone')
-                                    ->label('Telefoon')
-                                    ->placeholder('-'),
+                                       ->label('Telefoon')
+                                       ->placeholder('-'),
 
                                 TextEntry::make('company.email')
-                                    ->label('E-mail')
-                                    ->placeholder('-'),
+                                       ->label('E-mail')
+                                       ->placeholder('-'),
                             ]),
 
                         Section::make('Lead & Werklocatie')
                             ->schema([
                                 TextEntry::make('lead.name')
-                                    ->label('Lead')
-                                    ->url(fn ($record) => $record->lead
-                                        ? route('filament.admin.resources.leads.view', ['record' => $record->lead_id])
-                                        : null
-                                    )
-                                    ->openUrlInNewTab()
-                                    ->placeholder('-'),
+                                       ->label('Lead')
+                                       ->url(fn ($record) => $record->lead
+                                           ? route('filament.admin.resources.leads.view', ['record' => $record->lead_id])
+                                           : null
+                                       )
+                                       ->openUrlInNewTab()
+                                       ->placeholder('-'),
 
                                 TextEntry::make('work_address_display')
-                                    ->label('Werklocatie')
-                                    ->state(function ($record) {
-                                        $address = $record->workFullAddress() ?: null;
+                                       ->label('Werklocatie')
+                                       ->state(function ($record) {
+                                           $address = $record->workFullAddress() ?: null;
 
-                                        if (! $address) {
-                                            return null;
-                                        }
+                                           if (! $address) {
+                                               return null;
+                                           }
 
-                                        $service = app(DistanceCalculatorService::class);
-                                        if (! $service->isAvailable()) {
-                                            return $address;
-                                        }
+                                           $service = app(DistanceCalculatorService::class);
+                                           if (! $service->isAvailable()) {
+                                               return $address;
+                                           }
 
-                                        $result = $service->calculateDistance(str_replace("\n", ', ', $address));
-                                        if ($result['success']) {
-                                            return $address.'||'.$result['distance_km'].'||'.$result['duration_text'];
-                                        }
+                                           $result = $service->calculateDistance(str_replace("\n", ', ', $address));
+                                           if ($result['success']) {
+                                               return $address.'||'.$result['distance_km'].'||'.$result['duration_text'];
+                                           }
 
-                                        return $address;
-                                    })
-                                    ->formatStateUsing(function (?string $state): string {
-                                        if (! $state) {
-                                            return '-';
-                                        }
-                                        $parts = explode('||', $state);
-                                        if (count($parts) === 3) {
-                                            return nl2br(e($parts[0])).' <span class="text-gray-500 text-sm font-medium">('.$parts[1].' km)</span>';
-                                        }
+                                           return $address;
+                                       })
+                                       ->formatStateUsing(function (?string $state): string {
+                                           if (! $state) {
+                                               return '-';
+                                           }
+                                           $parts = explode('||', $state);
+                                           if (count($parts) === 3) {
+                                               return nl2br(e($parts[0])).' <span class="text-gray-500 text-sm font-medium">('.$parts[1].' km)</span>';
+                                           }
 
-                                        return nl2br(e($state));
-                                    })
-                                    ->html()
-                                    ->hintIcon(fn ($state) => $state && str_contains($state, '||') ? 'heroicon-o-information-circle' : null)
-                                    ->hintIconTooltip(function (?string $state): ?string {
-                                        if (! $state) {
-                                            return null;
-                                        }
-                                        $parts = explode('||', $state);
-                                        if (count($parts) === 3) {
-                                            return 'Rijafstand vanaf bedrijfslocatie: '.$parts[1].' km ('.$parts[2].')';
-                                        }
+                                           return nl2br(e($state));
+                                       })
+                                       ->html()
+                                       ->hintIcon(fn ($state) => $state && str_contains($state, '||') ? 'heroicon-o-information-circle' : null)
+                                       ->hintIconTooltip(function (?string $state): ?string {
+                                           if (! $state) {
+                                               return null;
+                                           }
+                                           $parts = explode('||', $state);
+                                           if (count($parts) === 3) {
+                                               return 'Rijafstand vanaf bedrijfslocatie: '.$parts[1].' km ('.$parts[2].')';
+                                           }
 
-                                        return null;
-                                    })
-                                    ->placeholder('-'),
+                                           return null;
+                                       })
+                                       ->placeholder('-'),
 
                                 TextEntry::make('subtotal')
-                                    ->label('Subtotaal excl. BTW')
-                                    ->money('EUR'),
+                                       ->label('Subtotaal excl. BTW')
+                                       ->money('EUR'),
 
                                 TextEntry::make('vat_amount')
-                                    ->label('BTW (21%)')
-                                    ->money('EUR'),
+                                       ->label('BTW (21%)')
+                                       ->money('EUR'),
                             ]),
 
                         Section::make('Offerte-aannames')
                             ->schema([
                                 TextEntry::make('assumptions')
-                                    ->label('')
-                                    ->state(fn ($record) => $record->assumptions()->orderBy('sort_order')->pluck('title')->toArray())
-                                    ->listWithLineBreaks()
-                                    ->placeholder('Geen aannames geselecteerd'),
+                                       ->label('')
+                                       ->state(fn ($record) => $record->assumptions()->orderBy('sort_order')->pluck('title')->toArray())
+                                       ->listWithLineBreaks()
+                                       ->placeholder('Geen aannames geselecteerd'),
                             ])
                             ->collapsible()
                             ->collapsed(fn ($record) => $record->assumptions()->doesntExist()),
@@ -364,11 +369,11 @@ class QuoteInfolist
                         Section::make('Betalingsvoorwaarden')
                             ->schema([
                                 TextEntry::make('paymentTerm.title')
-                                    ->label('Betalingsvoorwaarde')
-                                    ->placeholder('-'),
+                                       ->label('Betalingsvoorwaarde')
+                                       ->placeholder('-'),
                                 TextEntry::make('paymentTerm.content')
-                                    ->label('Tekst')
-                                    ->placeholder('-'),
+                                       ->label('Tekst')
+                                       ->placeholder('-'),
                             ])
                             ->collapsible()
                             ->collapsed(fn ($record) => $record->payment_term_id === null),
@@ -376,26 +381,26 @@ class QuoteInfolist
                         Section::make('Reiskosten')
                             ->schema([
                                 TextEntry::make('travel_info')
-                                    ->hiddenLabel()
-                                    ->state(function ($record) {
-                                        if (blank($record->travel_distance) && blank($record->travel_total)) {
-                                            return null;
-                                        }
+                                       ->hiddenLabel()
+                                       ->state(function ($record) {
+                                           if (blank($record->travel_distance) && blank($record->travel_total)) {
+                                               return null;
+                                           }
 
-                                        $parts = [];
-                                        if ($record->travel_distance) {
-                                            $parts[] = $record->travel_distance.' km';
-                                        }
-                                        if ($record->travel_cost_per_km) {
-                                            $parts[] = '€ '.number_format((float) $record->travel_cost_per_km, 2, ',', '.').' per km';
-                                        }
-                                        if ($record->travel_total) {
-                                            $parts[] = '€ '.number_format((float) $record->travel_total, 2, ',', '.').' totaal';
-                                        }
+                                           $parts = [];
+                                           if ($record->travel_distance) {
+                                               $parts[] = $record->travel_distance.' km';
+                                           }
+                                           if ($record->travel_cost_per_km) {
+                                               $parts[] = '€ '.number_format((float) $record->travel_cost_per_km, 2, ',', '.').' per km';
+                                           }
+                                           if ($record->travel_total) {
+                                               $parts[] = '€ '.number_format((float) $record->travel_total, 2, ',', '.').' totaal';
+                                           }
 
-                                        return implode(' | ', $parts);
-                                    })
-                                    ->placeholder('Geen reiskosten ingesteld'),
+                                           return implode(' | ', $parts);
+                                       })
+                                       ->placeholder('Geen reiskosten ingesteld'),
                             ])
                             ->collapsible()
                             ->collapsed(fn ($record) => blank($record->travel_distance)),
@@ -403,8 +408,8 @@ class QuoteInfolist
                         Section::make('Historie')
                             ->schema([
                                 ViewEntry::make('activity')
-                                    ->label('')
-                                    ->view('filament.components.quote-activity'),
+                                       ->label('')
+                                       ->view('filament.components.quote-activity'),
                             ]),
                     ]),
             ]);

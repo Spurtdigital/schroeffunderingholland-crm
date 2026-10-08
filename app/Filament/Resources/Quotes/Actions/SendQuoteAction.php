@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\Quotes\Actions;
 
 use App\Enums\QuoteStatus;
-use App\Models\Quote;
 use App\Models\QuoteAssumption;
 use App\Notifications\CustomerQuoteNotification;
+use App\Services\QuoteNumberService;
 use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
@@ -84,8 +84,11 @@ class SendQuoteAction extends Action
                             ->filter(function ($a) use ($skus) {
                                 $trigger = strtoupper($a->trigger_sku);
                                 foreach ($skus as $sku) {
-                                    if (str_contains($sku, $trigger)) return true;
+                                    if (str_contains($sku, $trigger)) {
+                                        return true;
+                                    }
                                 }
+
                                 return false;
                             })
                             ->pluck('id')
@@ -160,14 +163,14 @@ class SendQuoteAction extends Action
             $settings = app(GeneralSettings::class);
             $quoteNumber = $record->quote_number;
             if (! ($settings->moneybird_enabled ?? true) && str_starts_with($record->quote_number ?? '', 'CONCEPT-')) {
-                $quoteNumber = static::generateLocalQuoteNumber();
+                $quoteNumber = app(QuoteNumberService::class)->generateLocalNumber();
             }
 
             // Update quote status
             $record->update([
-                'status'           => QuoteStatus::Sent,
-                'sent_at'          => now(),
-                'quote_number'     => $quoteNumber,
+                'status' => QuoteStatus::Sent,
+                'sent_at' => now(),
+                'quote_number' => $quoteNumber,
                 'show_assumptions' => $data['show_assumptions'] ?? true,
             ]);
 
@@ -178,34 +181,9 @@ class SendQuoteAction extends Action
             Notification::make()
                 ->success()
                 ->title('Offerte verstuurd')
-                ->body("Offerte ".($record->displayNumber() ?? 'Concept')." is per e-mail met PDF-bijlage verstuurd.")
+                ->body('Offerte '.($record->displayNumber() ?? 'Concept').' is per e-mail met PDF-bijlage verstuurd.')
                 ->send();
 
         });
-    }
-
-    /**
-     * Genereer een lokaal oplopend offertenummer in het formaat YYYY-NNNN.
-     * Wordt gebruikt wanneer Moneybird uitgeschakeld is.
-     */
-    protected static function generateLocalQuoteNumber(): string
-    {
-        $year = now()->year;
-        $settings = app(GeneralSettings::class);
-        $start = max(1, (int) ($settings->quote_number_start ?? 1));
-
-        $last = Quote::whereYear('created_at', $year)
-            ->where('quote_number', 'like', $year.'-%')
-            ->orderByDesc('quote_number')
-            ->value('quote_number');
-
-        if ($last) {
-            $current = (int) substr($last, strpos($last, '-') + 1);
-            $next = max($start, $current + 1);
-        } else {
-            $next = $start;
-        }
-
-        return $year.'-'.str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 }

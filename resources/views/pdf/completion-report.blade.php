@@ -58,7 +58,7 @@
         }
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             background-color: #fff;
@@ -218,7 +218,7 @@
         }
         .items-table .total-incl-row td {
             font-weight: bold;
-            font-size: 9pt;
+            font-size: 8pt;
             border-top: 1px solid #000;
             padding-top: 6px;
         }
@@ -415,9 +415,9 @@
                 <tr><td class="lbl">Montagedatum:</td><td>{{ $project->start_date->format('d-m-Y') }}</td></tr>
                 @endif
                 <tr><td class="lbl">Opleverdatum:</td><td>{{ $project->completion_date?->format('d-m-Y') ?? '—' }}</td></tr>
-                @php $werklocatie = $project->quote?->workFullAddress(); @endphp
+                @php $werklocatie = $project->quote?->workAddressLines(); @endphp
                 @if($werklocatie)
-                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e(implode("\n", $werklocatie))) !!}</td></tr>
                 @endif
             </table>
         </div>

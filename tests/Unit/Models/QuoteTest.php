@@ -81,3 +81,50 @@ test('quote can check if expired', function () {
     expect($validQuote->isExpired())->toBeFalse()
         ->and($expiredQuote->isExpired())->toBeTrue();
 });
+
+test('work address lines splits work address into street, postal code and city', function () {
+    $quote = Quote::factory()->create([
+        'work_address_different' => true,
+        'work_street' => "'s-Gravenweg",
+        'work_house_number' => '28',
+        'work_postal_code' => '2911CG',
+        'work_city' => 'Nieuwerkerk aan den IJssel',
+    ]);
+
+    expect($quote->workAddressLines())->toBe([
+        "'s-Gravenweg 28",
+        '2911CG',
+        'Nieuwerkerk aan den IJssel',
+    ]);
+});
+
+test('work address lines falls back to company address when no work address is set', function () {
+    $company = Company::factory()->create([
+        'street' => 'Voorstraat',
+        'house_number' => '10',
+        'postal_code' => '1234AB',
+        'city' => 'Amsterdam',
+    ]);
+    $quote = Quote::factory()->for($company)->create(['work_address_different' => false]);
+
+    expect($quote->workAddressLines())->toBe([
+        'Voorstraat 10',
+        '1234AB',
+        'Amsterdam',
+    ]);
+});
+
+test('work address lines keeps combined postal and city when postal code is not Dutch', function () {
+    $quote = Quote::factory()->create([
+        'work_address_different' => true,
+        'work_street' => 'Hauptstraße',
+        'work_house_number' => '5',
+        'work_postal_code' => '10115',
+        'work_city' => 'Berlin',
+    ]);
+
+    expect($quote->workAddressLines())->toBe([
+        'Hauptstraße 5',
+        '10115 Berlin',
+    ]);
+});

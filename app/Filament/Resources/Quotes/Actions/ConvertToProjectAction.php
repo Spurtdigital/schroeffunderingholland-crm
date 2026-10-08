@@ -119,8 +119,10 @@ class ConvertToProjectAction extends Action
                 ]);
             }
 
-            // Release old quote reservations (project items created fresh ones via observer)
-            foreach ($record->stockReservations()->where('status', StockReservationStatus::Active)->get() as $reservation) {
+            // Release legacy quote-level reservations only (project items created fresh
+            // ones via the observer). Scope to project_id NULL so the just-created
+            // project reservations — which also carry quote_id — are NOT released.
+            foreach ($record->stockReservations()->whereNull('project_id')->where('status', StockReservationStatus::Active)->get() as $reservation) {
                 $reservation->release();
             }
 

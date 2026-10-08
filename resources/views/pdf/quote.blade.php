@@ -57,7 +57,7 @@
 
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             padding-top: 15mm;
@@ -204,7 +204,7 @@
         }
         .info-box p {
             margin: 3px 0;
-            font-size: 8.5pt;
+            font-size: 8pt;
         }
         .info-box .label {
             display: inline-block;
@@ -215,7 +215,7 @@
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 8pt;
         }
         .info-table td {
             padding: 1px 0;
@@ -231,6 +231,7 @@
         /* Items tabel */
         .items-section {
             margin-bottom: 14px;
+            page-break-before: always;
         }
         .items-table {
             width: 100%;
@@ -284,7 +285,7 @@
         }
         .totals-table td {
             padding: 4px 8px;
-            font-size: 8.5pt;
+            font-size: 8pt;
         }
         .totals-table .total-final {
             background-color: #fff;
@@ -303,7 +304,7 @@
             margin-bottom: 14px;
         }
         .notes-section h4 {
-            font-size: 8.5pt;
+            font-size: 8pt;
             font-weight: bold;
             color: #000;
             margin-bottom: 6px;
@@ -400,20 +401,21 @@
     <!-- Info Boxen: klantgegevens + projectdetails -->
     <div class="info-container clearfix">
         <div class="info-box">
-            <p><strong>{{ $quote->company->name }}</strong></p>
-            @if($quote->company->contact_person)
-            <p><span class="label">T.a.v.:</span> {{ $quote->company->contact_person }}</p>
-            @endif
-            @if($quote->company->street)
-            <p><span class="label">Adres:</span> {{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}</p>
-            <p><span class="label"></span> {{ trim(($quote->company->postal_code ?? '') . ' ' . ($quote->company->city ?? '')) }}</p>
-            @endif
-            @if($quote->company->phone)
-            <p><span class="label">Telefoon:</span> {{ $quote->company->phone }}</p>
-            @endif
-            @if($quote->company->email)
-            <p><span class="label">E-mail:</span> {{ $quote->company->email }}</p>
-            @endif
+            <table class="info-table">
+                <tr><td colspan="2"><strong>{{ $quote->company->name }}</strong></td></tr>
+                @if($quote->company->contact_person)
+                <tr><td class="lbl">T.a.v.:</td><td>{{ $quote->company->contact_person }}</td></tr>
+                @endif
+                @if($quote->company->street)
+                <tr><td class="lbl">Adres:</td><td>{{ trim(($quote->company->street ?? '') . ' ' . ($quote->company->house_number ?? '')) }}<br>{{ $quote->company->postal_code }}<br>{{ $quote->company->city }}</td></tr>
+                @endif
+                @if($quote->company->phone)
+                <tr><td class="lbl">Telefoon:</td><td>{{ $quote->company->phone }}</td></tr>
+                @endif
+                @if($quote->company->email)
+                <tr><td class="lbl">E-mail:</td><td>{{ $quote->company->email }}</td></tr>
+                @endif
+            </table>
         </div>
 
         <div class="info-box">
@@ -424,9 +426,9 @@
                 @if($quote->machine)
                 <tr><td class="lbl">Machine:</td><td>{{ $quote->machine->name }}</td></tr>
                 @endif
-                @php $werklocatie = $quote->workFullAddress(); @endphp
+                @php $werklocatie = $quote->workAddressLines(); @endphp
                 @if($werklocatie)
-                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e($werklocatie)) !!}</td></tr>
+                <tr><td class="lbl">Werklocatie:</td><td>{!! nl2br(e(implode("\n", $werklocatie))) !!}</td></tr>
                 @endif
             </table>
         </div>
@@ -437,16 +439,16 @@
         $aanhef = $quote->company->contact_person ?? null;
     @endphp
     @if($aanhef)
-    <p style="margin-bottom: 10px; font-size: 9pt;">Beste {{ $aanhef }},</p>
+    <p style="margin-bottom: 10px; font-size: 8pt;">Beste {{ $aanhef }},</p>
     @endif
 
     @if($quote->pre_text)
     <div class="pre-text-section">
-    <p style="margin-bottom: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br($mdBold(e($quote->pre_text))) !!}</p>
+    <p style="margin-bottom: 14px; font-size: 8pt; line-height: 1.5;">{!! nl2br($mdBold(e($quote->pre_text))) !!}</p>
     </div>
     @endif
 
-    @if($quote->assumptions->isNotEmpty())
+    @if($quote->show_assumptions !== false && $quote->assumptions->isNotEmpty())
     <div class="assumptions-section">
         <ul>
             @foreach($quote->assumptions->sortBy('sort_order') as $assumption)
@@ -471,9 +473,9 @@
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>
                 <tr>
-                    <th style="width: 10%;">Aantal</th>
-                    <th style="width: 13%;">Artikelnr.</th>
-                    <th style="width: 42%;">Omschrijving</th>
+                    <th style="width: 8%;">Aantal</th>
+                    <th style="width: 18%;">Artikelnr.</th>
+                    <th style="width: 39%;">Omschrijving</th>
                     <th style="width: 20%;" class="text-right">Prijs p/st (excl. BTW)</th>
                     <th style="width: 15%;" class="text-right">Totaal</th>
                 </tr>
@@ -508,9 +510,9 @@
                 @foreach($chunk as $item)
                 @php $isDiscount = $item->type instanceof \App\Enums\QuoteItemType && $item->type === \App\Enums\QuoteItemType::Discount; @endphp
                 <tr @if($item->is_optional) style="color: #888; font-style: italic;" @elseif($isDiscount) style="color: #c0392b;" @endif>
-                    <td style="width: 10%;">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
-                    <td style="width: 13%;">{{ $item->itemable?->sku ?? '' }}</td>
-                    <td style="width: 42%;">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
+                    <td style="width: 8%;">{{ $isDiscount ? '—' : number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td style="width: 18%;">{{ $item->itemable?->sku ?? '' }}</td>
+                    <td style="width: 39%;">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
                     <td style="width: 20%;" class="text-right">
                         @if($isDiscount)—@else&euro;&nbsp;{{ number_format($item->unit_price, 2, ',', '.') }}@endif
                     </td>
@@ -533,9 +535,9 @@
         <table class="items-table" style="border-top: none;">
             <tbody>
                 <tr>
-                    <td style="width: 10%;">1</td>
-                    <td style="width: 13%;"></td>
-                    <td style="width: 42%;">Voorrijkosten</td>
+                    <td style="width: 8%;">1</td>
+                    <td style="width: 18%;"></td>
+                    <td style="width: 39%;">Voorrijkosten</td>
                     <td style="width: 20%;" class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                     <td style="width: 15%;" class="text-right">&euro;&nbsp;{{ number_format($quote->travel_total, 2, ',', '.') }}</td>
                 </tr>
@@ -559,9 +561,9 @@
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>
                 <tr>
-                    <th style="width: 15%;">Aantal</th>
-                    <th style="width: 13%;">Artikelnr.</th>
-                    <th style="width: 72%;">Omschrijving</th>
+                    <th style="width: 12%;">Aantal</th>
+                    <th style="width: 18%;">Artikelnr.</th>
+                    <th style="width: 70%;">Omschrijving</th>
                 </tr>
             </thead>
             <tbody>
@@ -580,9 +582,9 @@
             <tbody>
                 @foreach($chunk as $item)
                 <tr @if($item->is_optional) style="color: #888; font-style: italic;" @endif>
-                    <td style="width: 15%;">{{ number_format($item->quantity, 0, ',', '.') }}</td>
-                    <td style="width: 13%;">{{ $item->itemable?->sku ?? '' }}</td>
-                    <td style="width: 72%;">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
+                    <td style="width: 12%;">{{ number_format($item->quantity, 0, ',', '.') }}</td>
+                    <td style="width: 18%;">{{ $item->itemable?->sku ?? '' }}</td>
+                    <td style="width: 70%;">{{ str_replace('⌀', 'Ø', $item->description) }}{{ $item->pile_length ? ' (lengte: ' . rtrim(rtrim(number_format((float)$item->pile_length, 2, ',', ''), '0'), ',') . ' m)' : '' }}{{ $item->machine ? ' — machine: ' . $item->machine->name : '' }}@if($item->is_optional) <em style="font-size:8pt;">(optioneel)</em>@endif</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -645,11 +647,11 @@
 
     @if($quote->post_text)
     <div class="post-text-section">
-    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br($mdBold(e($quote->post_text))) !!}</p>
+    <p style="margin-top: 14px; font-size: 8pt; line-height: 1.5;">{!! nl2br($mdBold(e($quote->post_text))) !!}</p>
     </div>
     @endif
 
-    @if($settings->closing_text)
+    @if($quote->show_assumptions !== false && $settings->closing_text)
     <div class="closing-section">
         @php
             // Split closing text op secties die beginnen met **titel**
@@ -683,14 +685,14 @@
         @endphp
         @foreach($groupedSections as $section)
         <table style="width: 100%; margin-bottom: 10px;"><tbody style="page-break-inside: avoid;"><tr><td style="padding: 0;">
-            <p style="font-size: 9pt; line-height: 1.5; margin: 0;">{!! nl2br($mdBold(e(trim($section)))) !!}</p>
+            <p style="font-size: 8pt; line-height: 1.5; margin: 0;">{!! nl2br($mdBold(e(trim($section)))) !!}</p>
         </td></tr></tbody></table>
         @endforeach
     </div>
     @endif
 
     @if($quote->paymentTerm)
-    <div class="payment-term-section" style="margin-top: 16px; font-size: 8.5pt; line-height: 1.5; color: #333;">
+    <div class="payment-term-section" style="margin-top: 16px; font-size: 8pt; line-height: 1.5; color: #333;">
         <p style="font-weight: bold; margin-bottom: 4px;">Betalingsvoorwaarden</p>
         <p style="font-weight: bold; margin-bottom: 2px;">{{ $quote->paymentTerm->title }}</p>
         <p>{{ $quote->paymentTerm->content }}</p>
@@ -699,7 +701,7 @@
 
     @if($settings->email_signature)
     <div class="signature-section">
-    <p style="margin-top: 14px; font-size: 9pt; line-height: 1.5;">{!! nl2br(e($settings->email_signature)) !!}</p>
+    <p style="margin-top: 14px; font-size: 8pt; line-height: 1.5;">{!! nl2br(e($settings->email_signature)) !!}</p>
     </div>
     @endif
 

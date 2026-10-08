@@ -40,6 +40,8 @@ class GeneralSettings extends Settings
 
     public int $quote_number_start;
 
+    public ?string $next_quote_number;
+
     public ?string $google_maps_api_key;
 
     public ?string $default_pre_text;

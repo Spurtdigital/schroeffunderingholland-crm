@@ -58,7 +58,7 @@
         }
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             padding-top: 15mm;
@@ -181,12 +181,14 @@
         /* Aanhef */
         .salutation {
             margin-bottom: 12px;
-            font-size: 9pt;
+            font-size: 8pt;
         }
 
         /* Items tabel */
         .items-section {
             margin-bottom: 14px;
+        }
+        .items-section.page-break {
             page-break-before: always;
         }
         .items-table {
@@ -309,7 +311,7 @@
         /* Inleidende tekst */
         .pre-text-section p {
             margin-bottom: 14px;
-            font-size: 9pt;
+            font-size: 8pt;
             line-height: 1.5;
         }
 
@@ -470,13 +472,14 @@
     <!-- Items Tabel -->
     @if($quote && $quote->items->count())
     @php
+        $hasContentBeforeItems = ($quote->pre_text) || ($quote->show_assumptions !== false && $quote->assumptions->isNotEmpty());
         $filteredItems = $quote->items->filter(fn($i) => !($i->type === \App\Enums\QuoteItemType::Discount || $i->type === \App\Enums\QuoteItemType::Adjustment));
         $totalItems = $filteredItems->count();
         $firstChunkSize = max(3, (int) ceil($totalItems * 0.5));
         $firstChunk = $filteredItems->take($firstChunkSize);
         $remainingItems = $filteredItems->skip($firstChunkSize);
     @endphp
-    <div class="items-section">
+    <div class="items-section{{ $hasContentBeforeItems ? ' page-break' : '' }}">
         {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>

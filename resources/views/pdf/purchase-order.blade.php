@@ -129,7 +129,7 @@
         }
         body {
             font-family: 'Montserrat', sans-serif;
-            font-size: 9pt;
+            font-size: 8pt;
             color: #000;
             line-height: 1.3;
             background-color: #fff;
@@ -269,13 +269,13 @@
             text-transform: uppercase;
         }
         .meta-item .meta-value {
-            font-size: 9pt;
+            font-size: 8pt;
             margin-top: 2px;
         }
 
         /* Sectie heading */
         .section-heading {
-            font-size: 9pt;
+            font-size: 8pt;
             font-weight: bold;
             color: #000;
             margin-bottom: 6px;
@@ -487,9 +487,9 @@
     <table class="items-table">
         <thead>
             <tr>
-                <th style="width: 8%;" class="text-center">{{ $t['qty'] }}</th>
-                <th style="width: 15%;">{{ $t['article'] }}</th>
-                <th style="width: 42%;">{{ $t['description'] }}</th>
+                <th style="width: 7%;" class="text-center">{{ $t['qty'] }}</th>
+                <th style="width: 19%;">{{ $t['article'] }}</th>
+                <th style="width: 39%;">{{ $t['description'] }}</th>
                 <th style="width: 17%;" class="text-right">{{ $t['unit_price'] }}</th>
                 <th style="width: 18%;" class="text-right">{{ $t['total'] }}</th>
             </tr>

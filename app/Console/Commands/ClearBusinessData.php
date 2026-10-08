@@ -55,6 +55,10 @@ class ClearBusinessData extends Command
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
+        // Reset voorraad op alle producten
+        DB::table('products')->update(['stock_quantity' => 0]);
+        $this->line('  Voorraad gereset op alle producten');
+
         // Reset auto-increment tellers
         $resetTables = ['companies', 'leads', 'quotes', 'projects', 'invoices', 'quote_items', 'project_items'];
         foreach ($resetTables as $table) {
