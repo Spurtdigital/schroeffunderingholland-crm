@@ -301,7 +301,7 @@ class Product extends Model
      */
     public function availableSerialNumbers(): HasMany
     {
-        return $this->serialNumbers()->where('status', \App\Enums\SerialNumberStatus::InStock);
+        return $this->serialNumbers()->whereRaw('quantity > quantity_reserved');
     }
 
     /**

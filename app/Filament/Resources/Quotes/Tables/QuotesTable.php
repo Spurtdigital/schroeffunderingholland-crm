@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes\Tables;
 use App\Enums\QuoteStatus;
 use App\Filament\Resources\Quotes\Actions\ApproveQuoteAction;
 use App\Filament\Resources\Quotes\Actions\ConvertToProjectAction;
+use App\Filament\Resources\Quotes\Actions\DuplicateQuoteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -70,6 +71,7 @@ class QuotesTable
                 ViewAction::make(),
                 EditAction::make()
                     ->label('Bewerken'),
+                DuplicateQuoteAction::make(),
                 ApproveQuoteAction::make(),
                 ConvertToProjectAction::make(),
             ])

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Companies\RelationManagers;
 
 use App\Enums\QuoteStatus;
+use App\Filament\Resources\Quotes\QuoteResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,11 +18,11 @@ use Filament\Tables\Table;
 class QuotesRelationManager extends RelationManager
 {
     protected static string $relationship = 'quotes';
-    
+
     protected static ?string $title = 'Offertes';
-    
+
     protected static ?string $modelLabel = 'offerte';
-    
+
     protected static ?string $pluralModelLabel = 'offertes';
 
     public function form(Schema $schema): Schema
@@ -58,6 +59,7 @@ class QuotesRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('quote_number')
+            ->recordUrl(fn ($record) => QuoteResource::getUrl('view', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('quote_number')
                     ->label('Nummer')
@@ -69,7 +71,7 @@ class QuotesRelationManager extends RelationManager
                     ->label('Status')
                     ->badge()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('total_excl_vat')
+                Tables\Columns\TextColumn::make('subtotal')
                     ->label('Totaal excl. BTW')
                     ->money('EUR')
                     ->sortable(),

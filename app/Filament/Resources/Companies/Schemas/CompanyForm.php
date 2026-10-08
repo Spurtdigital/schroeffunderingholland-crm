@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Companies\Schemas;
 
 use App\Services\PostcodeService;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
@@ -38,22 +37,22 @@ class CompanyForm
                     ->live(onBlur: true)
                     ->afterStateUpdated(function (?string $state, ?string $old, $set, callable $get) {
                         $houseNumber = $get('house_number');
-                        
-                        if (!$state || !$houseNumber || $state === $old) {
+
+                        if (! $state || ! $houseNumber || $state === $old) {
                             return;
                         }
-                        
+
                         $postcodeService = app(PostcodeService::class);
                         $result = $postcodeService->lookup($state, $houseNumber);
-                        
+
                         if ($result) {
                             $set('street', $result['street']);
                             $set('city', $result['city']);
-                            
+
                             Notification::make()
                                 ->success()
                                 ->title('Adres gevonden')
-                                ->body("Straat en plaats automatisch ingevuld")
+                                ->body('Straat en plaats automatisch ingevuld')
                                 ->send();
                         }
                     }),
@@ -63,22 +62,22 @@ class CompanyForm
                     ->live(onBlur: true)
                     ->afterStateUpdated(function (?string $state, ?string $old, $set, callable $get) {
                         $postalCode = $get('postal_code');
-                        
-                        if (!$state || !$postalCode || $state === $old) {
+
+                        if (! $state || ! $postalCode || $state === $old) {
                             return;
                         }
-                        
+
                         $postcodeService = app(PostcodeService::class);
                         $result = $postcodeService->lookup($postalCode, $state);
-                        
+
                         if ($result) {
                             $set('street', $result['street']);
                             $set('city', $result['city']);
-                            
+
                             Notification::make()
                                 ->success()
                                 ->title('Adres gevonden')
-                                ->body("Straat en plaats automatisch ingevuld")
+                                ->body('Straat en plaats automatisch ingevuld')
                                 ->send();
                         }
                     }),

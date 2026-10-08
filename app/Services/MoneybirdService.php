@@ -168,7 +168,7 @@ class MoneybirdService
                 $contact->company_name = $company->name;
                 $contact->email = $company->email;
                 $contact->phone = $company->phone;
-                $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                $contact->address1 = trim(($company->street ?? '').' '.($company->house_number ?? ''));
                 $contact->address2 = '';
                 $contact->zipcode = $company->postal_code;
                 $contact->city = $company->city;
@@ -186,7 +186,7 @@ class MoneybirdService
                     $contact->company_name = $company->name;
                     $contact->email = $company->email;
                     $contact->phone = $company->phone;
-                    $contact->address1 = trim(($company->street ?? '') . ' ' . ($company->house_number ?? ''));
+                    $contact->address1 = trim(($company->street ?? '').' '.($company->house_number ?? ''));
                     $contact->address2 = '';
                     $contact->zipcode = $company->postal_code;
                     $contact->city = $company->city;
@@ -207,7 +207,7 @@ class MoneybirdService
             if (str_contains($message, 'email_domain_unreachable') || str_contains($message, 'send_invoices_to_email')) {
                 throw new \Exception(
                     "Moneybird weigert het e-mailadres van \"{$company->name}\" ({$company->email}): het domein kan geen e-mail ontvangen. "
-                    . "Pas het e-mailadres van dit bedrijf aan in de CRM en probeer opnieuw."
+                    .'Pas het e-mailadres van dit bedrijf aan in de CRM en probeer opnieuw.'
                 );
             }
 
@@ -306,7 +306,7 @@ class MoneybirdService
             if ($invoice->deposit_percentage && $invoice->deposit_percentage != 100) {
                 $pct = rtrim(rtrim(number_format((float) $invoice->deposit_percentage, 2, '.', ''), '0'), '.');
                 $quote = $invoice->project->quote;
-                $quoteSubtotalStr = $quote ? ' € ' . number_format($quote->subtotal, 2, ',', '.') : '';
+                $quoteSubtotalStr = $quote ? ' € '.number_format($quote->subtotal, 2, ',', '.') : '';
                 $subject .= " — {$pct}% van totaalbedrag{$quoteSubtotalStr} excl. BTW";
             }
 
@@ -334,33 +334,23 @@ class MoneybirdService
                 $details[] = $detail;
             } else {
                 // Eindfactuur / enkelvoudige factuur:
-                // - Originele items (quote_item_id ingesteld, geen korting/aanpassing) → omschrijving + aantal, prijs 0
-                // - Één totaalregel "Resterend bedrag offerte" = offertebedrag minus al gefactureerd
-                // - Meerwerk items (quote_item_id null, geen korting/aanpassing) → met stuksprijs
-                $skipTypes = [
-                    \App\Enums\QuoteItemType::Discount,
-                    \App\Enums\QuoteItemType::Adjustment,
-                ];
+                // - Originele offerteregels (het aantal uit de offerte) zonder prijs
+                // - Eén regel "Resterend bedrag offerte" = factuurbedrag minus meerwerk
+                // - Meerwerkregels met stukprijs. Alles boven het offerte-aantal telt als
+                //   meerwerk, inclusief optionele regels die in het project alsnog gebruikt
+                //   zijn (optioneel 0 → 7 verschijnt dus als "7 x" met bedrag).
+                $split = $this->splitInvoiceItems($invoice);
 
-                $items = $invoice->project->items()->orderBy('sort_order')->get();
-
-                $originalItems  = $items->filter(fn ($i) => !is_null($i->quote_item_id) && !in_array($i->type, $skipTypes));
-                $meerwerkItems  = $items->filter(fn ($i) => is_null($i->quote_item_id) && !in_array($i->type, $skipTypes));
-
-                // 1. Originele items zonder prijs
-                foreach ($originalItems as $item) {
+                // 1. Originele regels zonder prijs
+                foreach ($split['original'] as $line) {
                     $detail = $moneybird->salesInvoiceDetail();
-                    $detail->description = $this->projectItemDescription($item);
-                    $detail->amount = $this->formatQuantity($item->quantity) . ' x';
+                    $detail->description = $this->projectItemDescription($line['item']);
+                    $detail->amount = $this->formatQuantity($line['quantity']).' x';
                     $details[] = $detail;
                 }
 
-                // 2. Resterend bedrag offerte (offerte subtotaal minus aanbetaling)
-                $quote = $invoice->project->quote;
-                $alreadyInvoicedSubtotal = $invoice->project->invoices()
-                    ->where('id', '!=', $invoice->id)
-                    ->sum('subtotal');
-                $remainingSubtotal = max(0, round(($quote?->subtotal ?? 0) - $alreadyInvoicedSubtotal, 2));
+                // 2. Resterend bedrag offerte = factuurbedrag minus meerwerk
+                $remainingSubtotal = max(0, round((float) $invoice->subtotal - $split['meerwerk_total'], 2));
 
                 if ($remainingSubtotal > 0) {
                     $restDetail = $moneybird->salesInvoiceDetail();
@@ -371,11 +361,12 @@ class MoneybirdService
                     $details[] = $restDetail;
                 }
 
-                // 3. Meerwerk items met stuksprijs
-                foreach ($meerwerkItems as $item) {
+                // 3. Meerwerkregels met stukprijs
+                foreach ($split['meerwerk'] as $line) {
+                    $item = $line['item'];
                     $detail = $moneybird->salesInvoiceDetail();
                     $detail->description = $this->projectItemDescription($item);
-                    $detail->amount = $this->formatQuantity($item->quantity) . ' x';
+                    $detail->amount = $this->formatQuantity($line['quantity']).' x';
                     if ((float) $item->unit_price > 0) {
                         $detail->price = (string) round((float) $item->unit_price, 2);
                         $detail->tax_rate_id = $taxRateId;
@@ -723,6 +714,64 @@ class MoneybirdService
     /**
      * Build the display description for a project item.
      */
+    /**
+     * Split de projectitems van een factuur in originele regels (zonder prijs)
+     * en meerwerkregels (met prijs).
+     *
+     * Per regel wordt het projectaantal vergeleken met het oorspronkelijke
+     * offerteaantal. Het deel tot het offerteaantal is "origineel"; alles
+     * daarboven is meerwerk. Optionele regels die in de offerte op 0 staan en
+     * in het project alsnog gebruikt worden (bv. 0 → 7) gelden dus volledig
+     * als meerwerk. Regels zonder offertekoppeling (quote_item_id null) zijn
+     * altijd meerwerk.
+     *
+     * @return array{
+     *     original: array<int, array{item: \App\Models\ProjectItem, quantity: float}>,
+     *     meerwerk: array<int, array{item: \App\Models\ProjectItem, quantity: float}>,
+     *     meerwerk_total: float
+     * }
+     */
+    public function splitInvoiceItems(Invoice $invoice): array
+    {
+        $skipTypes = [
+            \App\Enums\QuoteItemType::Discount,
+            \App\Enums\QuoteItemType::Adjustment,
+        ];
+
+        $items = $invoice->project->items()
+            ->with('quoteItem')
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn ($item) => ! in_array($item->type, $skipTypes));
+
+        $original = [];
+        $meerwerk = [];
+        $meerwerkTotal = 0.0;
+
+        foreach ($items as $item) {
+            $quotedQty = (float) ($item->quoteItem?->quantity ?? 0);
+            $projectQty = (float) $item->quantity;
+
+            $originalQty = min($projectQty, $quotedQty);
+            $meerwerkQty = max(0.0, $projectQty - $quotedQty);
+
+            if ($originalQty > 0) {
+                $original[] = ['item' => $item, 'quantity' => $originalQty];
+            }
+
+            if ($meerwerkQty > 0) {
+                $meerwerk[] = ['item' => $item, 'quantity' => $meerwerkQty];
+                $meerwerkTotal += $meerwerkQty * (float) $item->unit_price;
+            }
+        }
+
+        return [
+            'original' => $original,
+            'meerwerk' => $meerwerk,
+            'meerwerk_total' => round($meerwerkTotal, 2),
+        ];
+    }
+
     protected function projectItemDescription(\App\Models\ProjectItem $item): string
     {
         $parts = [];

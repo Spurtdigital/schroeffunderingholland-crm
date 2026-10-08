@@ -31,7 +31,7 @@ class GenerateSecondInvoiceAction extends Action
         $this->modalHeading(fn (Project $record) => "Tweede factuur genereren ({$record->getSecondInvoicePercentage()}%)"
         );
 
-        $this->modalDescription(fn (Project $record) => "Deze actie maakt de tweede (eind)factuur aan met {$record->getSecondInvoicePercentage()}% van het totaalbedrag."
+        $this->modalDescription(fn (Project $record) => "Deze actie maakt de tweede (eind)factuur aan: het resterende bedrag van de projectitems (incl. meerwerk) minus wat al gefactureerd is."
         );
 
         $this->visible(function (Project $record) {
@@ -67,9 +67,7 @@ class GenerateSecondInvoiceAction extends Action
             }
 
             $percentage = $record->getSecondInvoicePercentage();
-            $subtotal = ($quote->subtotal * $percentage) / 100;
-            $vatAmount = ($quote->vat_amount * $percentage) / 100;
-            $total = ($quote->total * $percentage) / 100;
+            $amounts = $record->getFinalInvoiceAmounts();
 
             // Create invoice
             $invoice = Invoice::create([
@@ -79,9 +77,9 @@ class GenerateSecondInvoiceAction extends Action
                 'invoice_date' => now(),
                 'due_date' => now()->addDays(14),
                 'invoice_type' => InvoiceType::Final,
-                'subtotal' => round($subtotal, 2),
-                'vat_amount' => round($vatAmount, 2),
-                'total' => round($total, 2),
+                'subtotal' => $amounts['subtotal'],
+                'vat_amount' => $amounts['vat_amount'],
+                'total' => $amounts['total'],
                 'status' => \App\Enums\InvoiceStatus::Draft,
                 'notes' => "Eindfactuur ({$percentage}%) voor project {$record->project_number}",
             ]);
@@ -89,7 +87,7 @@ class GenerateSecondInvoiceAction extends Action
             Notification::make()
                 ->success()
                 ->title('Factuur aangemaakt')
-                ->body("Factuur {$invoice->invoice_number} is aangemaakt voor €".number_format($total, 2, ',', '.'))
+                ->body("Factuur {$invoice->invoice_number} is aangemaakt voor €".number_format($amounts['total'], 2, ',', '.'))
                 ->send();
 
             // Redirect to invoice

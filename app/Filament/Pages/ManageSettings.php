@@ -3,14 +3,14 @@
 namespace App\Filament\Pages;
 
 use App\Services\MoneybirdService;
+use App\Services\QuoteNumberService;
 use App\Settings\GeneralSettings;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -64,6 +64,7 @@ class ManageSettings extends Page implements HasForms
             'moneybird_administration_id' => $settings->moneybird_administration_id,
             'moneybird_enabled' => $settings->moneybird_enabled ?? true,
             'quote_number_start' => $settings->quote_number_start ?? 1,
+            'next_quote_number' => $settings->next_quote_number,
             'google_maps_api_key' => $settings->google_maps_api_key,
             'default_pre_text' => $settings->default_pre_text,
             'default_post_text' => $settings->default_post_text,
@@ -212,6 +213,12 @@ class ManageSettings extends Page implements HasForms
                             ->minValue(1)
                             ->step(1)
                             ->columnSpanFull(),
+                        TextInput::make('next_quote_number')
+                            ->label('Volgend offertenummer (zonder Moneybird)')
+                            ->placeholder(fn () => app(QuoteNumberService::class)->peekNextLocalNumber())
+                            ->helperText('Laat leeg voor automatische nummering. Vul je hier een nummer in (bijv. 2026-0100), dan krijgt de eerstvolgende verstuurde offerte exact dit nummer; daarna loopt de nummering automatisch door.')
+                            ->maxLength(50)
+                            ->columnSpanFull(),
                         TextInput::make('moneybird_api_token')
                             ->label('API Token')
                             ->password()
@@ -270,6 +277,9 @@ class ManageSettings extends Page implements HasForms
         $settings->moneybird_administration_id = $data['moneybird_administration_id'] ?? null;
         $settings->moneybird_enabled = (bool) ($data['moneybird_enabled'] ?? true);
         $settings->quote_number_start = (int) ($data['quote_number_start'] ?? 1);
+        $settings->next_quote_number = filled($data['next_quote_number'] ?? null)
+            ? trim($data['next_quote_number'])
+            : null;
         $settings->google_maps_api_key = $data['google_maps_api_key'] ?? null;
         $settings->default_pre_text = $data['default_pre_text'] ?? null;
         $settings->default_post_text = $data['default_post_text'] ?? null;

@@ -155,6 +155,13 @@ class QuoteForm
                     ->collapsible()
                     ->columnSpanFull()
                     ->schema([
+                        Toggle::make('show_assumptions')
+                            ->label('Toon uitgangspunten op offerte PDF')
+                            ->default(true)
+                            ->live()
+                            ->helperText('Zet dit uit om de uitgangspunten/aannames niet op de offerte te tonen')
+                            ->columnSpanFull(),
+
                         CheckboxList::make('assumption_ids')
                             ->hiddenLabel()
                             ->options(fn () => QuoteAssumption::where('active', true)->orderBy('sort_order')->pluck('title', 'id')->toArray())
@@ -166,7 +173,8 @@ class QuoteForm
                                 }
                             })
                             ->columns(2)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->visible(fn (Get $get) => $get('show_assumptions') !== false),
                     ]),
 
                 // ── Betalingsvoorwaarden ──

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\RelationManagers;
 
 use App\Models\Product;
+use App\Models\SerialNumber;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -38,8 +39,8 @@ class SerialNumbersRelationManager extends RelationManager
                 ->numeric()
                 ->required()
                 ->minValue(fn ($record) => $record?->quantity_reserved ?? 0)
-                ->helperText(fn ($record) => $record?->quantity_reserved > 0 
-                    ? "Minimaal {$record->quantity_reserved} (gereserveerd)" 
+                ->helperText(fn ($record) => $record?->quantity_reserved > 0
+                    ? "Minimaal {$record->quantity_reserved} (gereserveerd)"
                     : null),
             Forms\Components\Textarea::make('notes')
                 ->label('Notities')
@@ -51,6 +52,7 @@ class SerialNumbersRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('serial_number')
+            ->modifyQueryUsing(fn ($query) => $query->with('projectItems.project.company'))
             ->columns([
                 Tables\Columns\TextColumn::make('serial_number')
                     ->label('Serienummer')
@@ -70,6 +72,17 @@ class SerialNumbersRelationManager extends RelationManager
                     ->numeric()
                     ->sortable()
                     ->color(fn ($state) => $state > 0 ? 'success' : 'danger'),
+                Tables\Columns\TextColumn::make('deliveries')
+                    ->label('Geleverd aan')
+                    ->getStateUsing(fn (SerialNumber $record): array => collect($record->deliveryLocations())
+                        ->map(fn ($location) => trim(
+                            ($location['project_number'] ?? '—').' · '.($location['company'] ?? '—').' ('.$location['quantity'].'x)'
+                        ))
+                        ->all()
+                    )
+                    ->listWithLineBreaks()
+                    ->bulleted()
+                    ->placeholder('Niet geleverd'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Toegevoegd op')
                     ->dateTime('d-m-Y H:i')
@@ -81,6 +94,17 @@ class SerialNumbersRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
+                Action::make('deliveries')
+                    ->label('Leveringen')
+                    ->icon('heroicon-o-map-pin')
+                    ->color('gray')
+                    ->visible(fn (SerialNumber $record) => $record->projectItems()->exists())
+                    ->modalHeading(fn (SerialNumber $record) => 'Leveringen van '.$record->serial_number)
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Sluiten')
+                    ->modalContent(fn (SerialNumber $record) => view('filament.serial-number-deliveries', [
+                        'serial' => $record->load('projectItems.project.company'),
+                    ])),
                 Action::make('addStock')
                     ->label('Nalevering')
                     ->icon('heroicon-o-plus-circle')
@@ -105,7 +129,7 @@ class SerialNumbersRelationManager extends RelationManager
                         $product = $record->product;
                         $product->addStock(
                             quantity: $addQty,
-                            reason: ($data['reason'] ?? 'Nalevering') . " (serienummer: {$record->serial_number})",
+                            reason: ($data['reason'] ?? 'Nalevering')." (serienummer: {$record->serial_number})",
                         );
 
                         Notification::make()

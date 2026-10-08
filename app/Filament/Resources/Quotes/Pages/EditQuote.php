@@ -4,6 +4,9 @@ namespace App\Filament\Resources\Quotes\Pages;
 
 use App\Filament\Resources\Quotes\Actions\ApproveQuoteAction;
 use App\Filament\Resources\Quotes\Actions\ConvertToProjectAction;
+use App\Filament\Resources\Quotes\Actions\DuplicateQuoteAction;
+use App\Filament\Resources\Quotes\Actions\ResendQuoteAction;
+use App\Filament\Resources\Quotes\Actions\SendQuoteAction;
 use App\Filament\Resources\Quotes\Actions\SendToMoneybirdAction;
 use App\Filament\Resources\Quotes\Actions\SyncFromMoneybirdAction;
 use App\Filament\Resources\Quotes\Actions\UpdateMoneybirdAction;
@@ -25,6 +28,9 @@ class EditQuote extends EditRecord
             // Hoofdacties
             ApproveQuoteAction::make(),
             ConvertToProjectAction::make(),
+            DuplicateQuoteAction::make(),
+            SendQuoteAction::make(),
+            ResendQuoteAction::make(),
 
             // Moneybird dropdown
             ActionGroup::make([
@@ -39,6 +45,11 @@ class EditQuote extends EditRecord
 
             DeleteAction::make(),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('view', ['record' => $this->getRecord()]);
     }
 
     protected function afterSave(): void

@@ -48,6 +48,7 @@ class Quote extends Model implements HasMedia
         'sent_at',
         'approved_at',
         'show_item_breakdown',
+        'show_assumptions',
         'signed_at',
         'signed_ip',
         'signed_by_name',
@@ -69,6 +70,7 @@ class Quote extends Model implements HasMedia
         'approved_at' => 'datetime',
         'signed_at' => 'datetime',
         'show_item_breakdown' => 'boolean',
+        'show_assumptions' => 'boolean',
     ];
 
     /**
@@ -302,5 +304,22 @@ class Quote extends Model implements HasMedia
         }
 
         return trim(implode("\n", array_filter([$street, $postalCity])));
+    }
+
+    /**
+     * Get the effective work address split into separate lines (street / postal code / city)
+     * so long city names never get clipped inside narrow PDF info boxes.
+     */
+    public function workAddressLines(): array
+    {
+        $lines = explode("\n", $this->workFullAddress() ?: '');
+        $street = $lines[0] ?? '';
+        $postalCity = $lines[1] ?? '';
+
+        if (preg_match('/^([0-9]{4}\s?[A-Z]{2})\s*(.*)$/', $postalCity, $m)) {
+            return array_filter([$street, $m[1], $m[2]]);
+        }
+
+        return array_filter([$street, $postalCity]);
     }
 }

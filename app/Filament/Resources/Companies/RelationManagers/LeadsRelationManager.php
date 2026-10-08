@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Companies\RelationManagers;
 
 use App\Enums\LeadStatus;
+use App\Filament\Resources\Leads\LeadResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,11 +18,11 @@ use Filament\Tables\Table;
 class LeadsRelationManager extends RelationManager
 {
     protected static string $relationship = 'leads';
-    
+
     protected static ?string $title = 'Leads';
-    
+
     protected static ?string $modelLabel = 'lead';
-    
+
     protected static ?string $pluralModelLabel = 'leads';
 
     public function form(Schema $schema): Schema
@@ -57,6 +58,7 @@ class LeadsRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('name')
+            ->recordUrl(fn ($record) => LeadResource::getUrl('view', ['record' => $record]))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Naam')

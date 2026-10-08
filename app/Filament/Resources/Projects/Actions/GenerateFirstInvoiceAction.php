@@ -60,9 +60,19 @@ class GenerateFirstInvoiceAction extends Action
             }
             
             $percentage = $record->getFirstInvoicePercentage();
-            $subtotal = ($quote->subtotal * $percentage) / 100;
-            $vatAmount = ($quote->vat_amount * $percentage) / 100;
-            $total = ($quote->total * $percentage) / 100;
+
+            if ($record->usesSingleInvoice()) {
+                // Enkelvoudige factuur: project items (incl. meerwerk, rekening houdend
+                // met minderwerk) — dit is de enige (eind)factuur voor dit project
+                $amounts = $record->getFinalInvoiceAmounts();
+                $subtotal = $amounts['subtotal'];
+                $vatAmount = $amounts['vat_amount'];
+                $total = $amounts['total'];
+            } else {
+                $subtotal = ($quote->subtotal * $percentage) / 100;
+                $vatAmount = ($quote->vat_amount * $percentage) / 100;
+                $total = ($quote->total * $percentage) / 100;
+            }
             
             // Create invoice
             $invoice = Invoice::create([

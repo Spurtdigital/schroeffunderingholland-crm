@@ -23,7 +23,7 @@ class Company extends Model
         'city',
         'moneybird_contact_id',
     ];
-    
+
     /**
      * Route notifications for the mail channel.
      */
@@ -54,5 +54,13 @@ class Company extends Model
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);
+    }
+
+    /**
+     * Get the invoices for the company.
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 }

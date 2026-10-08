@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Companies\Tables;
 
 use App\Filament\Resources\Companies\Actions\SyncToMoneybirdAction;
+use App\Filament\Resources\Companies\CompanyResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -61,6 +62,7 @@ class CompaniesTable
             ->filters([
                 //
             ])
+            ->recordUrl(fn ($record) => CompanyResource::getUrl('view', ['record' => $record]))
             ->recordActions([
                 ViewAction::make()
                     ->label('Bekijken'),

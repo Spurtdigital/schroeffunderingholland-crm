@@ -10,8 +10,10 @@ use App\Models\QuoteItem;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Notifications\CustomerQuoteNotification;
+use App\Settings\GeneralSettings;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
+use Spatie\LaravelSettings\Models\SettingsProperty;
 
 beforeEach(function () {
     $this->seed();
@@ -112,7 +114,7 @@ test('customer quote email contains signed URL action link for viewing and signi
     $quote = Quote::factory()->create(['status' => QuoteStatus::Draft]);
     QuoteItem::factory()->create(['quote_id' => $quote->id]);
 
-    $mail = (new CustomerQuoteNotification($quote, 'Jan Jansen'))->toMail(new stdClass());
+    $mail = (new CustomerQuoteNotification($quote, 'Jan Jansen'))->toMail(new stdClass);
 
     expect($mail->subject)->toBe('Offerte '.($quote->displayNumber() ?? 'Concept'))
         ->and($mail->actionText)->toBe('Offerte bekijken en ondertekenen')
@@ -252,6 +254,63 @@ test('send quote action: syncs selected assumptions to quote', function () {
 
     // The assumption must be attached to the quote
     expect($quote->fresh()->assumptions()->where('quote_assumptions.id', $assumption->id)->exists())->toBeTrue();
+});
+
+test('send quote action: manual next quote number is used once and then auto-increments', function () {
+    $settings = app(GeneralSettings::class);
+    $settings->moneybird_enabled = false;
+    $settings->quote_number_start = 1;
+    $settings->next_quote_number = now()->year.'-0700';
+    $settings->save();
+
+    $product = Product::first();
+
+    $makeDraftQuote = function () use ($product) {
+        $quote = Quote::factory()->create(['status' => QuoteStatus::Draft]);
+
+        QuoteItem::factory()->create([
+            'quote_id' => $quote->id,
+            'itemable_type' => Product::class,
+            'itemable_id' => $product->id,
+            'type' => QuoteItemType::Product,
+            'quantity' => 1,
+            'unit_price' => $product->sales_price,
+            'total' => $product->sales_price,
+        ]);
+
+        return $quote;
+    };
+
+    $first = $makeDraftQuote();
+
+    Livewire::actingAs(User::first())
+        ->test(ViewQuote::class, ['record' => $first->getRouteKey()])
+        ->callAction('sendQuote', data: [
+            'email' => 'klant@example.com',
+            'assumption_ids' => [],
+        ])
+        ->assertHasNoActionErrors();
+
+    expect($first->fresh()->quote_number)->toBe(now()->year.'-0700');
+
+    // De handmatige override is na gebruik gewist
+    $payload = SettingsProperty::where('group', 'general')
+        ->where('name', 'next_quote_number')
+        ->value('payload');
+    expect(json_decode($payload))->toBeNull();
+
+    // De volgende offerte loopt automatisch door
+    $second = $makeDraftQuote();
+
+    Livewire::actingAs(User::first())
+        ->test(ViewQuote::class, ['record' => $second->getRouteKey()])
+        ->callAction('sendQuote', data: [
+            'email' => 'klant@example.com',
+            'assumption_ids' => [],
+        ])
+        ->assertHasNoActionErrors();
+
+    expect($second->fresh()->quote_number)->toBe(now()->year.'-0701');
 });
 
 test('send quote action: is only visible for draft quotes', function () {

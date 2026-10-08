@@ -31,6 +31,30 @@ class PaymentTermsSeeder extends Seeder
                 'is_default' => false,
                 'sort_order' => 30,
             ],
+            [
+                'title' => '50% bij opdracht en 50% na oplevering per pin',
+                'content' => '50% bij akkoord opdracht, 50% na oplevering per pin.',
+                'is_default' => false,
+                'sort_order' => 40,
+            ],
+            [
+                'title' => '80% bij akkoord opdracht',
+                'content' => '80% bij akkoord opdracht, 20% na oplevering.',
+                'is_default' => false,
+                'sort_order' => 50,
+            ],
+            [
+                'title' => '7 dagen na oplevering',
+                'content' => 'Betaling binnen 7 dagen na oplevering.',
+                'is_default' => false,
+                'sort_order' => 60,
+            ],
+            [
+                'title' => 'Pin of contant oplevering',
+                'content' => 'Betaling per pin of contant bij oplevering.',
+                'is_default' => false,
+                'sort_order' => 70,
+            ],
         ];
 
         foreach ($terms as $term) {

@@ -162,6 +162,7 @@ class Project extends Model implements HasMedia
         return in_array($this->invoicing_type, [
             InvoicingType::Split5050,
             InvoicingType::Split3070,
+            InvoicingType::Split8020,
         ]);
     }
 
@@ -173,6 +174,7 @@ class Project extends Model implements HasMedia
         return in_array($this->invoicing_type, [
             InvoicingType::Single,
             InvoicingType::SingleUpfront,
+            InvoicingType::SingleOnsite,
         ]);
     }
 
@@ -182,6 +184,32 @@ class Project extends Model implements HasMedia
     public function getFirstInvoicePercentage(): int
     {
         return $this->invoicing_type->getFirstInvoicePercentage();
+    }
+
+    /**
+     * Bereken de eindfactuur-bedragen op basis van de daadwerkelijke projectitems
+     * (inclusief meerwerk, rekening houdend met minderwerk) minus al gefactureerd.
+     *
+     * Dit is de enige betrouwbare basis voor een (eind)factuur: de offertebedragen
+     * worden verouderd zodra items op het project worden aangepast of toegevoegd.
+     *
+     * @return array{subtotal: float, vat_amount: float, total: float}
+     */
+    public function getFinalInvoiceAmounts(): array
+    {
+        $projectSubtotal = (float) $this->items()->sum('total');
+        $projectVat = round($projectSubtotal * 0.21, 2);
+        $projectTotal = round($projectSubtotal + $projectVat, 2);
+
+        $alreadyInvoicedSubtotal = (float) $this->invoices()->sum('subtotal');
+        $alreadyInvoicedVat = (float) $this->invoices()->sum('vat_amount');
+        $alreadyInvoicedTotal = (float) $this->invoices()->sum('total');
+
+        return [
+            'subtotal' => (float) max(0, round($projectSubtotal - $alreadyInvoicedSubtotal, 2)),
+            'vat_amount' => (float) max(0, round($projectVat - $alreadyInvoicedVat, 2)),
+            'total' => (float) max(0, round($projectTotal - $alreadyInvoicedTotal, 2)),
+        ];
     }
 
     /**
