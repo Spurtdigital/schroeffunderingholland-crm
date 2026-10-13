@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Schemas;
 
+use App\Filament\Resources\Companies\CompanyResource;
 use App\Filament\Resources\Projects\Pages\ViewProject;
 use App\Filament\Resources\Projects\RelationManagers\InvoicesRelationManager;
 use App\Filament\Resources\Projects\RelationManagers\ItemsRelationManager;
@@ -79,7 +80,7 @@ class ProjectInfolist
                                     ->label('Bedrijf')
                                     ->weight('bold')
                                     ->url(fn ($record) => $record->company
-                                        ? route('filament.admin.resources.companies.view', ['record' => $record->company_id])
+                                        ? CompanyResource::detailUrl($record->company_id)
                                         : null
                                     )
                                     ->openUrlInNewTab(),

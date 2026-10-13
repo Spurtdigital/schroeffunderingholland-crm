@@ -31,5 +31,12 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Feature flags staan in de test suite AAN, zodat het gedrag van de
+             onderliggende functies gedekt blijft. Tests die het verborgen
+             gedrag controleren zetten de flag zelf expliciet uit. -->
+        <env name="FEATURE_QUOTE_DUPLICATE" value="true"/>
+        <env name="FEATURE_SERIAL_NUMBERS" value="true"/>
+        <env name="FEATURE_COMPANY_OVERVIEW" value="true"/>
+        <env name="FEATURE_QUOTE_NUMBER_OVERRIDE" value="true"/>
     </php>
 </phpunit>

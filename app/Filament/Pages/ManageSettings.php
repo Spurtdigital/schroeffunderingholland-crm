@@ -215,6 +215,7 @@ class ManageSettings extends Page implements HasForms
                             ->columnSpanFull(),
                         TextInput::make('next_quote_number')
                             ->label('Volgend offertenummer (zonder Moneybird)')
+                            ->visible(fn (): bool => (bool) config('features.quote_number_override'))
                             ->placeholder(fn () => app(QuoteNumberService::class)->peekNextLocalNumber())
                             ->helperText('Laat leeg voor automatische nummering. Vul je hier een nummer in (bijv. 2026-0100), dan krijgt de eerstvolgende verstuurde offerte exact dit nummer; daarna loopt de nummering automatisch door.')
                             ->maxLength(50)
@@ -277,9 +278,13 @@ class ManageSettings extends Page implements HasForms
         $settings->moneybird_administration_id = $data['moneybird_administration_id'] ?? null;
         $settings->moneybird_enabled = (bool) ($data['moneybird_enabled'] ?? true);
         $settings->quote_number_start = (int) ($data['quote_number_start'] ?? 1);
-        $settings->next_quote_number = filled($data['next_quote_number'] ?? null)
-            ? trim($data['next_quote_number'])
-            : null;
+        // Alleen overschrijven als het veld ook daadwerkelijk getoond is,
+        // anders zou opslaan een bestaande override stilletjes wissen.
+        if (config('features.quote_number_override')) {
+            $settings->next_quote_number = filled($data['next_quote_number'] ?? null)
+                ? trim($data['next_quote_number'])
+                : null;
+        }
         $settings->google_maps_api_key = $data['google_maps_api_key'] ?? null;
         $settings->default_pre_text = $data['default_pre_text'] ?? null;
         $settings->default_post_text = $data['default_post_text'] ?? null;
