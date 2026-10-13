@@ -231,7 +231,6 @@
         /* Items tabel */
         .items-section {
             margin-bottom: 14px;
-            page-break-before: always;
         }
         .items-table {
             width: 100%;
@@ -261,7 +260,7 @@
             border-bottom: 1px solid #ccc;
             font-size: 8pt;
         }
-        .items-table tbody tr:last-child td {
+        .items-section table:last-of-type tbody tr:last-child td {
             border-bottom: none;
         }
         .text-right { text-align: right; }
@@ -458,6 +457,10 @@
     </div>
     @endif
 
+    @php
+        $hasIntroContent = !empty(trim((string) $quote->pre_text));
+    @endphp
+
     @if($quote->show_item_breakdown)
     {{-- ── Volledige regelweergave (met prijzen) ──────────────────────── --}}
     @php
@@ -468,7 +471,7 @@
         $firstChunk = $allItems->take($firstChunkSize);
         $remainingItems = $allItems->skip($firstChunkSize);
     @endphp
-    <div class="items-section">
+    <div class="items-section" @if($hasIntroContent) style="page-break-before: always;" @endif>
         {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>
@@ -556,7 +559,7 @@
         $firstChunk = $filteredItems->take($firstChunkSize);
         $remainingItems = $filteredItems->skip($firstChunkSize);
     @endphp
-    <div class="items-section">
+    <div class="items-section" @if($hasIntroContent) style="page-break-before: always;" @endif>
         {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>

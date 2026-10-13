@@ -65,6 +65,13 @@ class ViewQuote extends ViewRecord
             ApproveQuoteAction::make(),
             ConvertToProjectAction::make(),
 
+            Action::make('viewProject')
+                ->label('Bekijk project')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->color('success')
+                ->url(fn (Quote $record) => route('filament.admin.resources.projects.view', ['record' => $record->project_id]))
+                ->visible(fn (Quote $record) => $record->project_id !== null),
+
             // Documenten dropdown
             ActionGroup::make([
                 GeneratePdfAction::make(),

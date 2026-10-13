@@ -373,9 +373,9 @@
             $hasWeight = false;
             $hasSerialNumbers = false;
             foreach ($project->items as $item) {
-                if ($item->itemable_type === 'App\\Models\\Product' && $item->itemable) {
+                if ($item->itemable_type === 'App\\Models\\Product') {
                     $hasItems = true;
-                    if ($item->itemable->weight) {
+                    if ($item->itemable?->weight) {
                         $hasWeight = true;
                         $totalWeight += $item->quantity * $item->itemable->weight;
                     }
@@ -407,9 +407,9 @@
             </thead>
             <tbody>
                 @foreach($project->items as $item)
-                    @if($item->itemable_type === 'App\\Models\\Product' && $item->itemable)
+                    @if($item->itemable_type === 'App\\Models\\Product')
                         @php 
-                            $lineWeight = $item->itemable->weight ? $item->quantity * $item->itemable->weight : null;
+                            $lineWeight = $item->itemable?->weight ? $item->quantity * $item->itemable->weight : null;
                             $serials = $item->serialNumbers->map(function ($serial) {
                                 return $serial->pivot->quantity > 1
                                     ? $serial->serial_number . ' (' . $serial->pivot->quantity . 'x)'
@@ -418,8 +418,8 @@
                         @endphp
                         <tr>
                             <td class="text-bold">{{ number_format($item->quantity, 0, ',', '.') }}</td>
-                            <td>{{ $item->itemable->sku ?? '-' }}</td>
-                            <td>{{ str_replace('⌀', 'Ø', $item->itemable->name ?? $item->description) }}</td>
+                            <td>{{ $item->itemable?->sku ?? '-' }}</td>
+                            <td>{{ str_replace('⌀', 'Ø', $item->itemable?->name ?? $item->description) }}</td>
                             @if($hasSerialNumbers)
                             <td style="font-size: 7pt;">{{ implode(', ', $serials) ?: '-' }}</td>
                             @endif
