@@ -294,6 +294,14 @@
             page-break-inside: avoid;
         }
 
+        /* Slottekst: bewust GEEN page-break-inside op het geheel. Het blok is
+           te lang voor één pagina; zou je het bij elkaar willen houden, dan
+           schuift het in zijn geheel door en laat het een lege pagina achter.
+           De losse kopje-met-tekst groepen hieronder blijven wel intact. */
+        .closing-section {
+            margin-top: 14px;
+        }
+
         /* Aannames bullet-lijst */
         .assumptions-section {
             margin-bottom: 14px;
@@ -579,6 +587,52 @@
     <div class="notes-section">
         <h4>Opmerkingen</h4>
         <p>{{ $quote->notes }}</p>
+    </div>
+    @endif
+
+    <!-- Slottekst: de eisen aan de klant (stroom, vrij van obstakels, Klic,
+         wachttijd). Zelfde bron en opmaak als op de offerte. Bewust niet
+         gekoppeld aan show_assumptions: dit is het document dat de klant
+         tekent, dus deze voorwaarden horen er altijd op te staan. -->
+    @if($settings->closing_text)
+    <div class="closing-section">
+        @php
+            // Split closing text op secties die beginnen met **titel**
+            $closingText = trim($settings->closing_text);
+            $sections = preg_split('/\n{2,}/', $closingText);
+
+            // Groepeer secties: als een sectie begint met ** is het een nieuwe groep
+            $groupedSections = [];
+            $currentGroup = '';
+
+            foreach ($sections as $section) {
+                $section = trim($section);
+                if (empty($section)) {
+                    continue;
+                }
+
+                if (preg_match('/^\*\*[^*]+\*\*/', $section)) {
+                    if (! empty($currentGroup)) {
+                        $groupedSections[] = $currentGroup;
+                    }
+                    $currentGroup = $section;
+                } else {
+                    if (! empty($currentGroup)) {
+                        $currentGroup .= "\n\n".$section;
+                    } else {
+                        $currentGroup = $section;
+                    }
+                }
+            }
+            if (! empty($currentGroup)) {
+                $groupedSections[] = $currentGroup;
+            }
+        @endphp
+        @foreach($groupedSections as $section)
+        <table style="width: 100%; margin-bottom: 10px;"><tbody style="page-break-inside: avoid;"><tr><td style="padding: 0;">
+            <p style="font-size: 8pt; line-height: 1.5; margin: 0;">{!! nl2br($mdBold(e(trim($section)))) !!}</p>
+        </td></tr></tbody></table>
+        @endforeach
     </div>
     @endif
 
