@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Leads\Schemas;
 
+use App\Filament\Resources\Companies\CompanyResource;
 use App\Services\DistanceCalculatorService;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
@@ -102,7 +103,7 @@ class LeadInfolist
                                     ->label('Bedrijf')
                                     ->weight('bold')
                                     ->url(fn ($record) => $record->company
-                                        ? route('filament.admin.resources.companies.view', ['record' => $record->company_id])
+                                        ? CompanyResource::detailUrl($record->company_id)
                                         : null
                                     )
                                     ->openUrlInNewTab()
@@ -151,7 +152,7 @@ class LeadInfolist
                                     ->label('Bedrijf')
                                     ->weight('bold')
                                     ->url(fn ($record) => $record->company
-                                        ? route('filament.admin.resources.companies.view', ['record' => $record->company_id])
+                                        ? CompanyResource::detailUrl($record->company_id)
                                         : null
                                     )
                                     ->openUrlInNewTab()

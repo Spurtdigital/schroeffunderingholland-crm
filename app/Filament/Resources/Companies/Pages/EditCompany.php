@@ -15,7 +15,9 @@ class EditCompany extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('view', ['record' => $this->getRecord()]);
+        // Gaat naar het bedrijfsoverzicht als FEATURE_COMPANY_OVERVIEW aanstaat,
+        // anders blijven we op de bewerkpagina.
+        return CompanyResource::detailUrl($this->getRecord());
     }
 
     /**

@@ -23,6 +23,11 @@ class DuplicateQuoteAction extends Action
 
         $this->label('Dupliceren');
 
+        // Zichtbaar via de feature flag FEATURE_QUOTE_DUPLICATE.
+        // Staat die uit, dan verdwijnt de knop in één keer uit QuotesTable,
+        // EditQuote en ViewQuote.
+        $this->visible(fn (): bool => (bool) config('features.quote_duplicate'));
+
         $this->icon('heroicon-o-document-duplicate');
 
         $this->color('gray');

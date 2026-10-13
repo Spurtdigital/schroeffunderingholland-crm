@@ -62,10 +62,11 @@ class CompaniesTable
             ->filters([
                 //
             ])
-            ->recordUrl(fn ($record) => CompanyResource::getUrl('view', ['record' => $record]))
+            ->recordUrl(fn ($record) => CompanyResource::detailUrl($record))
             ->recordActions([
                 ViewAction::make()
-                    ->label('Bekijken'),
+                    ->label('Bekijken')
+                    ->visible(fn (): bool => (bool) config('features.company_overview')),
                 EditAction::make()
                     ->label('Bewerken'),
                 SyncToMoneybirdAction::make(),

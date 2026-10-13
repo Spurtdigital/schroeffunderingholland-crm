@@ -35,6 +35,21 @@ class CompanyResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    /**
+     * Waar een klantlink naartoe wijst.
+     *
+     * Het bedrijfsoverzicht (de bekijkpagina) hangt achter de feature flag
+     * FEATURE_COMPANY_OVERVIEW. Staat die uit, dan gaan alle links naar de
+     * bewerkpagina. Gebruik deze helper overal waar je naar een klant linkt,
+     * zodat er één plek is die dit bepaalt.
+     */
+    public static function detailUrl(Company|int|string $record): string
+    {
+        return config('features.company_overview')
+            ? static::getUrl('view', ['record' => $record])
+            : static::getUrl('edit', ['record' => $record]);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return CompanyForm::configure($schema);

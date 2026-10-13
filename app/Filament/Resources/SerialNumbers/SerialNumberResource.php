@@ -25,6 +25,21 @@ class SerialNumberResource extends Resource
 
     protected static ?int $navigationSort = 7;
 
+    /**
+     * Zichtbaar via de feature flag FEATURE_SERIAL_NUMBERS.
+     * Staat die uit, dan verdwijnt het menu-item én is de route
+     * /admin/serial-numbers niet meer bereikbaar.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return (bool) config('features.serial_numbers');
+    }
+
+    public static function canAccess(): bool
+    {
+        return (bool) config('features.serial_numbers');
+    }
+
     public static function table(Table $table): Table
     {
         return SerialNumbersTable::configure($table);

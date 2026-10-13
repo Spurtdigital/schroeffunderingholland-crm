@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Quotes\Schemas;
 
+use App\Filament\Resources\Companies\CompanyResource;
 use App\Filament\Resources\Quotes\Pages\ViewQuote;
 use App\Filament\Resources\Quotes\RelationManagers\ItemsRelationManager;
 use App\Models\Machine;
@@ -254,7 +255,7 @@ class QuoteInfolist
                                        ->label('Bedrijf')
                                        ->weight('bold')
                                        ->url(fn ($record) => $record->company
-                                           ? route('filament.admin.resources.companies.view', ['record' => $record->company_id])
+                                           ? CompanyResource::detailUrl($record->company_id)
                                            : null
                                        )
                                        ->openUrlInNewTab(),
