@@ -458,7 +458,13 @@
     @endif
 
     @php
-        $hasIntroContent = !empty(trim((string) $quote->pre_text));
+        // Begint de itemstabel op een nieuwe pagina? Alleen als er daadwerkelijk
+        // inleidende inhoud boven staat: een intro-tekst en/of de voorwaarden.
+        // Staat er niets boven, dan blijft de tabel gewoon op pagina 1 staan en
+        // voorkomen we een vrijwel lege eerste pagina.
+        // Zelfde conditie als in order-confirmation.blade.php — houd ze gelijk.
+        $hasContentBeforeItems = filled(trim((string) $quote->pre_text))
+            || ($quote->show_assumptions !== false && $quote->assumptions->isNotEmpty());
     @endphp
 
     @if($quote->show_item_breakdown)
@@ -471,7 +477,7 @@
         $firstChunk = $allItems->take($firstChunkSize);
         $remainingItems = $allItems->skip($firstChunkSize);
     @endphp
-    <div class="items-section" @if($hasIntroContent) style="page-break-before: always;" @endif>
+    <div class="items-section" @if($hasContentBeforeItems) style="page-break-before: always;" @endif>
         {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>
@@ -559,7 +565,7 @@
         $firstChunk = $filteredItems->take($firstChunkSize);
         $remainingItems = $filteredItems->skip($firstChunkSize);
     @endphp
-    <div class="items-section" @if($hasIntroContent) style="page-break-before: always;" @endif>
+    <div class="items-section" @if($hasContentBeforeItems) style="page-break-before: always;" @endif>
         {{-- Wrapper tabel voor header + eerste 50% items - blijft samen --}}
         <table class="items-table" style="page-break-inside: avoid;">
             <thead>
