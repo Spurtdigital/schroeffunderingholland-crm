@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PurchaseOrders\Actions;
 use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -69,10 +70,7 @@ class ReceiveMaterialsAction extends Action
                         ->required()
                         ->columnSpan(1),
 
-                    TextInput::make('id')
-                        ->hidden()
-                        ->dehydrated()
-                        ->required(),
+                    Hidden::make('id'),
                 ])
                 ->columns(3)
                 ->addable(false)
