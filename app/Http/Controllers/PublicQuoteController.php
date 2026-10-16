@@ -140,10 +140,10 @@ class PublicQuoteController extends Controller
             'user_agent' => substr($request->userAgent() ?? '', 0, 255),
         ]);
 
-        // Notify team about approval
+        // Notify Bob about approval
         $quote->load('company');
-        $users = \App\Models\User::all();
-        Notification::send($users, new QuoteApprovedNotification($quote));
+        Notification::route('mail', 'bob@schroeffunderingholland.nl')
+            ->notify(new QuoteApprovedNotification($quote));
 
         return back()->with('success', 'Bedankt! Uw offerte is succesvol ondertekend. U ontvangt een bevestiging per e-mail.');
     }
