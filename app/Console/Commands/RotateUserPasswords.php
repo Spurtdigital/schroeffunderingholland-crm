@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class RotateUserPasswords extends Command
@@ -42,14 +44,23 @@ class RotateUserPasswords extends Command
             $password = Str::password(24);
 
             $user->password = $password;
+            $user->remember_token = null;
             $user->save();
 
             $rows[] = [$user->email, $password];
         }
 
+        // Na een compromis moeten bestaande sessies en tokens ongeldig worden.
+        foreach (['sessions', 'password_reset_tokens', 'personal_access_tokens'] as $table) {
+            if (Schema::hasTable($table)) {
+                DB::table($table)->delete();
+            }
+        }
+
         $this->newLine();
         $this->info('Nieuwe wachtwoorden (eenmalig zichtbaar, niet opgeslagen):');
         $this->table(['E-mail', 'Nieuw wachtwoord'], $rows);
+        $this->warn('Alle bestaande sessies, remember-tokens en API-tokens zijn ongeldig gemaakt.');
         $this->warn('Deel deze wachtwoorden via een veilig kanaal en sla ze niet op in de repo of logs.');
 
         return self::SUCCESS;

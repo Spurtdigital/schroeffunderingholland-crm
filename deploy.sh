@@ -95,6 +95,7 @@ rsync -az --delete \
   --exclude='node_modules' \
   --exclude='vendor' \
   --exclude='storage/app/public/' \
+  --exclude='storage/fonts/' \
   --exclude='storage/logs/*' \
   --exclude='storage/framework/cache/*' \
   --exclude='storage/framework/sessions/*' \
