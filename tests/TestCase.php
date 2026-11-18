@@ -25,6 +25,9 @@ abstract class TestCase extends BaseTestCase
             'guard_name' => 'web',
         ]);
 
-        User::factory()->create()->assignRole($role);
+        User::factory()->create([
+            'is_approved' => true,
+            'approved_at' => now(),
+        ])->assignRole($role);
     }
 }

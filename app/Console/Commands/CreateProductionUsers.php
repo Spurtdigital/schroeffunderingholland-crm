@@ -37,6 +37,11 @@ class CreateProductionUsers extends Command
                     $existing->syncRoles([$role]);
                 }
 
+                $existing->forceFill([
+                    'is_approved' => true,
+                    'approved_at' => $existing->approved_at ?? now(),
+                ])->save();
+
                 $this->warn("Bestaat al, wachtwoord ongewijzigd: {$email}");
 
                 continue;
@@ -55,8 +60,11 @@ class CreateProductionUsers extends Command
                 'email' => $email,
                 'password' => Hash::make($password),
             ]);
-            $user->email_verified_at = now();
-            $user->save();
+            $user->forceFill([
+                'email_verified_at' => now(),
+                'is_approved' => true,
+                'approved_at' => now(),
+            ])->save();
             $user->syncRoles([$role]);
 
             $this->info("Aangemaakt: {$email} (super_admin)");
