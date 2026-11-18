@@ -3,17 +3,56 @@ set -euo pipefail
 
 # =============================================================================
 # deploy.sh — SFH CRM deploy naar Antagonist
-# Gebruik: ./deploy.sh
+# Gebruik:
+#   ./deploy.sh                     — normale deploy
+#   ./deploy.sh --rotate-passwords  — eenmalig alle wachtwoorden roteren
+#                                     (toont de nieuwe wachtwoorden in de terminal)
 # =============================================================================
+
+ROTATE_PASSWORDS=false
+for arg in "$@"; do
+  case "$arg" in
+    --rotate-passwords) ROTATE_PASSWORDS=true ;;
+    -h|--help)
+      echo "Gebruik: ./deploy.sh [--rotate-passwords]"
+      exit 0
+      ;;
+    *)
+      echo "Onbekende optie: $arg"
+      exit 1
+      ;;
+  esac
+done
 
 SSH_KEY="$HOME/.ssh/antagonist-ssh"
 SSH_USER="deb122730"
 SSH_HOST="141.138.169.228"
-SSH_OPTS="-i $SSH_KEY -p 22 -o ServerAliveInterval=10 -o ServerAliveCountMax=30 -o ConnectTimeout=60 -o TCPKeepAlive=yes"
+# Key-only: er worden geen wachtwoorden gebruikt of opgeslagen.
+SSH_OPTS="-i $SSH_KEY -o IdentitiesOnly=yes -p 22 -o ServerAliveInterval=10 -o ServerAliveCountMax=30 -o ConnectTimeout=60 -o TCPKeepAlive=yes"
 SSH="ssh $SSH_OPTS $SSH_USER@$SSH_HOST"
-REMOTE_ROOT="/home/deb122730/domains/crm.schroeffunderingholland.nl"
+
+if [ ! -f "$SSH_KEY" ]; then
+  echo "SSH-sleutel niet gevonden: $SSH_KEY"
+  exit 1
+fi
+REMOTE_ROOT="/home/deb122730/domains/app.schroeffunderingholland.nl"
 REMOTE_APP="$REMOTE_ROOT/app"
 REMOTE_PUBLIC="$REMOTE_ROOT/public_html"
+
+# =============================================================================
+# STAP -1: Controleer of de productiegebruikers op de server zijn ingesteld
+# =============================================================================
+echo "==> [preflight] Controleren of PRODUCTION_USER_* op de server staat..."
+if ! $SSH "test -f '$REMOTE_APP/.env' && grep -qE '^PRODUCTION_USER_[0-9]_EMAIL=.+' '$REMOTE_APP/.env'"; then
+  echo ""
+  echo "❌ Geen PRODUCTION_USER_*_EMAIL gevonden in $REMOTE_APP/.env."
+  echo "   Zet daar minimaal PRODUCTION_USER_1_NAME / _EMAIL / _PASSWORD (min. 12 tekens)."
+  echo "   De deploy stopt, zodat er geen omgeving zonder beheerder ontstaat."
+  echo ""
+  exit 1
+fi
+echo "✅ Productiegebruikers zijn geconfigureerd."
+echo ""
 
 # =============================================================================
 # STAP 0: Tests draaien — deploy stopt bij falen
@@ -117,7 +156,13 @@ INDEXPHP
 echo "==> [6/6] Laravel optimalisaties + migraties..."
 $SSH "cd $REMOTE_APP && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php"
 $SSH "cd $REMOTE_APP && php artisan migrate --force 2>&1"
-$SSH "cd $REMOTE_APP && php artisan app:create-production-users --force 2>&1"
+# Gebruikers: alleen aanmaken als ze nog niet bestaan. Bestaande wachtwoorden
+# worden nooit gereset. Zet PRODUCTION_USER_* in de .env op de server.
+$SSH "cd $REMOTE_APP && php artisan app:create-production-users 2>&1"
+if [ "$ROTATE_PASSWORDS" = true ]; then
+  echo "==> Wachtwoorden roteren (eenmalig; nieuwe wachtwoorden worden hieronder getoond)..."
+  $SSH "cd $REMOTE_APP && php artisan app:rotate-user-passwords --force 2>&1"
+fi
 $SSH "cd $REMOTE_APP && php artisan db:seed --class=EmailTemplateSeeder --force 2>&1"
 # LET OP: config:cache wordt NIET gedraaid - zie server-bootstrap.sh voor uitleg
 $SSH "cd $REMOTE_APP && php artisan route:cache && php artisan view:cache && php artisan event:cache 2>&1"
@@ -125,4 +170,8 @@ $SSH "cd $REMOTE_APP && php artisan route:cache && php artisan view:cache && php
 $SSH "find $REMOTE_PUBLIC -type d -exec chmod 755 {} \; && find $REMOTE_PUBLIC -type f -exec chmod 644 {} \;"
 
 echo ""
-echo "Deploy voltooid! https://crm.schroeffunderingholland.nl"
+echo "Deploy voltooid! https://app.schroeffunderingholland.nl"
+if [ "$ROTATE_PASSWORDS" = true ]; then
+  echo ""
+  echo "LET OP: de nieuwe wachtwoorden staan hierboven. Sla ze veilig op en deel ze via een veilig kanaal."
+fi

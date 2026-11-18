@@ -23,7 +23,7 @@ Dit is een volledig functioneel CRM-systeem voor Schroeffundering Holland, gebou
 ## Belangrijke URLs
 
 - **Admin Panel:** https://sfh.ddev.site/admin
-- **Login:** admin@sfh.nl / password
+- **Login:** geen standaardaccount; gebruik `PRODUCTION_USER_*` + `php artisan app:create-production-users`
 - **Mailpit:** https://sfh.ddev.site:8026
 
 ## Database Schema

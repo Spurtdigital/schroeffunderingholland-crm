@@ -10,7 +10,7 @@ SSH_KEY="$HOME/.ssh/antagonist-ssh"
 SSH_USER="deb122730"
 SSH_HOST="141.138.169.228"
 SSH="ssh -i $SSH_KEY $SSH_USER@$SSH_HOST"
-REMOTE_APP="/home/deb122730/domains/crm.schroeffunderingholland.nl/app"
+REMOTE_APP="/home/deb122730/domains/app.schroeffunderingholland.nl/app"
 
 echo "==> [1/4] Live database dumpen op server..."
 $SSH "cd $REMOTE_APP && php artisan db:show --json 2>/dev/null | true"

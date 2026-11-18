@@ -10,6 +10,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
@@ -34,11 +35,13 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(asset('schroeffunderingholland.svg'))
             ->darkModeBrandLogo(asset('schroeffunderingholland.svg'))
             ->favicon(asset('favicon.ico'))
+            ->font('Inter')
             ->colors([
-                // Primary: #150c2f (SFH donkerpaars) — huisstijl primary buttons
-                // 500/600 slots zijn verschoven naar 700/800 waarden zodat
-                // Filament's ButtonComponent witte tekst kiest (contrast >= 4.5:1).
-                'primary' => [
+                // Primary: oranje — 500 = oklch(70.5% .213 47.604)
+                'primary' => Color::Orange,
+                // Secondary: #150c2f (SFH donkerpaars)
+                // Verschoven 500/600 slots zodat witte knoptekst contrast >= 4.5:1 haalt.
+                'secondary' => [
                     50 => 'oklch(0.977 0.014 290.523)',
                     100 => 'oklch(0.950 0.033 290.523)',
                     200 => 'oklch(0.905 0.063 290.523)',
@@ -50,21 +53,6 @@ class AdminPanelProvider extends PanelProvider
                     800 => 'oklch(0.330 0.080 290.523)',
                     900 => 'oklch(0.278 0.071 290.523)',
                     950 => 'oklch(0.180 0.045 290.523)',
-                ],
-                // Secondary: #EF7D00 (SFH oranje)
-                // Zelfde verschuiving voor witte knoptekst.
-                'secondary' => [
-                    50 => 'oklch(0.977 0.014 55.475)',
-                    100 => 'oklch(0.950 0.033 55.475)',
-                    200 => 'oklch(0.905 0.063 55.475)',
-                    300 => 'oklch(0.840 0.106 55.475)',
-                    400 => 'oklch(0.754 0.150 55.475)',
-                    500 => 'oklch(0.515 0.149 55.475)',  // = gegenereerde 700 (5.92:1 vs wit ✅)
-                    600 => 'oklch(0.446 0.123 55.475)',  // = gegenereerde 800 (7.98:1 vs wit ✅)
-                    700 => 'oklch(0.395 0.100 55.475)',
-                    800 => 'oklch(0.330 0.080 55.475)',
-                    900 => 'oklch(0.278 0.071 55.475)',
-                    950 => 'oklch(0.180 0.045 55.475)',
                 ],
             ])
             ->navigationGroups([
@@ -101,6 +89,11 @@ class AdminPanelProvider extends PanelProvider
 
     public function boot(): void
     {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::STYLES_AFTER,
+            fn () => view('filament.admin-theme'),
+        );
+
         FilamentView::registerRenderHook(
             PanelsRenderHook::STYLES_AFTER,
             fn () => <<<'HTML'

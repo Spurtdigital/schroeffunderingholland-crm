@@ -17,7 +17,6 @@ use App\Models\QuoteItem;
 use App\Models\User;
 use App\Services\QuoteCalculationService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -28,25 +27,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->command->info('🌱 Seeding database with demo data...');
 
-        // 1. Create admin user (firstOrCreate zodat re-seeden niet crasht)
-        $this->command->info('👤 Creating admin user...');
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@sfh.nl'],
-            [
-                'name' => 'Admin',
-                'password' => Hash::make('password'),
-            ]);
+        // Let op: er worden bewust géén gebruikers aangemaakt. Gebruik
+        // `php artisan app:create-production-users` met PRODUCTION_USER_* in de .env.
 
-        // Assign super_admin role to the admin user
-        $this->command->info('🔐 Assigning super_admin role...');
-        $superAdminRoleName = \BezhanSalleh\FilamentShield\Support\Utils::getSuperAdminName();
-        $role = \Spatie\Permission\Models\Role::firstOrCreate([
-            'name' => $superAdminRoleName,
-            'guard_name' => 'web',
-        ]);
-        $admin->assignRole($role);
-
-        // 2. Maak alle echte SFH-producten aan via updateOrCreate
+        // 1. Maak alle echte SFH-producten aan via updateOrCreate
         $this->command->info('📦 Creating products...');
         $products = collect();
         foreach (\Database\Factories\ProductFactory::catalog() as $productData) {
@@ -311,8 +295,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $this->command->info('');
-        $this->command->info('🔑 Login credentials:');
-        $this->command->info('   Email: admin@sfh.nl');
-        $this->command->info('   Password: password');
+        $this->command->info('Gebruikers worden niet via de seeder aangemaakt. Gebruik: php artisan app:create-production-users');
     }
 }

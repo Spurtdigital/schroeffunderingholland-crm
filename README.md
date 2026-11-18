@@ -74,7 +74,7 @@ Een CRM-systeem voor leadbeheer, offertes, projecten en facturatievoorbereiding 
 ### ✅ Fase 7: Testing & Demo Data (Compleet)
 - [x] Database seeder met realistische demo data
 - [x] Complete workflow: 15 companies → 25 leads → 20+ quotes → 5+ projects → invoices
-- [x] Automatic admin user creation (admin@sfh.nl / password)
+- [x] Gebruikersaanmaak via `PRODUCTION_USER_*` + `app:create-production-users` (geen standaardwachtwoorden)
 
 ### ✅ Fase 8: Email Notifications & Templates (Compleet)
 - [x] Email Template Management systeem
@@ -116,13 +116,47 @@ Alle core functionaliteit is geïmplementeerd en werkend:
 # Start DDEV
 ddev start
 
-# Run migrations & seed demo data
+# Run migrations & seed demo data (maakt géén gebruikers aan)
 ddev exec php artisan migrate --seed
+
+# Maak een gebruiker aan (zet eerst PRODUCTION_USER_1_* in .env)
+ddev exec php artisan app:create-production-users
 
 # Access admin panel
 open https://sfh.ddev.site/admin
-# Login: admin@sfh.nl / password
 ```
+
+## 🚀 Deployment
+
+Productie draait uitsluitend op **https://app.schroeffunderingholland.nl**. Er wordt niet meer gedeployed naar `crm.schroeffunderingholland.nl`; dat domein is legacy.
+
+**Server (Antagonist)**:
+- SSH: `ssh -i ~/.ssh/antagonist-ssh deb122730@141.138.169.228`
+- App: `/home/deb122730/domains/app.schroeffunderingholland.nl/app`
+- Public: `/home/deb122730/domains/app.schroeffunderingholland.nl/public_html`
+- Database: `deb122730_app` (los van de oude `deb122730_crm`-database)
+
+**Deployen**:
+```bash
+./deploy.sh
+```
+Het script controleert eerst of `PRODUCTION_USER_*` in de server-`.env` staat, draait de Pest-suite, bouwt Vite-assets en `vendor`, rsynct naar de app-directory, schrijft de server-`index.php`, draait migraties/seeders en cachet routes/views/events. Bij falende tests of ontbrekende gebruikersconfiguratie stopt de deploy.
+
+**Wachtwoorden roteren** (eenmalig, toont de nieuwe wachtwoorden in de terminal):
+```bash
+./deploy.sh --rotate-passwords
+```
+Dit verwijdert ook het legacy `admin@sfh.nl`-account. Bestaande wachtwoorden worden bij een normale deploy nooit gereset.
+
+**Secrets uit de git-historie verwijderen**: gebruik `scripts/scrub-secrets-from-history.sh` (eenmalig, buiten deploy.sh om; zie de uitleg in het script).
+
+**Live database lokaal ophalen**:
+```bash
+./pull-db.sh
+```
+Leest de `.env` van de app-directory op de server en importeert de dump in DDEV.
+
+**Let op**: `deploy.sh`, `pull-db.sh` en `server-bootstrap.sh` zijn geconfigureerd voor `app.schroeffunderingholland.nl`. Wijzig je die paden, pas ze in alle drie de scripts aan.
 
 ## 📁 Project Structuur
 
@@ -259,7 +293,6 @@ tests/
 - ✅ ConvertToProjectAction (Quote → optional email naar klant)
 - ✅ Custom email branding (Schroeffundering Holland logo & colors)
 - ✅ Informele toon (je/jouw i.p.v. u/uw) in alle emails
-- ✅ Test command: `php artisan test:emails {type}`
 - ✅ Queue-based sending (alle notificaties implement ShouldQueue)
 - ✅ Mailpit integration voor testing
 - **Status**: Email systeem volledig werkend en getest!
@@ -362,7 +395,7 @@ tests/
 
 **Admin Panel**:
 - URL: https://sfh.ddev.site/admin
-- Login: admin@sfh.nl / password
+- Er is geen standaardaccount. Zet `PRODUCTION_USER_1_NAME`, `PRODUCTION_USER_1_EMAIL` en `PRODUCTION_USER_1_PASSWORD` (min. 12 tekens) in `.env` en draai `php artisan app:create-production-users`.
 
 **Mailpit (Email Testing)**:
 - URL: https://sfh.ddev.site:8026
@@ -389,11 +422,6 @@ ddev exec php artisan test --testsuite=Unit
 
 # Run with coverage
 ddev exec php artisan test --coverage
-
-# Test email notifications
-ddev exec "php artisan test:emails all <<< 'your@email.com'"
-ddev exec "php artisan queue:work --stop-when-empty"
-# Then check Mailpit: https://sfh.ddev.site:8026
 ```
 
 **Code Quality**:

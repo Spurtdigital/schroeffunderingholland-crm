@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -11,52 +10,56 @@ use Spatie\Permission\Models\Role;
 class CreateProductionUsers extends Command
 {
     protected $signature = 'app:create-production-users
-                            {--force : Overschrijf bestaande gebruikers}';
+                            {--force : Wijs de super_admin-rol opnieuw toe aan bestaande gebruikers (wachtwoorden worden nooit gereset)}';
 
-    protected $description = 'Maak de twee productie-gebruikers aan met super_admin rol.';
+    protected $description = 'Maak productiegebruikers aan op basis van PRODUCTION_USER_* uit de .env. Bestaande wachtwoorden worden nooit overschreven.';
 
     public function handle(): int
     {
-        $users = [
-            [
-                'name'     => 'Schroeffundering Holland',
-                'email'    => 'info@schroeffunderingholland.nl',
-                'password' => '***REMOVED***',
-            ],
-            [
-                'name'     => 'Spurt Digital',
-                'email'    => 'info@spurt.digital',
-                'password' => '***REMOVED***',
-            ],
-            [
-                'name'     => 'Kevin (Spurt Digital)',
-                'email'    => 'kevin@spurt.digital',
-                'password' => '***REMOVED***',
-            ],
-        ];
+        $users = collect(config('production_users.users', []))
+            ->filter(fn (array $user): bool => filled($user['email'] ?? null));
+
+        if ($users->isEmpty()) {
+            $this->warn('Geen PRODUCTION_USER_* gevonden in de .env. Er zijn geen gebruikers aangemaakt.');
+            $this->line('Zet bijvoorbeeld PRODUCTION_USER_1_NAME, PRODUCTION_USER_1_EMAIL en PRODUCTION_USER_1_PASSWORD (min. 12 tekens).');
+
+            return self::SUCCESS;
+        }
 
         $role = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'web']);
 
         foreach ($users as $data) {
-            $existing = User::where('email', $data['email'])->first();
+            $email = (string) $data['email'];
+            $existing = User::where('email', $email)->first();
 
-            if ($existing && ! $this->option('force')) {
-                $this->warn("Gebruiker bestaat al: {$data['email']} (gebruik --force om te overschrijven)");
+            if ($existing) {
+                if ($this->option('force')) {
+                    $existing->syncRoles([$role]);
+                }
+
+                $this->warn("Bestaat al, wachtwoord ongewijzigd: {$email}");
+
                 continue;
             }
 
-            $user = User::updateOrCreate(
-                ['email' => $data['email']],
-                [
-                    'name'              => $data['name'],
-                    'password'          => Hash::make($data['password']),
-                    'email_verified_at' => Carbon::now(),
-                ]
-            );
+            $password = (string) ($data['password'] ?? '');
 
+            if (strlen($password) < 12) {
+                $this->error("Overgeslagen: {$email} heeft geen wachtwoord van minimaal 12 tekens (PRODUCTION_USER_*_PASSWORD).");
+
+                continue;
+            }
+
+            $user = new User([
+                'name' => $data['name'] ?: $email,
+                'email' => $email,
+                'password' => Hash::make($password),
+            ]);
+            $user->email_verified_at = now();
+            $user->save();
             $user->syncRoles([$role]);
 
-            $this->info("Aangemaakt: {$data['email']} (super_admin)");
+            $this->info("Aangemaakt: {$email} (super_admin)");
         }
 
         $this->newLine();

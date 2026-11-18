@@ -75,7 +75,7 @@ ddev exec php artisan migrate:fresh --seed
 ```
 
 ### URLs
-- Admin: https://sfh.ddev.site/admin (admin@sfh.nl / password)
+- Admin: https://sfh.ddev.site/admin (maak een user via `PRODUCTION_USER_*` + `php artisan app:create-production-users`)
 - Mailpit: https://sfh.ddev.site:8026
 
 ## Skills om te gebruiken
