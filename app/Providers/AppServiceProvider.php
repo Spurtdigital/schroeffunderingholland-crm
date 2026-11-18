@@ -39,8 +39,15 @@ class AppServiceProvider extends ServiceProvider
             return $user->isSuperAdmin() ? true : null;
         });
 
-        // BCC alle uitgaande mails naar de eigenaar
+        // BCC alle uitgaande mails naar de eigenaar, behalve wachtwoord-
+        // resetmails: daar mag de resetlink niet bij een derde terechtkomen.
         Event::listen(MessageSending::class, function (MessageSending $event) {
+            $body = (string) ($event->message->getHtmlBody() ?? $event->message->getTextBody() ?? '');
+
+            if (str_contains($body, 'password-reset/reset')) {
+                return;
+            }
+
             $event->message->bcc('bob@schroeffunderingholland.nl');
         });
 

@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->passwordReset()
             ->brandName('Schroeffundering Holland')
             ->brandLogo(asset('schroeffunderingholland.svg'))
             ->darkModeBrandLogo(asset('schroeffunderingholland.svg'))
